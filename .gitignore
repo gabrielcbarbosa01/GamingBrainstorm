@@ -4,6 +4,12 @@
 
 ## User settings
 xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+
+## macOS
+.DS_Store
 
 ## Obj-C/Swift specific
 *.hmap
@@ -30,6 +36,14 @@ playground.xcworkspace
 # .swiftpm
 
 .build/
+DerivedData/
+build/
+
+## SwiftData / Core Data local stores
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.store
 
 # CocoaPods
 #
