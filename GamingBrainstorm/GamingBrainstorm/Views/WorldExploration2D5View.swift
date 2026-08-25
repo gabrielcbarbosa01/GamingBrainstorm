@@ -79,7 +79,7 @@ public struct WorldExploration2D5View: View {
             // 5. Metamorphosis Wheel Modal
             if showingTransformWheel {
                 TransformationWheelView(session: session, isPresented: $showingTransformWheel)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    .transition(.opacity.combined(with: .scale(0.95)))
                     .zIndex(9999)
             }
         }
@@ -242,8 +242,10 @@ public struct WorldExploration2D5View: View {
             
             // River Bed Outline & Water Flow
             context.stroke(riverPath, with: .color(Color(red: 0.1, green: 0.35, blue: 0.45).opacity(0.4)), lineWidth: 42)
-            context.stroke(riverPath, with: .color(Color(red: 0.2, green: 0.6, blue: 0.7).opacity(0.7)), lineWidth: 28)
-            context.stroke(riverPath, with: .color(Color.white.opacity(0.35)), style: StrokeStyle(lineWidth: 4, dash: [20, 35], dashPhase: CGFloat(windPhase * 20)))
+            context.stroke(riverPath, with: .color(Color(red: 0.18, green: 0.62, blue: 0.76).opacity(0.85)), lineWidth: 28)
+            // Animated flowing river current and foam streaks
+            context.stroke(riverPath, with: .color(Color.white.opacity(0.45)), style: StrokeStyle(lineWidth: 4, dash: [16, 28], dashPhase: CGFloat(windPhase * 55)))
+            context.stroke(riverPath, with: .color(Color.cyan.opacity(0.35)), style: StrokeStyle(lineWidth: 10, dash: [35, 55], dashPhase: CGFloat(windPhase * 35)))
             
             // Ground Dirt Pathways
             var dirtTrail = Path()
@@ -280,7 +282,18 @@ public struct WorldExploration2D5View: View {
                 .zIndex(item.y)
             }
             
-            // 2. Interactive World Points (Animals in distress, Clues, Rescues)
+            // 2. Bushes & Native Flora
+            ForEach(env.bushes) { bush in
+                let sx = center.x + (bush.x - cameraOffset.x) * 2.8
+                let sy = center.y + (bush.y - cameraOffset.y) * 2.0
+                let rustle = sin(windPhase * 1.4 + Double(bush.x)) * 1.5
+                
+                bushBillboardView(bush: bush, rustleAngle: rustle)
+                    .position(x: sx, y: sy)
+                    .zIndex(bush.y)
+            }
+            
+            // 3. Interactive World Points (Animals in distress, Clues, Rescues)
             let pointsInBiome = session.worldPoints.filter { $0.biome == session.currentBiome }
             ForEach(pointsInBiome) { point in
                 let sx = center.x + (point.x - cameraOffset.x) * 2.8
@@ -291,18 +304,20 @@ public struct WorldExploration2D5View: View {
                     .zIndex(point.y) // Depth Y-Sort
             }
             
-            // 3. Tree Billboards (TreeImage from Tree.xcassets)
+            // 4. Tree Billboards (TreeImage from Tree.xcassets)
             ForEach(env.trees) { tree in
                 let sx = center.x + (tree.x - cameraOffset.x) * 2.8
                 let sy = center.y + (tree.y - cameraOffset.y) * 2.0
-                let swayAngle = sin(windPhase + tree.swayOffset) * 1.8
+                let swayAngle = sin(windPhase * 1.4 + tree.swayOffset * 4.0) * 2.2
+                let scaleW = 1.0 + sin(windPhase * 1.2 + tree.swayOffset * 2.0) * 0.02
+                let scaleH = 1.0 + cos(windPhase * 1.2 + tree.swayOffset * 2.0) * 0.015
                 
-                treeBillboardView(tree: tree, swayAngle: swayAngle)
+                treeBillboardView(tree: tree, swayAngle: swayAngle, scaleW: scaleW, scaleH: scaleH)
                     .position(x: sx, y: sy)
                     .zIndex(tree.y) // Depth Y-Sort: Player walks behind or in front!
             }
             
-            // 4. Player Animated Character (Monkey.xcassets)
+            // 5. Player Animated Character (Monkey.xcassets)
             CharacterSpriteView(
                 isMoving: isMoving,
                 isFacingLeft: isFacingLeft,
@@ -314,14 +329,35 @@ public struct WorldExploration2D5View: View {
         }
     }
     
+    // MARK: - Bush Billboard View (Using BushImage asset)
+    private func bushBillboardView(bush: BushItem, rustleAngle: Double) -> some View {
+        VStack(spacing: 0) {
+            // Standing Bush Sprite Billboard
+            Image("BushImage")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 85 * bush.scale, height: 68 * bush.scale)
+                .rotationEffect(.degrees(rustleAngle), anchor: .bottom)
+                .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+                .offset(y: -26 * bush.scale) // Anchor bottom base to ground position
+            
+            // Ground Contact Shadow
+            Ellipse()
+                .fill(Color.black.opacity(0.35))
+                .frame(width: 55 * bush.scale, height: 14 * bush.scale)
+                .offset(y: -6)
+        }
+    }
+    
     // MARK: - Tree Billboard View (Using TreeImage asset)
-    private func treeBillboardView(tree: TreeBillboardItem, swayAngle: Double) -> some View {
+    private func treeBillboardView(tree: TreeBillboardItem, swayAngle: Double, scaleW: Double, scaleH: Double) -> some View {
         VStack(spacing: 0) {
             // Standing Tree Sprite Billboard
             Image("TreeImage")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 140 * tree.scale, height: 190 * tree.scale)
+                .scaleEffect(x: scaleW, y: scaleH, anchor: .bottom)
                 .rotationEffect(.degrees(swayAngle), anchor: .bottom)
                 .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
                 .offset(y: -85 * tree.scale) // Anchor bottom trunk to ground position
@@ -519,12 +555,12 @@ public struct WorldExploration2D5View: View {
                 
                 // Directional D-Pad Controls
                 VStack(spacing: 3) {
-                    controlDirectionButton(dx: 0, dy: -3.5, icon: "chevron.up")
+                    controlDirectionButton(dx: 0, dy: -1.8, icon: "chevron.up")
                     HStack(spacing: 12) {
-                        controlDirectionButton(dx: -3.5, dy: 0, icon: "chevron.left")
-                        controlDirectionButton(dx: 3.5, dy: 0, icon: "chevron.right")
+                        controlDirectionButton(dx: -1.8, dy: 0, icon: "chevron.left")
+                        controlDirectionButton(dx: 1.8, dy: 0, icon: "chevron.right")
                     }
-                    controlDirectionButton(dx: 0, dy: 3.5, icon: "chevron.down")
+                    controlDirectionButton(dx: 0, dy: 1.8, icon: "chevron.down")
                 }
                 .padding(.trailing)
             }

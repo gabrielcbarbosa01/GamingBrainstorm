@@ -23,6 +23,22 @@ public struct TreeBillboardItem: Identifiable, Sendable {
     }
 }
 
+public struct BushItem: Identifiable, Sendable {
+    public let id: UUID
+    public let x: Double
+    public let y: Double
+    public let scale: Double
+    public let hasFlowers: Bool
+    
+    public init(id: UUID = UUID(), x: Double, y: Double, scale: Double = 1.0, hasFlowers: Bool = false) {
+        self.id = id
+        self.x = x
+        self.y = y
+        self.scale = scale
+        self.hasFlowers = hasFlowers
+    }
+}
+
 public struct GroundFoliageItem: Identifiable, Sendable {
     public let id: UUID
     public let x: Double
@@ -43,6 +59,7 @@ public struct GroundFoliageItem: Identifiable, Sendable {
 
 public struct BiomeEnvironmentSet {
     public let trees: [TreeBillboardItem]
+    public let bushes: [BushItem]
     public let foliage: [GroundFoliageItem]
     public let groundBaseColor: Color
     public let groundAccentColor: Color
@@ -62,6 +79,17 @@ public struct BiomeEnvironmentSet {
                     TreeBillboardItem(x: 55, y: 45, scale: 1.2, swayOffset: 0.1),
                     TreeBillboardItem(x: 10, y: 65, scale: 1.05, swayOffset: 0.7),
                     TreeBillboardItem(x: -15, y: -25, scale: 0.95, swayOffset: 0.2)
+                ],
+                bushes: [
+                    BushItem(x: -45, y: -30, scale: 1.1, hasFlowers: true),
+                    BushItem(x: -20, y: -50, scale: 0.9, hasFlowers: false),
+                    BushItem(x: 25, y: -35, scale: 1.2, hasFlowers: true),
+                    BushItem(x: 60, y: -10, scale: 1.0, hasFlowers: false),
+                    BushItem(x: -60, y: 30, scale: 1.15, hasFlowers: true),
+                    BushItem(x: -35, y: 40, scale: 0.95, hasFlowers: false),
+                    BushItem(x: 40, y: 30, scale: 1.05, hasFlowers: true),
+                    BushItem(x: 15, y: 50, scale: 1.2, hasFlowers: false),
+                    BushItem(x: -5, y: -15, scale: 0.85, hasFlowers: true)
                 ],
                 foliage: [
                     GroundFoliageItem(x: -20, y: -10, symbolName: "leaf.fill", tintColor: .green, size: 24),
@@ -87,6 +115,16 @@ public struct BiomeEnvironmentSet {
                     TreeBillboardItem(x: -10, y: 55, scale: 1.25, swayOffset: 0.2),
                     TreeBillboardItem(x: 25, y: 20, scale: 1.1, swayOffset: 0.8)
                 ],
+                bushes: [
+                    BushItem(x: -50, y: -40, scale: 1.3, hasFlowers: true),
+                    BushItem(x: -10, y: -45, scale: 1.1, hasFlowers: false),
+                    BushItem(x: 35, y: -45, scale: 1.25, hasFlowers: true),
+                    BushItem(x: 65, y: 15, scale: 1.2, hasFlowers: false),
+                    BushItem(x: -45, y: 20, scale: 1.15, hasFlowers: true),
+                    BushItem(x: 45, y: 35, scale: 1.3, hasFlowers: true),
+                    BushItem(x: 0, y: 35, scale: 1.0, hasFlowers: false),
+                    BushItem(x: -25, y: 10, scale: 1.2, hasFlowers: true)
+                ],
                 foliage: [
                     GroundFoliageItem(x: -45, y: -20, symbolName: "drop.circle.fill", tintColor: .teal, size: 26),
                     GroundFoliageItem(x: 30, y: -15, symbolName: "leaf.arrow.circlepath", tintColor: .mint, size: 24),
@@ -107,6 +145,13 @@ public struct BiomeEnvironmentSet {
                     TreeBillboardItem(x: 50, y: 35, scale: 1.05, swayOffset: 0.2),
                     TreeBillboardItem(x: 0, y: -60, scale: 0.9, swayOffset: 0.5)
                 ],
+                bushes: [
+                    BushItem(x: -40, y: -25, scale: 0.9, hasFlowers: false),
+                    BushItem(x: 20, y: -30, scale: 1.0, hasFlowers: true),
+                    BushItem(x: -30, y: 25, scale: 0.95, hasFlowers: false),
+                    BushItem(x: 30, y: 15, scale: 1.05, hasFlowers: true),
+                    BushItem(x: -10, y: -10, scale: 0.85, hasFlowers: false)
+                ],
                 foliage: [
                     GroundFoliageItem(x: -30, y: -15, symbolName: "sun.max.fill", tintColor: .orange, size: 22),
                     GroundFoliageItem(x: 25, y: -10, symbolName: "circle.grid.cross.fill", tintColor: .brown, size: 20),
@@ -125,6 +170,13 @@ public struct BiomeEnvironmentSet {
                     TreeBillboardItem(x: 50, y: -50, scale: 1.2, swayOffset: 0.4),
                     TreeBillboardItem(x: -55, y: 45, scale: 1.1, swayOffset: 0.1),
                     TreeBillboardItem(x: 60, y: 40, scale: 1.25, swayOffset: 0.5)
+                ],
+                bushes: [
+                    BushItem(x: -45, y: -35, scale: 1.1, hasFlowers: true),
+                    BushItem(x: 30, y: -35, scale: 1.15, hasFlowers: false),
+                    BushItem(x: -35, y: 30, scale: 1.05, hasFlowers: true),
+                    BushItem(x: 45, y: 20, scale: 1.2, hasFlowers: false),
+                    BushItem(x: 10, y: -10, scale: 1.0, hasFlowers: true)
                 ],
                 foliage: [
                     GroundFoliageItem(x: -25, y: -30, symbolName: "water.waves", tintColor: .cyan, size: 30),
@@ -145,6 +197,12 @@ public struct BiomeEnvironmentSet {
                     TreeBillboardItem(x: -45, y: 45, scale: 0.85, swayOffset: 0.2),
                     TreeBillboardItem(x: 55, y: 30, scale: 0.95, swayOffset: 0.4)
                 ],
+                bushes: [
+                    BushItem(x: -35, y: -30, scale: 0.8, hasFlowers: false),
+                    BushItem(x: 30, y: -25, scale: 0.85, hasFlowers: true),
+                    BushItem(x: -25, y: 35, scale: 0.8, hasFlowers: false),
+                    BushItem(x: 35, y: 15, scale: 0.9, hasFlowers: true)
+                ],
                 foliage: [
                     GroundFoliageItem(x: -30, y: -10, symbolName: "sun.dust.fill", tintColor: .yellow, size: 24),
                     GroundFoliageItem(x: 25, y: 10, symbolName: "triangle.fill", tintColor: .brown, size: 20),
@@ -161,6 +219,12 @@ public struct BiomeEnvironmentSet {
                     TreeBillboardItem(x: -60, y: -50, scale: 1.05, swayOffset: 0.4),
                     TreeBillboardItem(x: 50, y: -40, scale: 1.1, swayOffset: 0.2),
                     TreeBillboardItem(x: 0, y: 60, scale: 1.0, swayOffset: 0.5)
+                ],
+                bushes: [
+                    BushItem(x: -40, y: -30, scale: 1.0, hasFlowers: true),
+                    BushItem(x: 35, y: -20, scale: 0.95, hasFlowers: false),
+                    BushItem(x: -30, y: 35, scale: 1.05, hasFlowers: true),
+                    BushItem(x: 25, y: 40, scale: 1.0, hasFlowers: false)
                 ],
                 foliage: [
                     GroundFoliageItem(x: -35, y: -20, symbolName: "wind", tintColor: .mint, size: 26),

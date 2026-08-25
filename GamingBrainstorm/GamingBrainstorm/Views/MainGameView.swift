@@ -8,7 +8,8 @@
 import SwiftUI
 
 public enum GameNavigationTab: String, CaseIterable, Identifiable {
-    case exploration = "Exploração 2.5D"
+    case exploration3D = "Exploração 3D"
+    case exploration2D5 = "Modo 2.5D"
     case sanctuary = "Santuário"
     case catalog = "Catálogo & Mapa"
     
@@ -16,7 +17,8 @@ public enum GameNavigationTab: String, CaseIterable, Identifiable {
     
     public var iconName: String {
         switch self {
-        case .exploration: return "map.fill"
+        case .exploration3D: return "cube.fill"
+        case .exploration2D5: return "map.fill"
         case .sanctuary: return "house.lodge.fill"
         case .catalog: return "books.vertical.fill"
         }
@@ -25,7 +27,7 @@ public enum GameNavigationTab: String, CaseIterable, Identifiable {
 
 public struct MainGameView: View {
     @State private var session = GameSession()
-    @State private var selectedTab: GameNavigationTab = .exploration
+    @State private var selectedTab: GameNavigationTab = .exploration3D
     @FocusState private var isViewFocused: Bool
     
     public init() {}
@@ -59,7 +61,9 @@ public struct MainGameView: View {
             // Main Content Area
             Group {
                 switch selectedTab {
-                case .exploration:
+                case .exploration3D:
+                    WorldExploration3DView(session: session)
+                case .exploration2D5:
                     WorldExploration2D5View(session: session)
                 case .sanctuary:
                     SanctuaryManagementView(session: session)
@@ -99,29 +103,29 @@ public struct MainGameView: View {
             .frame(maxWidth: .infinity)
             .background(Material.ultraThick)
         }
-        .frame(minWidth: 960, minHeight: 680)
+        .frame(minWidth: 980, minHeight: 680)
         .focusable()
         .focused($isViewFocused)
         .onAppear {
             isViewFocused = true
         }
         .onKeyPress { press in
-            guard selectedTab == .exploration else { return .ignored }
+            guard selectedTab == .exploration3D || selectedTab == .exploration2D5 else { return .ignored }
             
             if press.key == .space {
                 _ = session.interactWithNearbyPoint()
                 return .handled
             } else if press.characters == "w" || press.characters == "W" || press.key == .upArrow {
-                session.movePlayer(dx: 0, dy: -3.5)
+                session.movePlayer(dx: 0, dy: -1.8)
                 return .handled
             } else if press.characters == "s" || press.characters == "S" || press.key == .downArrow {
-                session.movePlayer(dx: 0, dy: 3.5)
+                session.movePlayer(dx: 0, dy: 1.8)
                 return .handled
             } else if press.characters == "a" || press.characters == "A" || press.key == .leftArrow {
-                session.movePlayer(dx: -3.5, dy: 0)
+                session.movePlayer(dx: -1.8, dy: 0)
                 return .handled
             } else if press.characters == "d" || press.characters == "D" || press.key == .rightArrow {
-                session.movePlayer(dx: 3.5, dy: 0)
+                session.movePlayer(dx: 1.8, dy: 0)
                 return .handled
             }
             return .ignored

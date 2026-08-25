@@ -46,6 +46,19 @@ public enum BiomeType: String, CaseIterable, Identifiable, Codable, Sendable {
         }
     }
     
+    #if canImport(AppKit)
+    public var nsColor: NSColor {
+        switch self {
+        case .amazonia: return NSColor.systemGreen
+        case .cerrado: return NSColor.systemOrange
+        case .pantanal: return NSColor.systemTeal
+        case .mataAtlantica: return NSColor.systemMint
+        case .caatinga: return NSColor.systemYellow
+        case .pampa: return NSColor.systemBrown
+        }
+    }
+    #endif
+    
     public var iconName: String {
         switch self {
         case .amazonia: return "leaf.fill"
