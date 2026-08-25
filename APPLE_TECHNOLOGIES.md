@@ -1,6 +1,6 @@
 # Apple Technologies Evaluation
 
-Nenhuma tecnologia desta lista está aprovada por mera presença. A seleção depende do conceito, plataforma e protótipos definidos no [GDD](GDD.md) e no [SDD](SDD.md).
+SwiftUI está aprovado para a interface do produto. Nenhuma outra tecnologia desta lista está aprovada por mera presença; a seleção depende do conceito, da plataforma e dos protótipos definidos no [GDD](GDD.md) e no [SDD](SDD.md).
 
 | Tecnologia | Possível uso | Adotar quando | Risco/pergunta |
 | --- | --- | --- | --- |
@@ -37,4 +37,3 @@ Nenhuma tecnologia desta lista está aprovada por mera presença. A seleção de
 ## Princípio de fallback
 
 Se uma API depender de sensor, conta, acessório, permissão ou hardware específico, a experiência deve declarar comportamento para indisponibilidade, recusa de permissão e interrupção.
-

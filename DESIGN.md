@@ -2,7 +2,19 @@
 
 ## Estado
 
-A direção visual é `TBD`. Não assumir pixel art, ilustração, realismo, 2D, 3D, glassmorphism ou qualquer estética a partir do scaffold atual.
+A direção aprovada para prototipagem é 2.5D: personagens em sprites de oito direções com animação esquelética 2D e cenários construídos com planos 2D distribuídos em profundidade. A referência de legibilidade e composição é *Cult of the Lamb*, sem reproduzir sua identidade visual. Paleta, acabamento, proporções, texturas e pipeline permanecem `TBD`.
+
+## Câmera de gameplay
+
+- ângulo elevado e fixo, sem rotação livre;
+- seguimento com lerp curto, pequena zona morta e antecipação na direção do movimento;
+- enquadramento mais próximo durante idle;
+- zoom out moderado durante deslocamento;
+- aproximação em diálogos e descobertas;
+- zoom out de apresentação ao revelar um bioma;
+- ganho de altura e campo visual durante voo.
+
+O protótipo deve medir legibilidade de profundidade, oclusão por vegetação, conforto, julgamento de distância e transições entre enquadramentos. A preferência de redução de movimento deve reduzir ou eliminar zooms e atrasos não essenciais.
 
 ## Objetivos da direção futura
 
@@ -61,4 +73,3 @@ Direção sonora e háptica permanece `TBD`. Áudio e háptica devem complementa
 - contraste e legibilidade medidos;
 - teste com redução de movimento e tecnologias assistivas relevantes;
 - custo de produção compatível com o cronograma.
-

@@ -2,7 +2,7 @@
 
 ## Estado da arquitetura
 
-A arquitetura está em discovery. O repositório contém um app SwiftUI macOS mínimo, criado com Xcode 26.6 e deployment target 26.5. Esses valores descrevem o scaffold atual; não constituem plataforma, versão mínima ou arquitetura aprovadas.
+A arquitetura está em discovery. macOS foi aprovado como plataforma principal, mas a versão mínima permanece aberta. O repositório contém um app SwiftUI macOS e um protótipo SpriteKit local ainda não consolidado como decisão arquitetural. A direção visual 2.5D exige comparar renderer, profundidade, câmera, pipeline de sprites e desempenho antes de aprovar a tecnologia em ADR.
 
 ## Objetivos de engenharia
 
@@ -79,4 +79,3 @@ Erros recuperáveis devem produzir diagnóstico útil em builds de desenvolvimen
 ## Estratégia de entrega inicial
 
 O primeiro incremento deve ser um vertical slice mínimo: uma ação central, resposta completa, começo e fim de sessão, instrumentação suficiente e pelo menos uma verificação de acessibilidade. Ver [TEST_PLAN.md](TEST_PLAN.md).
-

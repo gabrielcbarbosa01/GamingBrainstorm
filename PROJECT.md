@@ -16,6 +16,9 @@ Criar um jogo Apple nativo com uma experiência clara, memorável e executável 
 ## Restrições confirmadas
 
 - SwiftUI será usado na interface do produto.
+- O jogo será single-player e terá macOS como plataforma principal.
+- O público será geral, com foco em adultos e jovens adultos.
+- A experiência terá sessões típicas de 20–30 minutos e campanha de pelo menos 4–5 horas, sujeita a validação de escopo.
 - O projeto deve seguir as Human Interface Guidelines aplicáveis à plataforma aprovada.
 - Funcionalidades essenciais devem ser utilizáveis sem depender exclusivamente de cor, som ou movimento.
 - Mudanças relevantes de arquitetura, plataforma, renderer ou persistência exigem decisão documentada.
@@ -24,17 +27,16 @@ Criar um jogo Apple nativo com uma experiência clara, memorável e executável 
 
 Os itens abaixo continuam deliberadamente abertos:
 
-- conceito, gênero e narrativa;
-- público-alvo e classificação etária;
-- plataformas e dispositivos suportados;
+- classificação etária e versões mínimas do macOS;
+- plataformas secundárias e dispositivos adicionais;
 - duração, frequência e estrutura das sessões;
-- modelo 2D, 2.5D, 3D, espacial ou híbrido;
-- estilo visual e sonoro;
-- controles e modos de entrada;
+- renderer e pipeline técnico para o visual 2.5D aprovado como direção;
+- direção sonora final;
+- suporte de lançamento a controle físico e remapeamento;
 - online, multiplayer, placares e conquistas;
 - persistência local ou em nuvem.
 
-O deployment target macOS 26.5 encontrado no Xcode é somente o estado do scaffold.
+O deployment target encontrado no Xcode descreve somente o scaffold e não define a versão mínima aprovada.
 
 ## Processo de discovery
 
@@ -66,4 +68,3 @@ Decisões arquiteturais importantes serão registradas em `docs/adr/NNNN-titulo.
 3. Quais são os verbos mínimos dessa fantasia?
 4. Qual é a duração ideal de uma sessão?
 5. Em qual contexto e dispositivo a experiência funciona melhor?
-
