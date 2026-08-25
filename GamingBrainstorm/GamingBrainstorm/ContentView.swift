@@ -1,27 +1,17 @@
 //
 //  ContentView.swift
-//  GamingBrainstorm
-//
-//  Created by Gabriel Barbosa on 25/08/26.
+//  Guardiões dos Biomas
 //
 
 import SpriteKit
 import SwiftUI
 
 struct ContentView: View {
-    @State private var sceneID = UUID()
+    @StateObject private var estado = GameState()
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            SpriteView(scene: GameScene.makeScene(), options: [.ignoresSiblingOrder])
-                .id(sceneID)
-                .ignoresSafeArea()
-            Button("Reiniciar jornada") { sceneID = UUID() }
-                .buttonStyle(.borderedProminent)
-                .tint(Color(red: 0.12, green: 0.35, blue: 0.24))
-                .padding()
-        }
-        .frame(minWidth: 960, minHeight: 640)
-        .background(Color.black)
+        GameView(st: estado)
+            .frame(minWidth: 1024, minHeight: 680)
+            .preferredColorScheme(.dark)
     }
 }
