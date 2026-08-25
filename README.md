@@ -1,0 +1,106 @@
+# Guardiões dos Biomas
+
+Jogo de exploração em Swift sobre cinco animais brasileiros ameaçados de extinção.
+Aplicativo macOS: SwiftUI para a interface, SpriteKit para o mundo.
+
+**Não há um único arquivo de imagem no projeto** — todo o sprite e todo o terreno
+são desenhados em CoreGraphics em tempo de execução.
+
+## A ideia
+
+Você é guardiã(o) de campo. Sai do **Refúgio Raízes** por portais, explora biomas
+gerados proceduralmente sem limite de tamanho, registra vestígios, liberta animais
+presos e recupera áreas degradadas. Cada bioma termina no encontro com um Guardião,
+que entrega um amuleto — e cada amuleto abre o bioma seguinte.
+
+| Bioma | Animal | Amuleto | Travessia | ESPAÇO faz |
+|---|---|---|---|---|
+| Mata Atlântica | Mico-leão-dourado | da Copa | cipoais | **Salto** em arco, com salto duplo |
+| Cerrado | Lobo-guará | da Campina | espinheiros | **Investida** que rompe e empurra ameaças |
+| Pantanal | Arara-azul-grande | do Vento | abismos | **Planar**: segure para se manter no ar |
+| Amazônia | Pirarucu | das Águas | água funda | **Arranco**: mergulha, veloz e invisível |
+| Pampa | Tuco-tuco-das-dunas | do Subsolo | terra compactada | **Escavar**: some no subsolo |
+| — (lendária) | Harpia | Coroa | tudo | **Voo** livre, sem barreira nenhuma |
+
+Cada forma tem um verbo próprio na barra de espaço — é isso, e não a velocidade,
+que diferencia jogar de mico e jogar de lobo. O jogador tem **altura real**: o
+salto sobe cerca de um tile, a sombra se separa do corpo e no ar você passa por
+cima de água, cipó e abismo mesmo sem o amuleto correspondente. Só o paredão de
+rocha continua sendo parede.
+
+### A Harpia
+
+Aparece na abertura, dá uma dica enigmática e some. Só volta quando o mundo
+inteiro tiver voltado: os cinco amuletos, uma expedição concluída em cada bioma
+e quinze mudas cultivadas no viveiro. Aí vira a sexta forma jogável.
+
+Ela é predadora dos próprios micos que você passou o jogo protegendo — e é
+exatamente por isso que serve de sinal: onde a harpia ainda se reproduz, a
+floresta está inteira.
+
+### O Refúgio como base
+
+O centro deixou de ser um saguão com portais:
+
+- **Viveiro** — plante juçara, lobeira, manduvi, castanheira e capim-das-dunas.
+  Crescem com o tempo de jogo e viram mudas. Sementes vêm dos objetivos de
+  restauro e resgate no campo.
+- **Açude** — minigame de pesca por tempo. Espécies migradoras e juvenis abaixo
+  do tamanho mínimo valem o **dobro** quando devolvidas à água.
+- **Oficina** — pontos, mudas e peixes viram melhorias permanentes: mais
+  canteiros, mais essência máxima, cais melhor, torre de observação (revela
+  caches mesmo na forma humana) e ferramenta que rende mais pontos.
+
+Como cada amuleto vale em todos os biomas, voltar a um território antigo abre
+áreas que antes eram intransponíveis.
+
+Depois dos cinco amuletos o jogo **não acaba**: cada bioma passa a gerar expedições
+infinitas, com alvo e hostilidade crescentes, alimentando o Índice de Biodiversidade.
+
+## Controles
+
+| Tecla | Ação |
+|---|---|
+| WASD / setas | andar |
+| ESPAÇO | movimento especial da forma atual |
+| E | interagir · avançar diálogo |
+| 1–6 | vestir um amuleto |
+| Q | voltar à forma humana |
+| TAB | Códice |
+| M | mapa de campo |
+| R | iniciar nova expedição |
+| ESC | menu |
+
+**Essência** é o recurso central: transformar-se consome essência continuamente e,
+quando ela acaba, você volta a ser humano na hora. Só a forma humana conversa com
+pessoas, abre armadilhas e planta mudas — a troca entre bicho e gente é o ritmo do jogo.
+
+Ninguém morre. Quem é pego por uma ameaça é afugentado e perde pontos.
+
+## Estrutura
+
+```
+GamingBrainstorm/
+  Core/    regras: biomas, amuletos, terreno, missões, diálogo, códice, save
+  World/   geração procedural infinita por chunks
+  Art/     desenho de todo o sprite e terreno em CoreGraphics.
+           Creatures.swift gera cada quadro a partir de uma Pose — os ciclos de
+           caminhada, salto, investida e batida de asa são calculados, não
+           desenhados à mão.
+  Scenes/  cena SpriteKit, entidades do mundo, teclado
+  UI/      SwiftUI: HUD, diálogo, códice, mapa, menu
+```
+
+O Códice traz fichas de conservação baseadas em dados reais (IUCN, ICMBio e
+projetos brasileiros de campo) sobre cada espécie e cada bioma.
+
+## Rodar
+
+Abra `GamingBrainstorm.xcodeproj` no Xcode e rode o esquema `GamingBrainstorm`,
+ou pela linha de comando:
+
+```
+xcodebuild -project GamingBrainstorm/GamingBrainstorm.xcodeproj -scheme GamingBrainstorm build
+```
+
+O progresso é salvo em `~/Library/Application Support/GuardioesDosBiomas/save.json`.

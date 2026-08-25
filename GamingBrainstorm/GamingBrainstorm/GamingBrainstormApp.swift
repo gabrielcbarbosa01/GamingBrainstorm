@@ -1,8 +1,8 @@
 //
 //  GamingBrainstormApp.swift
-//  GamingBrainstorm
+//  Guardiões dos Biomas
 //
-//  Created by Gabriel Barbosa on 25/08/26.
+//  Um jogo sobre cinco animais brasileiros ameaçados de extinção.
 //
 
 import SwiftUI
@@ -10,8 +10,10 @@ import SwiftUI
 @main
 struct GamingBrainstormApp: App {
     var body: some Scene {
-        WindowGroup {
+        WindowGroup("Guardiões dos Biomas") {
             ContentView()
         }
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 1440, height: 900)
     }
 }

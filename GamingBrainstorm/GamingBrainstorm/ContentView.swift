@@ -1,21 +1,17 @@
 //
 //  ContentView.swift
-//  GamingBrainstorm
-//
-//  Created by Gabriel Barbosa on 25/08/26.
+//  Guardiões dos Biomas
 //
 
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var estado = GameState()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        GameView(st: estado)
+            .frame(minWidth: 1024, minHeight: 680)
+            .preferredColorScheme(.dark)
     }
 }
 

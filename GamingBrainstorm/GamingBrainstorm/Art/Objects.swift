@@ -1,0 +1,380 @@
+//
+//  Objects.swift
+//  Guardiões dos Biomas
+//
+//  Sprites dos elementos interativos: pontos de missão, essência, ameaças,
+//  segredos, portais e placas de leitura.
+//
+
+import SpriteKit
+
+enum Objects {
+
+    private static var cache: [String: SKTexture] = [:]
+
+    private static func cached(_ chave: String, _ w: Int, _ h: Int,
+                               _ body: @escaping (CGContext) -> Void) -> SKTexture {
+        if let t = cache[chave] { return t }
+        let t = Draw.texture(width: w, height: h, body)
+        cache[chave] = t
+        return t
+    }
+
+    // MARK: - Pontos de missão
+
+    static func objetivo(_ kind: ObjectiveKind, bioma: BiomeID) -> SKTexture {
+        cached("obj_\(kind.rawValue)_\(bioma.rawValue)", 52, 52) { ctx in
+            desenharObjetivo(ctx, kind: kind, bioma: bioma)
+        }
+    }
+
+    static func desenharObjetivo(_ ctx: CGContext, kind: ObjectiveKind, bioma: BiomeID) {
+        let p = Biome[bioma].palette
+        let c = CGPoint(x: 26, y: 26)
+        // Halo suave para o ponto se destacar na vegetação.
+        Draw.circle(ctx, c, 24, p.accent.withAlphaComponent(0.12))
+        Draw.circle(ctx, c, 17, p.accent.withAlphaComponent(0.20))
+        switch kind {
+        case .rastro: pegada(ctx, c: c, cor: p.accent)
+        case .resgate: gaiola(ctx, c: c)
+        case .restauro: muda(ctx, c: c, palette: p)
+        case .ameaca: alerta(ctx, c: c)
+        }
+    }
+
+    private static func pegada(_ ctx: CGContext, c: CGPoint, cor: SKColor) {
+        // Sombra deslocada + marca clara: a pegada precisa saltar sobre solo escuro.
+        let sombra = SKColor(hex: 0x14100C, alpha: 0.55)
+        let marca = Palette.parchment
+        for (off, tinta) in [(CGPoint(x: 1.5, y: 2), sombra), (.zero, marca)] {
+            Draw.ellipse(ctx, CGRect(x: c.x - 7 + off.x, y: c.y - 1 + off.y,
+                                     width: 14, height: 12), tinta)
+            for dx in [CGFloat(-8), -3, 3, 8] {
+                let dy: CGFloat = abs(dx) > 5 ? -4 : -7
+                Draw.circle(ctx, CGPoint(x: c.x + dx + off.x, y: c.y + dy + off.y), 2.8, tinta)
+            }
+        }
+        Draw.circle(ctx, CGPoint(x: c.x, y: c.y + 3), 3.2, cor)
+    }
+
+    private static func gaiola(_ ctx: CGContext, c: CGPoint) {
+        let madeira = SKColor(hex: 0x6A4E2E)
+        Draw.roundRect(ctx, CGRect(x: c.x - 13, y: c.y - 12, width: 26, height: 24), radius: 3, madeira)
+        Draw.roundRect(ctx, CGRect(x: c.x - 10, y: c.y - 9, width: 20, height: 18), radius: 2,
+                       SKColor(hex: 0x2A2418))
+        for i in 0..<4 {
+            let x = c.x - 9 + CGFloat(i) * 6
+            Draw.line(ctx, from: CGPoint(x: x, y: c.y - 10), to: CGPoint(x: x, y: c.y + 9),
+                      width: 2, madeira.lighter(0.18))
+        }
+        Draw.circle(ctx, CGPoint(x: c.x, y: c.y + 13), 3.2, SKColor(hex: 0xB0B0B8)) // cadeado
+    }
+
+    private static func muda(_ ctx: CGContext, c: CGPoint, palette p: BiomePalette) {
+        Draw.ellipse(ctx, CGRect(x: c.x - 13, y: c.y + 4, width: 26, height: 12), SKColor(hex: 0x5A4630))
+        Draw.line(ctx, from: CGPoint(x: c.x, y: c.y + 8), to: CGPoint(x: c.x, y: c.y - 8),
+                  width: 2.6, SKColor(hex: 0x4E7A34))
+        Draw.leaf(ctx, from: CGPoint(x: c.x, y: c.y - 2), to: CGPoint(x: c.x - 12, y: c.y - 9),
+                  bulge: 5, p.foliage.lighter(0.10))
+        Draw.leaf(ctx, from: CGPoint(x: c.x, y: c.y - 5), to: CGPoint(x: c.x + 12, y: c.y - 12),
+                  bulge: 5, p.foliage)
+    }
+
+    private static func alerta(_ ctx: CGContext, c: CGPoint) {
+        Draw.polygon(ctx, [CGPoint(x: c.x, y: c.y - 14), CGPoint(x: c.x + 14, y: c.y + 10),
+                           CGPoint(x: c.x - 14, y: c.y + 10)], SKColor(hex: 0xE8B23A))
+        Draw.polygon(ctx, [CGPoint(x: c.x, y: c.y - 9), CGPoint(x: c.x + 10, y: c.y + 7),
+                           CGPoint(x: c.x - 10, y: c.y + 7)], SKColor(hex: 0x2A2010))
+        Draw.roundRect(ctx, CGRect(x: c.x - 1.5, y: c.y - 5, width: 3, height: 8), radius: 1.5,
+                       SKColor(hex: 0xE8B23A))
+        Draw.circle(ctx, CGPoint(x: c.x, y: c.y + 5), 1.8, SKColor(hex: 0xE8B23A))
+    }
+
+    // MARK: - Essência
+
+    static func essencia() -> SKTexture {
+        cached("essencia", 40, 40) { ctx in
+            let c = CGPoint(x: 20, y: 20)
+            Draw.circle(ctx, c, 18, Palette.essence.withAlphaComponent(0.10))
+            Draw.circle(ctx, c, 13, Palette.essence.withAlphaComponent(0.22))
+            Draw.circle(ctx, c, 8, Palette.essence)
+            Draw.circle(ctx, CGPoint(x: c.x - 2.5, y: c.y - 3), 2.8, .white)
+        }
+    }
+
+    // MARK: - Ameaças
+
+    static func ameaca(_ kind: HazardKind) -> SKTexture {
+        cached("ameaca_\(kind.rawValue)", 64, 64) { ctx in
+            desenharAmeaca(ctx, kind: kind)
+        }
+    }
+
+    static func desenharAmeaca(_ ctx: CGContext, kind: HazardKind) {
+        let c = CGPoint(x: 32, y: 34)
+        Draw.shadow(ctx, center: CGPoint(x: 32, y: 54), w: 34, h: 12)
+        switch kind {
+        case .queimada: fogo(ctx, c: c)
+        case .desmatamento: motosserra(ctx, c: c)
+        case .trafico: cacador(ctx, c: c)
+        case .pescaIlegal: rede(ctx, c: c)
+        case .monocultura: maquina(ctx, c: c)
+        case .nenhuma: break
+        }
+    }
+
+    private static func fogo(_ ctx: CGContext, c: CGPoint) {
+        Draw.polygon(ctx, [CGPoint(x: c.x, y: c.y - 22), CGPoint(x: c.x + 15, y: c.y + 16),
+                           CGPoint(x: c.x - 15, y: c.y + 16)], SKColor(hex: 0xE8541E))
+        Draw.polygon(ctx, [CGPoint(x: c.x + 2, y: c.y - 12), CGPoint(x: c.x + 11, y: c.y + 16),
+                           CGPoint(x: c.x - 8, y: c.y + 16)], SKColor(hex: 0xF2903A))
+        Draw.polygon(ctx, [CGPoint(x: c.x - 1, y: c.y - 2), CGPoint(x: c.x + 5, y: c.y + 16),
+                           CGPoint(x: c.x - 7, y: c.y + 16)], SKColor(hex: 0xF6D24E))
+        Draw.ellipse(ctx, CGRect(x: c.x - 17, y: c.y + 12, width: 34, height: 10),
+                     SKColor(hex: 0x2A1810, alpha: 0.6))
+    }
+
+    private static func motosserra(_ ctx: CGContext, c: CGPoint) {
+        Draw.roundRect(ctx, CGRect(x: c.x - 16, y: c.y - 4, width: 20, height: 16), radius: 4,
+                       SKColor(hex: 0xC8442E))
+        Draw.roundRect(ctx, CGRect(x: c.x + 2, y: c.y + 1, width: 22, height: 6), radius: 3,
+                       SKColor(hex: 0xB0B4BA))
+        for i in 0..<7 {
+            let x = c.x + 4 + CGFloat(i) * 3
+            Draw.polygon(ctx, [CGPoint(x: x, y: c.y + 1), CGPoint(x: x + 2, y: c.y + 1),
+                               CGPoint(x: x + 1, y: c.y - 2)], SKColor(hex: 0xE0E4EA))
+        }
+        Draw.roundRect(ctx, CGRect(x: c.x - 14, y: c.y - 12, width: 5, height: 10), radius: 2.5,
+                       SKColor(hex: 0x2A2620))
+        // Toco cortado
+        Draw.ellipse(ctx, CGRect(x: c.x - 10, y: c.y + 12, width: 22, height: 10), SKColor(hex: 0x8A6A42))
+    }
+
+    private static func cacador(_ ctx: CGContext, c: CGPoint) {
+        Draw.roundRect(ctx, CGRect(x: c.x - 9, y: c.y + 6, width: 7, height: 16), radius: 3, SKColor(hex: 0x3A3428))
+        Draw.roundRect(ctx, CGRect(x: c.x + 2, y: c.y + 6, width: 7, height: 16), radius: 3, SKColor(hex: 0x3A3428))
+        Draw.roundRect(ctx, CGRect(x: c.x - 12, y: c.y - 10, width: 24, height: 22), radius: 8, SKColor(hex: 0x54503E))
+        Draw.circle(ctx, CGPoint(x: c.x, y: c.y - 15), 10, SKColor(hex: 0x9A7048))
+        Draw.ellipse(ctx, CGRect(x: c.x - 14, y: c.y - 24, width: 28, height: 10), SKColor(hex: 0x2E2A20))
+        // Gaiola de transporte na mão
+        Draw.roundRect(ctx, CGRect(x: c.x + 10, y: c.y + 2, width: 16, height: 14), radius: 2, SKColor(hex: 0x6A5A3A))
+        for i in 0..<3 {
+            Draw.line(ctx, from: CGPoint(x: c.x + 13 + CGFloat(i) * 5, y: c.y + 3),
+                      to: CGPoint(x: c.x + 13 + CGFloat(i) * 5, y: c.y + 15), width: 1.6, SKColor(hex: 0x2A2418))
+        }
+    }
+
+    private static func rede(_ ctx: CGContext, c: CGPoint) {
+        Draw.roundRect(ctx, CGRect(x: c.x - 22, y: c.y - 14, width: 44, height: 30), radius: 4,
+                       SKColor(hex: 0x1E3A42, alpha: 0.55))
+        ctx.setStrokeColor(SKColor(hex: 0xD8E4E0, alpha: 0.85).cgColor)
+        ctx.setLineWidth(1.4)
+        for i in 0...6 {
+            let x = c.x - 21 + CGFloat(i) * 7
+            ctx.move(to: CGPoint(x: x, y: c.y - 14)); ctx.addLine(to: CGPoint(x: x, y: c.y + 16))
+        }
+        for i in 0...4 {
+            let y = c.y - 14 + CGFloat(i) * 7.5
+            ctx.move(to: CGPoint(x: c.x - 22, y: y)); ctx.addLine(to: CGPoint(x: c.x + 22, y: y))
+        }
+        ctx.strokePath()
+        // Boias
+        Draw.circle(ctx, CGPoint(x: c.x - 14, y: c.y - 16), 4, SKColor(hex: 0xE8541E))
+        Draw.circle(ctx, CGPoint(x: c.x + 6, y: c.y - 16), 4, SKColor(hex: 0xE8541E))
+    }
+
+    private static func maquina(_ ctx: CGContext, c: CGPoint) {
+        Draw.roundRect(ctx, CGRect(x: c.x - 20, y: c.y - 12, width: 34, height: 20), radius: 4,
+                       SKColor(hex: 0x2E7A3E))
+        Draw.roundRect(ctx, CGRect(x: c.x - 6, y: c.y - 22, width: 18, height: 14), radius: 3,
+                       SKColor(hex: 0x1E5A2E))
+        Draw.roundRect(ctx, CGRect(x: c.x - 3, y: c.y - 19, width: 12, height: 8), radius: 2,
+                       SKColor(hex: 0x9AC8D8))
+        Draw.circle(ctx, CGPoint(x: c.x - 12, y: c.y + 10), 9, SKColor(hex: 0x24201A))
+        Draw.circle(ctx, CGPoint(x: c.x - 12, y: c.y + 10), 4, SKColor(hex: 0x8A8A82))
+        Draw.circle(ctx, CGPoint(x: c.x + 10, y: c.y + 12), 6, SKColor(hex: 0x24201A))
+        // Arado revirando a terra
+        Draw.polygon(ctx, [CGPoint(x: c.x + 14, y: c.y + 2), CGPoint(x: c.x + 26, y: c.y + 8),
+                           CGPoint(x: c.x + 14, y: c.y + 14)], SKColor(hex: 0x8A8A82))
+    }
+
+    // MARK: - Segredo
+
+    static func segredo(revelado: Bool) -> SKTexture {
+        cached("segredo_\(revelado)", 48, 48) { ctx in
+            let c = CGPoint(x: 24, y: 26)
+            if revelado {
+                Draw.circle(ctx, c, 22, Palette.gold.withAlphaComponent(0.14))
+                Draw.circle(ctx, c, 14, Palette.gold.withAlphaComponent(0.28))
+            }
+            Draw.ellipse(ctx, CGRect(x: c.x - 16, y: c.y - 2, width: 32, height: 16),
+                         SKColor(hex: 0x6A5A3E))
+            Draw.ellipse(ctx, CGRect(x: c.x - 11, y: c.y - 5, width: 22, height: 12),
+                         SKColor(hex: 0x8A7A54))
+            if revelado {
+                Draw.roundRect(ctx, CGRect(x: c.x - 8, y: c.y - 14, width: 16, height: 12),
+                               radius: 3, SKColor(hex: 0x8A6A3E))
+                Draw.roundRect(ctx, CGRect(x: c.x - 8, y: c.y - 9, width: 16, height: 3),
+                               radius: 1, Palette.gold)
+            }
+        }
+    }
+
+    // MARK: - Portal
+
+    static func portal(_ id: BiomeID) -> SKTexture {
+        let p = Biome[id].palette
+        return cached("portal_\(id.rawValue)", 120, 150) { ctx in
+            let cx: CGFloat = 60
+            Draw.shadow(ctx, center: CGPoint(x: cx, y: 138), w: 84, h: 20, alpha: 0.3)
+            // Arco de pedra
+            Draw.roundRect(ctx, CGRect(x: cx - 46, y: 24, width: 20, height: 114), radius: 8,
+                           SKColor(hex: 0x6E6858))
+            Draw.roundRect(ctx, CGRect(x: cx + 26, y: 24, width: 20, height: 114), radius: 8,
+                           SKColor(hex: 0x6E6858))
+            Draw.roundRect(ctx, CGRect(x: cx - 50, y: 10, width: 100, height: 24), radius: 12,
+                           SKColor(hex: 0x7E7866))
+            // Portal em si: a cor do bioma de destino
+            Draw.ellipse(ctx, CGRect(x: cx - 28, y: 34, width: 56, height: 100),
+                         p.foliage.withAlphaComponent(0.85))
+            Draw.ellipse(ctx, CGRect(x: cx - 20, y: 44, width: 40, height: 80),
+                         p.grass.withAlphaComponent(0.9))
+            Draw.ellipse(ctx, CGRect(x: cx - 11, y: 58, width: 22, height: 52),
+                         p.accent.withAlphaComponent(0.75))
+            // Musgo nas pedras
+            for i in 0..<6 {
+                let y = 34 + CGFloat(i) * 17
+                Draw.circle(ctx, CGPoint(x: cx - 40 + CGFloat(i % 2) * 4, y: y), 4,
+                            p.foliage.withAlphaComponent(0.6))
+                Draw.circle(ctx, CGPoint(x: cx + 40 - CGFloat(i % 2) * 4, y: y + 6), 3.4,
+                            p.foliage.withAlphaComponent(0.5))
+            }
+        }
+    }
+
+    // MARK: - Placa
+
+    static func placa() -> SKTexture {
+        cached("placa", 64, 72) { ctx in
+            Draw.shadow(ctx, center: CGPoint(x: 32, y: 66), w: 28, h: 9)
+            Draw.roundRect(ctx, CGRect(x: 29, y: 30, width: 6, height: 34), radius: 2,
+                           SKColor(hex: 0x5A4630))
+            Draw.roundRect(ctx, CGRect(x: 8, y: 10, width: 48, height: 28), radius: 4,
+                           SKColor(hex: 0x8A6A3E))
+            Draw.roundRect(ctx, CGRect(x: 11, y: 13, width: 42, height: 22), radius: 3,
+                           SKColor(hex: 0xB08A4E))
+            for i in 0..<4 {
+                let y = 17 + CGFloat(i) * 5
+                Draw.line(ctx, from: CGPoint(x: 15, y: y), to: CGPoint(x: 47 - CGFloat(i % 2) * 12, y: y),
+                          width: 1.6, SKColor(hex: 0x5A4630, alpha: 0.7), round: false)
+            }
+        }
+    }
+}
+
+// MARK: - Estruturas do Refúgio
+
+extension Objects {
+
+    /// Canteiro do viveiro. 0 vazio · 1 brotando · 2 pronto · 3 ainda não construído.
+    static func canteiro(_ etapa: Int) -> SKTexture {
+        cached("canteiro_\(etapa)", 56, 56) { ctx in
+            let c = CGPoint(x: 28, y: 32)
+            Draw.shadow(ctx, center: CGPoint(x: 28, y: 44), w: 40, h: 12, alpha: 0.18)
+
+            if etapa == 3 {
+                // Terreno ainda por abrir: mato e estacas soltas.
+                Draw.roundRect(ctx, CGRect(x: 6, y: 22, width: 44, height: 22), radius: 4,
+                               SKColor(hex: 0x4A5038, alpha: 0.6))
+                Draw.line(ctx, from: CGPoint(x: 10, y: 22), to: CGPoint(x: 46, y: 44),
+                          width: 2, SKColor(hex: 0x6A6A5A, alpha: 0.7))
+                return
+            }
+
+            // Canteiro lavrado, com moldura de madeira.
+            Draw.roundRect(ctx, CGRect(x: 5, y: 20, width: 46, height: 26), radius: 4,
+                           SKColor(hex: 0x6A4E2E))
+            Draw.roundRect(ctx, CGRect(x: 8, y: 23, width: 40, height: 20), radius: 3,
+                           SKColor(hex: 0x4A3524))
+            for i in 0..<3 {
+                Draw.line(ctx, from: CGPoint(x: 11, y: 27 + CGFloat(i) * 6),
+                          to: CGPoint(x: 45, y: 27 + CGFloat(i) * 6),
+                          width: 1.6, SKColor(hex: 0x33241A, alpha: 0.7), round: false)
+            }
+
+            switch etapa {
+            case 1:
+                // Broto
+                Draw.line(ctx, from: CGPoint(x: c.x, y: 34), to: CGPoint(x: c.x, y: 24),
+                          width: 2.2, SKColor(hex: 0x4E7A34))
+                Draw.leaf(ctx, from: CGPoint(x: c.x, y: 27), to: CGPoint(x: c.x - 8, y: 22),
+                          bulge: 3.5, SKColor(hex: 0x5E9440))
+                Draw.leaf(ctx, from: CGPoint(x: c.x, y: 25), to: CGPoint(x: c.x + 8, y: 20),
+                          bulge: 3.5, SKColor(hex: 0x6EA44C))
+            case 2:
+                // Muda pronta para o transplante
+                Draw.line(ctx, from: CGPoint(x: c.x, y: 36), to: CGPoint(x: c.x, y: 12),
+                          width: 3, SKColor(hex: 0x4A6A2E))
+                Draw.circle(ctx, CGPoint(x: c.x - 7, y: 14), 8, SKColor(hex: 0x2E5A2B))
+                Draw.circle(ctx, CGPoint(x: c.x + 7, y: 15), 7.5, SKColor(hex: 0x2E5A2B))
+                Draw.circle(ctx, CGPoint(x: c.x, y: 9), 9, SKColor(hex: 0x3E7434))
+                Draw.circle(ctx, CGPoint(x: c.x - 3, y: 6), 4, SKColor(hex: 0x56904A))
+            default:
+                break
+            }
+        }
+    }
+
+    /// Cais de pesca do açude.
+    static func cais() -> SKTexture {
+        cached("cais", 76, 68) { ctx in
+            Draw.shadow(ctx, center: CGPoint(x: 38, y: 56), w: 52, h: 14, alpha: 0.2)
+            // Tábuas
+            Draw.roundRect(ctx, CGRect(x: 10, y: 26, width: 56, height: 26), radius: 3,
+                           SKColor(hex: 0x7A5A38))
+            for i in 0..<4 {
+                Draw.line(ctx, from: CGPoint(x: 12, y: 30 + CGFloat(i) * 6),
+                          to: CGPoint(x: 64, y: 30 + CGFloat(i) * 6),
+                          width: 1.4, SKColor(hex: 0x5A4028, alpha: 0.8), round: false)
+            }
+            // Estacas
+            Draw.roundRect(ctx, CGRect(x: 13, y: 48, width: 6, height: 14), radius: 2,
+                           SKColor(hex: 0x5A4028))
+            Draw.roundRect(ctx, CGRect(x: 57, y: 48, width: 6, height: 14), radius: 2,
+                           SKColor(hex: 0x5A4028))
+            // Vara de pescar encostada
+            Draw.line(ctx, from: CGPoint(x: 20, y: 30), to: CGPoint(x: 58, y: 4),
+                      width: 2.4, SKColor(hex: 0x8A6A3E))
+            Draw.line(ctx, from: CGPoint(x: 58, y: 4), to: CGPoint(x: 64, y: 24),
+                      width: 1, SKColor(white: 1, alpha: 0.55))
+            Draw.circle(ctx, CGPoint(x: 64, y: 25), 3, SKColor(hex: 0xE8541E))
+        }
+    }
+
+    /// Bancada da oficina de campo.
+    static func oficina() -> SKTexture {
+        cached("oficina", 76, 72) { ctx in
+            Draw.shadow(ctx, center: CGPoint(x: 38, y: 60), w: 50, h: 14, alpha: 0.22)
+            // Telhadinho
+            Draw.polygon(ctx, [CGPoint(x: 6, y: 24), CGPoint(x: 70, y: 24),
+                               CGPoint(x: 38, y: 4)], SKColor(hex: 0x8A4E2E))
+            Draw.roundRect(ctx, CGRect(x: 10, y: 22, width: 56, height: 5), radius: 2,
+                           SKColor(hex: 0x6A3A22))
+            // Bancada
+            Draw.roundRect(ctx, CGRect(x: 12, y: 34, width: 52, height: 10), radius: 3,
+                           SKColor(hex: 0x8A6A3E))
+            Draw.roundRect(ctx, CGRect(x: 15, y: 44, width: 6, height: 18), radius: 2,
+                           SKColor(hex: 0x5A4028))
+            Draw.roundRect(ctx, CGRect(x: 55, y: 44, width: 6, height: 18), radius: 2,
+                           SKColor(hex: 0x5A4028))
+            // Ferramentas
+            Draw.line(ctx, from: CGPoint(x: 22, y: 34), to: CGPoint(x: 22, y: 20),
+                      width: 2.4, SKColor(hex: 0x6A4E2E))
+            Draw.roundRect(ctx, CGRect(x: 17, y: 15, width: 11, height: 6), radius: 2,
+                           SKColor(hex: 0xB0B4BA))
+            Draw.circle(ctx, CGPoint(x: 44, y: 29), 6, SKColor(hex: 0x3E7A8C))
+            Draw.roundRect(ctx, CGRect(x: 50, y: 26, width: 10, height: 8), radius: 2,
+                           SKColor(hex: 0xE8B23A))
+        }
+    }
+}
