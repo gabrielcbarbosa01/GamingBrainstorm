@@ -23,6 +23,7 @@ enum SpawnKind: Equatable {
     case pesca             // cais do açude
     case oficina           // bancada de melhorias
     case harpia            // a lendária, no fim do jogo
+    case fauna(String)     // bicho de fundo do bioma
 }
 
 struct Spawn {
@@ -128,6 +129,7 @@ struct WorldGenerator {
         let n = WorldMetrics.chunkTiles
         var tiles = [[Terrain]](repeating: [Terrain](repeating: .grama, count: n), count: n)
         var livres: [GridPoint] = []
+        var aguas: [GridPoint] = []
 
         for ly in 0..<n {
             for lx in 0..<n {
@@ -135,6 +137,7 @@ struct WorldGenerator {
                 let t = terrain(at: world)
                 tiles[ly][lx] = t
                 if t.livre { livres.append(world) }
+                if t == .agua || t == .charco { aguas.append(world) }
             }
         }
 
@@ -142,7 +145,7 @@ struct WorldGenerator {
         if biome.id == .refugio {
             spawns = refugioSpawns(chunk: coord, livres: livres)
         } else {
-            spawns = biomaSpawns(chunk: coord, livres: livres)
+            spawns = biomaSpawns(chunk: coord, livres: livres, aguas: aguas)
         }
 
         return ChunkData(coord: coord, tiles: tiles, spawns: spawns)
@@ -150,7 +153,8 @@ struct WorldGenerator {
 
     // MARK: Spawns dos biomas exploráveis
 
-    private func biomaSpawns(chunk coord: GridPoint, livres: [GridPoint]) -> [Spawn] {
+    private func biomaSpawns(chunk coord: GridPoint, livres: [GridPoint],
+                             aguas: [GridPoint]) -> [Spawn] {
         guard !livres.isEmpty else { return [] }
         var rng = Hashing.rng(coord.x, coord.y, seed &+ 777)
         var spawns: [Spawn] = []
@@ -188,6 +192,19 @@ struct WorldGenerator {
         // Segredos: raros, invisíveis até o faro do lobo-guará passar perto.
         if rng.chance(0.28), let p = pegarLivre(minDist: 6) {
             spawns.append(Spawn(kind: .segredo, tile: p))
+        }
+
+        // Fauna: pouca, mas presente. Um bioma sem bicho não é um bioma.
+        let especies = FaunaSpec.doBioma(biome.id)
+        if !especies.isEmpty {
+            for _ in 0..<rng.int(1, 3) {
+                let sp = especies[rng.int(0, especies.count - 1)]
+                // Espécies aquáticas precisam nascer perto d'água.
+                let candidatos = sp.aquatico ? aguas : livres
+                guard !candidatos.isEmpty else { continue }
+                let p = candidatos[rng.int(0, candidatos.count - 1)]
+                spawns.append(Spawn(kind: .fauna(sp.id), tile: p))
+            }
         }
 
         // Placas de leitura espalhadas pelo território.

@@ -108,6 +108,9 @@ final class InputManager {
     /// dependem de manter pressionado, não de apertar uma vez.
     var habilidadeSegurada: Bool { teclas.contains(Key.space) }
 
+    /// Alguns desafios pedem que a tecla de ação seja mantida (cortar uma rede).
+    var interagirSegurado: Bool { teclas.contains(Key.e) }
+
     /// Retira e devolve as ações acumuladas desde o último frame.
     func consumirAcoes() -> [GameAction] {
         let a = acoesPendentes

@@ -38,6 +38,32 @@ Ela é predadora dos próprios micos que você passou o jogo protegendo — e é
 exatamente por isso que serve de sinal: onde a harpia ainda se reproduz, a
 floresta está inteira.
 
+### Cada bioma joga diferente
+
+A etapa central de cada território não é "apertar E num marcador": é uma
+mecânica própria, com regras que só existem ali.
+
+| Bioma | Desafio | O laço de jogo |
+|---|---|---|
+| Mata Atlântica | **Travessia da copa** | Escolta. Um grupo de micos segue o seu rastro com atraso; a confiança cai se você se afasta, e o grupo se dispersa se você deixa de ser mico. |
+| Cerrado | **Aceiro** | Simulação de incêndio. O fogo pula de tile em tile pelo material inflamável; a investida do lobo raspa o chão e abre faixas de terra nua. Cercar, não apagar. |
+| Pantanal | **Vigília dos ninhos** | Corrida. Um saqueador caminha até o ninho num relógio visível. Voar é o único jeito de chegar; proteger exige voltar à forma humana. |
+| Amazônia | **Malhadeiras** | Mergulho com fôlego. Cortar a rede leva 2 s segurando E, e submerso o fôlego cai — a vulnerabilidade real da espécie virada regra. |
+| Pampa | **Sob o arado** | Escavação às cegas. A lâmina avança em linha reta; as galerias só se alcançam por baixo, e no subsolo a visão fecha num círculo. |
+
+Todos os cinco também entram no sorteio das expedições infinitas.
+
+### Fauna
+
+Quinze espécies de fundo, três por bioma, montadas a partir de cinco arquétipos
+de corpo (quadrúpede, ave, réptil, aquático, pendurado) parametrizados por cor,
+porte e um traço marcante — o bico do tucano, o pescoço da ema, o focinho do
+tamanduá.
+
+Elas perambulam e fogem. O raio de fuga depende de quem se aproxima: na forma
+humana disparam de longe, em forma animal deixam chegar mais perto, e de quem
+está no subsolo ou submerso não fogem. Cada primeiro registro abre uma ficha.
+
 ### O Refúgio como base
 
 O centro deixou de ser um saguão com portais:

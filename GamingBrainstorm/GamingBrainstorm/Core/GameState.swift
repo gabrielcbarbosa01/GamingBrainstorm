@@ -100,6 +100,8 @@ final class GameState: ObservableObject {
     @Published var dicaInteracao: String?
     @Published var mostrarRodaAmuletos = false
     @Published var pesca: PescaSession?
+    /// O pirarucu respira ar: submerso, isto cai; na superfície, volta.
+    @Published var folego: CGFloat = 100
     /// Painel do Refúgio aberto no momento (viveiro, oficina…).
     @Published var painelRefugio: PainelRefugio?
     /// Muda sempre que a cena precisa recarregar o mundo (viagem entre biomas).
@@ -325,6 +327,8 @@ final class GameState: ObservableObject {
         }
         toasts.removeAll { Date().timeIntervalSince($0.criado) > 4.2 }
     }
+
+    var folegoMaximo: CGFloat { 100 }
 
     func ganharEssencia(_ v: CGFloat) {
         essencia = min(essenciaMaxima, essencia + v)

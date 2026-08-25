@@ -39,6 +39,10 @@ final class GameScene: SKScene {
     private var ultimoAvisoBloqueio: TimeInterval = 0
     private var ultimoAvisoAmeaca: TimeInterval = 0
     private var recargaInvestida: TimeInterval = 0
+    /// Tiles modificados em tempo de jogo (aceiros abertos, chão queimado).
+    private var alteracoes: [GridPoint: Terrain] = [:]
+    private var marcasDeTerreno: [GridPoint: SKNode] = [:]
+    private let escuridao = SKSpriteNode()
     private var avisoVerbo: TimeInterval = 0
     private var tempoAndando: TimeInterval = 0
     private var tempoPublicacao: TimeInterval = 0
@@ -59,6 +63,12 @@ final class GameScene: SKScene {
         camadaEntidades.zPosition = 0
 
         mundo.addChild(jogador)
+
+        escuridao.texture = Self.texturaEscuridao
+        escuridao.size = CGSize(width: 2600, height: 2600)
+        escuridao.zPosition = 800
+        escuridao.alpha = 0
+        cam.addChild(escuridao)
 
         addChild(cam)
         camera = cam
@@ -83,6 +93,9 @@ final class GameScene: SKScene {
         }
         chunks.removeAll()
         filaGeracao.removeAll()
+        alteracoes.removeAll()
+        marcasDeTerreno.values.forEach { $0.removeFromParent() }
+        marcasDeTerreno.removeAll()
 
         jogador.position = WorldMetrics.center(of: GridPoint(x: 0, y: 0))
         kindObjetivoAtual = estado?.etapaAtual(id)?.kind
@@ -272,6 +285,8 @@ final class GameScene: SKScene {
 
         jogador.olharPara(dx: passoX)
         cobrarEssenciaDoVerbo(estado: estado, delta: delta)
+        atualizarFolego(estado: estado, delta: delta)
+        atualizarEscuridao(delta: delta)
         resolverPousoInvalido(forma: forma, estado: estado)
     }
 
@@ -376,6 +391,25 @@ final class GameScene: SKScene {
         }
     }
 
+    /// O pirarucu respira ar. Submerso o fôlego cai; à tona, volta depressa.
+    private func atualizarFolego(estado: GameState, delta: TimeInterval) {
+        if jogador.estado == .mergulhado {
+            estado.folego = max(0, estado.folego - CGFloat(delta) * 15)
+            if estado.folego <= 0 {
+                jogador.entrar(.andando)
+                estado.avisar("Sem fôlego — você veio à tona.", icone: "wind", cor: .alerta)
+            }
+        } else if estado.folego < estado.folegoMaximo {
+            estado.folego = min(estado.folegoMaximo, estado.folego + CGFloat(delta) * 45)
+        }
+    }
+
+    /// No subsolo o mundo fecha: sobra um círculo de visão em volta do corpo.
+    private func atualizarEscuridao(delta: TimeInterval) {
+        let alvo: CGFloat = jogador.estado == .cavando ? 1.0 : 0
+        escuridao.alpha += (alvo - escuridao.alpha) * CGFloat(min(1, delta * 4))
+    }
+
     private func cobrarEssenciaDoVerbo(estado: GameState, delta: TimeInterval) {
         let extra: CGFloat
         switch jogador.estado {
@@ -453,8 +487,49 @@ final class GameScene: SKScene {
     }
 
     func terreno(em p: CGPoint) -> Terrain {
-        gerador.terrain(at: WorldMetrics.tile(at: p))
+        terrenoNoTile(WorldMetrics.tile(at: p))
     }
+
+    /// Terreno efetivo de um tile: o gerado, salvo se o jogo o tiver alterado.
+    func terrenoNoTile(_ g: GridPoint) -> Terrain {
+        alteracoes[g] ?? gerador.terrain(at: g)
+    }
+
+    /// Modifica o mundo em tempo real — é assim que o aceiro existe.
+    func alterarTerreno(_ g: GridPoint, para t: Terrain, aceiro: Bool) {
+        guard alteracoes[g] != t else { return }
+        alteracoes[g] = t
+        marcasDeTerreno[g]?.removeFromParent()
+        let marca = SKSpriteNode(color: aceiro ? SKColor(hex: 0x8A6A42) : SKColor(hex: 0x2E241C),
+                                 size: CGSize(width: WorldMetrics.tileSize,
+                                              height: WorldMetrics.tileSize))
+        marca.position = WorldMetrics.center(of: g)
+        marca.zPosition = aceiro ? -50 : -49
+        marca.alpha = aceiro ? 0.92 : 0.85
+        camadaEntidades.addChild(marca)
+        marcasDeTerreno[g] = marca
+    }
+
+    /// Nó solto controlado por um desafio (baliza, chama, marcador).
+    func adicionarAuxiliar(_ n: SKNode) {
+        camadaEntidades.addChild(n)
+    }
+
+    var jogadorInvestindo: Bool { jogador.estado == .investindo }
+    var jogadorSubmerso: Bool { jogador.estado == .mergulhado }
+
+    /// Máscara circular usada quando o jogador está no subsolo.
+    private static let texturaEscuridao: SKTexture = Draw.texture(width: 512, height: 512) { ctx in
+        let c = CGPoint(x: 256, y: 256)
+        // Escuro nas bordas, aberto no centro: degradê feito em anéis.
+        for i in stride(from: 256, through: 90, by: -3) {
+            let t = (CGFloat(i) - 90) / (256 - 90)
+            Draw.circle(ctx, c, CGFloat(i), SKColor(white: 0.02, alpha: 0.055 * t))
+        }
+    }
+
+    /// O jogador está fora de vista (subsolo ou submerso)?
+    var jogadorEscondido: Bool { jogador.estado.enterrado }
 
     func terrenoLivreParaAmeaca(_ p: CGPoint) -> Bool {
         terreno(em: p).passavel(para: .humano)
@@ -693,6 +768,11 @@ final class GameScene: SKScene {
         switch spawn.kind {
         case .objetivo:
             guard let kind = kindObjetivoAtual else { return nil }
+            if kind == .desafio {
+                // Desafios ocupam muito espaço e atenção: no máximo um por chunk.
+                guard Hashing.unit(spawn.tile.x, spawn.tile.y, 4242) < 0.34 else { return nil }
+                return desafioDoBioma(tile: spawn.tile)
+            }
             return ObjetivoNode(tile: spawn.tile, kind: kind, bioma: biomaID)
         case .essencia:
             return EssenciaNode(tile: spawn.tile)
@@ -715,6 +795,9 @@ final class GameScene: SKScene {
             return OficinaNode(tile: spawn.tile)
         case .harpia:
             return HarpiaNode(tile: spawn.tile)
+        case .fauna(let id):
+            guard let spec = FaunaSpec.porId(id) else { return nil }
+            return FaunaNode(tile: spawn.tile, spec: spec)
         }
     }
 
@@ -741,6 +824,34 @@ final class GameScene: SKScene {
         }
         estado.bussola = vetor
         estado.distanciaObjetivo = vetor == nil ? nil : melhor
+    }
+
+    /// Cada bioma resolve o seu desafio com uma mecânica própria.
+    private func desafioDoBioma(tile: GridPoint) -> WorldEntity? {
+        switch biomaID {
+        case .mataAtlantica: return ComitivaNode(tile: tile)
+        case .cerrado: return FocoDeIncendioNode(tile: tile)
+        case .pantanal: return NinhoNode(tile: tile)
+        case .amazonia:
+            // A malhadeira está no fundo: precisa de água de verdade sob ela.
+            guard let agua = aguaProxima(de: tile) else { return nil }
+            return RedeNode(tile: agua)
+        case .pampa: return GaleriaNode(tile: tile)
+        case .refugio: return nil
+        }
+    }
+
+    /// Procura um tile de água perto de um ponto, para ancorar a rede.
+    private func aguaProxima(de g: GridPoint, raio: Int = 7) -> GridPoint? {
+        for r in 0...raio {
+            for dy in -r...r {
+                for dx in -r...r where abs(dx) == r || abs(dy) == r || r == 0 {
+                    let t = GridPoint(x: g.x + dx, y: g.y + dy)
+                    if terrenoNoTile(t) == .agua { return t }
+                }
+            }
+        }
+        return nil
     }
 
     // MARK: Efeitos e reações

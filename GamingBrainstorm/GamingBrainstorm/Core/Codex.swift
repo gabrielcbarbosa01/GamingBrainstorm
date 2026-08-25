@@ -22,6 +22,7 @@ struct CodexEntry: Identifiable {
 
 enum CodexCategoria: String, CaseIterable, Identifiable {
     case animais = "Animais"
+    case fauna = "Fauna"
     case biomas = "Biomas"
     case campo = "Diário de campo"
     var id: String { rawValue }
@@ -31,7 +32,22 @@ enum StatusCor { case critico, ameacado, vulneravel, quaseAmeacado, estavel }
 
 enum Codex {
 
-    static var todos: [CodexEntry] { animais + [lendaria] + biomas + campo }
+    static var todos: [CodexEntry] { animais + [lendaria] + faunaAmbiente + biomas + campo }
+
+    /// Fichas geradas a partir do catálogo de fauna: uma por espécie avistada.
+    static var faunaAmbiente: [CodexEntry] {
+        FaunaSpec.catalogo.map { sp in
+            CodexEntry(id: "fauna_" + sp.id,
+                       titulo: sp.nome,
+                       subtitulo: sp.cientifico,
+                       categoria: .fauna,
+                       status: "Avistada em \(Biome[sp.bioma].nome)",
+                       statusCor: .estavel,
+                       paragrafos: [sp.nota,
+                                    "Registrada em campo durante uma expedição em \(Biome[sp.bioma].nome). Espécies ariscas exigem aproximação silenciosa: em forma animal você assusta menos, e no subsolo ou submerso não assusta nada."],
+                       curiosidades: [])
+        }
+    }
 
     static func entry(_ id: String) -> CodexEntry? { todos.first { $0.id == id } }
 

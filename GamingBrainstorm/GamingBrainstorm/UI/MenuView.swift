@@ -133,6 +133,20 @@ struct ComoSeJogaView: View {
                     "No ar você atravessa quase tudo — só o paredão de rocha continua sendo parede."
                 ])
 
+                secao("Cada bioma, um problema diferente", [
+                    "🐒 Mata Atlântica — TRAVESSIA DA COPA: grupos de micos ficaram isolados e não descem ao chão. Vire mico, reúna a comitiva e guie-a saltando; se você se afastar demais, o grupo entra em pânico.",
+                    "🐺 Cerrado — ACEIRO: o fogo se alastra tile a tile pelo capim seco. Não dá para apagar, dá para cercar — a investida do lobo raspa o chão e abre faixas de terra nua à frente das chamas.",
+                    "🦜 Pantanal — VIGÍLIA DOS NINHOS: saqueadores caminham na direção dos ninhos de manduvi. Só voando se chega a tempo, mas instalar a proteção exige mão humana.",
+                    "🐟 Amazônia — MALHADEIRAS: as redes estão no fundo e o pirarucu respira ar. Mergulhe, segure E para cortar e volte à tona antes do fôlego acabar.",
+                    "🐹 Pampa — SOB O ARADO: a lâmina avança em linha reta sobre as galerias. Só se chega a elas por baixo — e no subsolo você quase não enxerga."
+                ])
+
+                secao("A fauna", [
+                    "Cada bioma tem os seus bichos de fundo: tucano, quati e preguiça na Mata Atlântica; ema, tamanduá e veado no Cerrado; capivara, jacaré e tuiuiú no Pantanal; boto, macaco-prego e jabuti na Amazônia; graxaim, quero-quero e ratão no Pampa.",
+                    "Eles não são missão. Perambulam, comem e fogem de você — quanto mais arisca a espécie, mais longe ela dispara.",
+                    "Chegar perto é o desafio: em forma animal você assusta menos, e no subsolo ou submerso não assusta nada. Cada primeiro registro abre uma ficha no Códice."
+                ])
+
                 secao("O Refúgio", [
                     "Viveiro: plante mudas de espécies reais de restauração. Elas crescem com o tempo de jogo e viram matéria-prima.",
                     "Açude: pesque no minigame de tempo. Espécies migradoras e juvenis valem o dobro quando você as devolve à água.",

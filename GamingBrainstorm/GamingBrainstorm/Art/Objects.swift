@@ -39,7 +39,73 @@ enum Objects {
         case .resgate: gaiola(ctx, c: c)
         case .restauro: muda(ctx, c: c, palette: p)
         case .ameaca: alerta(ctx, c: c)
+        case .desafio: desafio(ctx, c: c, bioma: bioma, palette: p)
         }
+    }
+
+    /// Marca do desafio característico de cada bioma — cada um com o seu ícone.
+    private static func desafio(_ ctx: CGContext, c: CGPoint,
+                                bioma: BiomeID, palette p: BiomePalette) {
+        switch bioma {
+        case .mataAtlantica:
+            // Comitiva: três vultos numa linha, sobre um galho.
+            Draw.line(ctx, from: CGPoint(x: c.x - 15, y: c.y + 8),
+                      to: CGPoint(x: c.x + 15, y: c.y + 6), width: 3, SKColor(hex: 0x4A3A28))
+            for (i, dx) in [CGFloat(-9), 0, 9].enumerated() {
+                let dy = CGFloat(i) * -1.5
+                Draw.circle(ctx, CGPoint(x: c.x + dx, y: c.y + dy), 5.2, SKColor(hex: 0xE8952C))
+                Draw.circle(ctx, CGPoint(x: c.x + dx, y: c.y - 3 + dy), 3.4, SKColor(hex: 0xF6C860))
+            }
+        case .cerrado:
+            // Aceiro: chama cortada por uma faixa de terra nua.
+            Draw.polygon(ctx, [CGPoint(x: c.x, y: c.y - 14), CGPoint(x: c.x + 10, y: c.y + 6),
+                               CGPoint(x: c.x - 10, y: c.y + 6)], SKColor(hex: 0xE8541E))
+            Draw.polygon(ctx, [CGPoint(x: c.x, y: c.y - 5), CGPoint(x: c.x + 5, y: c.y + 6),
+                               CGPoint(x: c.x - 5, y: c.y + 6)], SKColor(hex: 0xF6D24E))
+            Draw.roundRect(ctx, CGRect(x: c.x - 16, y: c.y + 7, width: 32, height: 6),
+                           radius: 3, SKColor(hex: 0x7A5A34))
+        case .pantanal:
+            // Ninho com ovos no oco.
+            Draw.ellipse(ctx, CGRect(x: c.x - 14, y: c.y - 2, width: 28, height: 16),
+                         SKColor(hex: 0x6A4E2E))
+            Draw.ellipse(ctx, CGRect(x: c.x - 10, y: c.y, width: 20, height: 10),
+                         SKColor(hex: 0x4A3524))
+            Draw.circle(ctx, CGPoint(x: c.x - 4, y: c.y + 3), 3.4, SKColor(hex: 0xF0EAD8))
+            Draw.circle(ctx, CGPoint(x: c.x + 4, y: c.y + 4), 3.4, SKColor(hex: 0xF0EAD8))
+            Draw.circle(ctx, CGPoint(x: c.x, y: c.y - 8), 4, SKColor(hex: 0x2F6FD8))
+        case .amazonia:
+            // Malha de rede sob a linha d'água.
+            Draw.line(ctx, from: CGPoint(x: c.x - 16, y: c.y - 11),
+                      to: CGPoint(x: c.x + 16, y: c.y - 11), width: 2, SKColor(hex: 0x9AD8E0))
+            ctx.setStrokeColor(SKColor(hex: 0xE0ECE8, alpha: 0.9).cgColor)
+            ctx.setLineWidth(1.5)
+            for i in 0...4 {
+                let x = c.x - 14 + CGFloat(i) * 7
+                ctx.move(to: CGPoint(x: x, y: c.y - 6)); ctx.addLine(to: CGPoint(x: x, y: c.y + 12))
+            }
+            for i in 0...3 {
+                let y = c.y - 6 + CGFloat(i) * 6
+                ctx.move(to: CGPoint(x: c.x - 14, y: y)); ctx.addLine(to: CGPoint(x: c.x + 14, y: y))
+            }
+            ctx.strokePath()
+        case .pampa:
+            // Lâmina do arado sobre galerias.
+            Draw.polygon(ctx, [CGPoint(x: c.x - 14, y: c.y - 10), CGPoint(x: c.x + 14, y: c.y - 10),
+                               CGPoint(x: c.x + 6, y: c.y)], SKColor(hex: 0x9AA0A6))
+            Draw.roundRect(ctx, CGRect(x: c.x - 16, y: c.y + 2, width: 32, height: 5),
+                           radius: 2.5, SKColor(hex: 0xC6B584))
+            for dx in [CGFloat(-8), 2] {
+                ctx.setStrokeColor(SKColor(hex: 0x5E4A32).cgColor)
+                ctx.setLineWidth(3)
+                ctx.move(to: CGPoint(x: c.x + dx, y: c.y + 14))
+                ctx.addQuadCurve(to: CGPoint(x: c.x + dx + 10, y: c.y + 8),
+                                 control: CGPoint(x: c.x + dx + 3, y: c.y + 15))
+                ctx.strokePath()
+            }
+        case .refugio:
+            alerta(ctx, c: c)
+        }
+        _ = p
     }
 
     private static func pegada(_ ctx: CGContext, c: CGPoint, cor: SKColor) {

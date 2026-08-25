@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SpriteKit
 
 struct HUDView: View {
     @ObservedObject var st: GameState
@@ -139,6 +140,22 @@ struct HUDView: View {
                     .font(Tema.rotulo)
                     .foregroundStyle(Tema.papel.opacity(0.85))
                     .frame(width: 30, alignment: .leading)
+            }
+
+            // Fôlego: aparece apenas quando o corpo está submerso ou se recuperando.
+            if st.folego < st.folegoMaximo {
+                HStack(spacing: 8) {
+                    Image(systemName: "wind")
+                        .font(.system(size: 12))
+                        .foregroundStyle(st.folego < 30 ? Tema.perigo : Tema.papel.opacity(0.8))
+                    BarraDeProgresso(valor: Double(st.folego / st.folegoMaximo),
+                                     cor: st.folego < 30 ? Tema.perigo : Color(nsColor: SKColor(hex: 0x9AD8E0)))
+                        .frame(width: 170)
+                    Text("fôlego")
+                        .font(Tema.rotulo)
+                        .foregroundStyle(Tema.papel.opacity(0.6))
+                }
+                .transition(.opacity)
             }
 
             HStack(spacing: 8) {

@@ -91,6 +91,10 @@ struct JournalView: View {
                     if aberto, let forma = AnimalForm(rawValue: e.id) {
                         Image(nsImage: Creatures.retrato(forma))
                             .interpolation(.high).resizable().scaledToFit().padding(2)
+                    } else if aberto, e.id.hasPrefix("fauna_"),
+                              let sp = FaunaSpec.porId(String(e.id.dropFirst(6))) {
+                        Image(nsImage: FaunaArt.retrato(sp))
+                            .interpolation(.high).resizable().scaledToFit().padding(2)
                     } else {
                         Image(systemName: aberto ? iconeCategoria(e.categoria) : "lock.fill")
                             .font(.system(size: 13))
@@ -121,6 +125,7 @@ struct JournalView: View {
         case .animais: return "pawprint.fill"
         case .biomas: return "mountain.2.fill"
         case .campo: return "book.closed.fill"
+        case .fauna: return "binoculars.fill"
         }
     }
 
@@ -132,6 +137,13 @@ struct JournalView: View {
                     HStack(alignment: .top, spacing: 16) {
                         if let forma = AnimalForm(rawValue: e.id) {
                             Image(nsImage: Creatures.retrato(forma))
+                                .interpolation(.high).resizable().scaledToFit()
+                                .frame(width: 110, height: 110)
+                                .background(RoundedRectangle(cornerRadius: 14)
+                                    .fill(Color.white.opacity(0.05)))
+                        } else if e.id.hasPrefix("fauna_"),
+                                  let sp = FaunaSpec.porId(String(e.id.dropFirst(6))) {
+                            Image(nsImage: FaunaArt.retrato(sp))
                                 .interpolation(.high).resizable().scaledToFit()
                                 .frame(width: 110, height: 110)
                                 .background(RoundedRectangle(cornerRadius: 14)
