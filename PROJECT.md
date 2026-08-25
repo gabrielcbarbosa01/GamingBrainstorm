@@ -24,12 +24,11 @@ Criar um jogo Apple nativo com uma experiência clara, memorável e executável 
 
 Os itens abaixo continuam deliberadamente abertos:
 
-- conceito, gênero e narrativa;
-- público-alvo e classificação etária;
-- plataformas e dispositivos suportados;
+- narrativa detalhada;
+- classificação etária;
+- plataformas e dispositivos exatos suportados;
 - duração, frequência e estrutura das sessões;
-- modelo 2D, 2.5D, 3D, espacial ou híbrido;
-- estilo visual e sonoro;
+- estilo sonoro;
 - controles e modos de entrada;
 - online, multiplayer, placares e conquistas;
 - persistência local ou em nuvem.

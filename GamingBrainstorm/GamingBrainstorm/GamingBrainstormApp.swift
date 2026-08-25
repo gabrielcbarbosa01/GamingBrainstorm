@@ -9,6 +9,12 @@ import SwiftUI
 
 @main
 struct GamingBrainstormApp: App {
+    init() {
+        #if DEBUG
+        _ = GameEngineTests.runAllTests()
+        #endif
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()

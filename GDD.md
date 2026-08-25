@@ -4,13 +4,13 @@
 
 ## Visão do jogo
 
-- High concept: `TBD`.
-- Fantasia do jogador: `TBD`.
-- Emoção durante a sessão: `TBD`.
-- Emoção imediatamente após a sessão: `TBD`.
-- Público principal: `TBD`.
-- Gênero: `TBD`.
-- Plataforma e contexto de uso: `TBD`.
+- High concept: Um jogo de aventura e gerenciamento 2.5D onde o jogador explora biomas brasileiros em mundo aberto, assumindo a forma de animais ameaçados para investigar perigos e resgatá-los para o santuário.
+- Fantasia do jogador: Guardião metamorfo do ecossistema brasileiro.
+- Emoção durante a sessão: Curiosidade (ao explorar biomas e descobrir mecânicas dos animais) e Tensão (ao lidar com ameaças ambientais).
+- Emoção imediatamente após a sessão: Satisfação e alívio ao expandir o santuário e garantir a segurança das espécies.
+- Público principal: Jovens e adultos interessados em exploração, coleta e cozy management.
+- Gênero: Aventura / Sanctuary Management.
+- Plataforma e contexto de uso: Mac / iPad (a ser validado), focado em sessões de média duração para exploração e microgerenciamento.
 
 ## Pilares de design
 
@@ -23,7 +23,10 @@ Os pilares serão escolhidos após a definição emocional. Cada pilar deverá:
 
 ## Core loop
 
-`TBD`
+1. **Explorar e Investigar:** O jogador navega pelo mapa aberto (biomas brasileiros), atraído por sinais de animais em perigo (estímulo).
+2. **Transformar:** O jogador assume a forma de um animal específico para acessar áreas restritas ou investigar ameaças (decisão e verbo).
+3. **Resgatar:** O jogador coleta/salva o animal, recebendo feedback de conclusão (resposta).
+4. **Gerenciar:** O jogador retorna ao santuário para construir habitats adequados, gerenciar comida e acomodar o animal resgatado, liberando dados no mapa/catálogo e recursos para explorar novas áreas (mudança de estado e motivação).
 
 Ao ser definido, o loop deve explicitar:
 
@@ -45,13 +48,15 @@ Ao ser definido, o loop deve explicitar:
 
 | Sistema | Estado | Pergunta de discovery |
 | --- | --- | --- |
-| Movimento/controle | TBD | Qual ação física ou abstrata expressa a fantasia? |
-| Desafio | TBD | Que habilidade ou decisão é testada? |
+| Movimento/controle | Em design | Qual ação física ou abstrata expressa a fantasia? (Navegação no mapa e controles de transformação animal) |
+| Desafio | Em design | Que habilidade ou decisão é testada? (Otimização de recursos no santuário e escolha da forma animal) |
 | Feedback | TBD | Como o jogo torna causa e efeito inequívocos? |
-| Progressão | TBD | O que muda dentro e entre sessões? |
+| Progressão | Em design | O que muda dentro e entre sessões? (O santuário cresce, catálogo é preenchido e mapa revela novas áreas) |
 | Falha/recuperação | TBD | Como falhar ensina sem quebrar o ritmo? |
-| Conteúdo | TBD | Quanto conteúdo é necessário para sustentar o loop? |
+| Conteúdo | Em design | Quanto conteúdo é necessário para sustentar o loop? (Biomas, variedade de animais e habitats do santuário) |
 | Tutorial/onboarding | TBD | Como aprender jogando, sem instrução excessiva? |
+| Santuário (Management) | Definido | Construção de habitats, gestão de comida e alocação de resgatados. |
+| Catálogo e Mapa | Definido | Registro de animais encontrados, sua localização e dados de estado. |
 
 ## Controles e acessibilidade de gameplay
 

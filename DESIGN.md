@@ -2,7 +2,7 @@
 
 ## Estado
 
-A direção visual é `TBD`. Não assumir pixel art, ilustração, realismo, 2D, 3D, glassmorphism ou qualquer estética a partir do scaffold atual.
+A direção visual é **2.5D**. A estética será inspirada em títulos como *Cult of the Lamb* e *Don't Starve* (personagens e elementos interativos em 2D estilizado inseridos em um ambiente com perspectiva, proporcionando profundidade sem perder o charme de ilustração).
 
 ## Objetivos da direção futura
 
@@ -43,7 +43,7 @@ Quando a plataforma for aprovada, cada fluxo deve verificar:
 
 ## Tokens e componentes
 
-Cores, tipografia, espaçamento, formas, materiais, motion e componentes permanecem `TBD`. Quando definidos, deverão ser centralizados e documentados para evitar valores divergentes entre gameplay e SwiftUI.
+Cores, tipografia, espaçamento, formas, materiais, motion e componentes permanecem `TBD`. A UI do santuário e do catálogo (menus, HUD de gestão) será obrigatoriamente construída em **SwiftUI**. Quando definidos, os tokens deverão ser centralizados e documentados para evitar valores divergentes entre gameplay e a UI.
 
 ## Motion
 
