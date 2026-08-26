@@ -14,9 +14,11 @@ public struct WorldExploration3DView: View {
     @State private var showingTransformWheel = false
     @State private var isMoving = false
     @State private var isFacingLeft = false
-    // 2.5D Isometric Orthographic Camera Configuration
-    @State private var orthographicScale: Double = 26.0
-    @State private var isIsometricDiagonal: Bool = false
+    // 3D Perspective Depth Camera Configuration
+    @State private var cameraDistance: CGFloat = 16.0
+    @State private var cameraHeight: CGFloat = 11.5
+    @State private var cameraPitch: Float = -0.38
+    @State private var isElevatedView: Bool = false
     @State private var previousPlayerPos: CGPoint = .zero
     
     // SceneKit Scene & Nodes
@@ -161,25 +163,20 @@ public struct WorldExploration3DView: View {
     private func setup3DScene() {
         scene = SCNScene()
         
-        // 1. Camera Node (2.5D Isometric Orthographic Camera)
+        // 1. Camera Node (3D Perspective Depth Camera with Horizon Angle)
         cameraNode = SCNNode()
         let cam = SCNCamera()
-        cam.usesOrthographicProjection = true
-        cam.orthographicScale = orthographicScale
+        cam.usesOrthographicProjection = false
+        cam.fieldOfView = 54.0
         cam.zNear = 0.5
-        cam.zFar = 800.0
+        cam.zFar = 850.0
         cameraNode.camera = cam
         
         let targetX = CGFloat(session.playerPosition.x * 0.8)
         let targetZ = CGFloat(session.playerPosition.y * 0.8)
         
-        if isIsometricDiagonal {
-            cameraNode.position = SCNVector3(targetX - 28, 40, targetZ + 28)
-            cameraNode.eulerAngles = SCNVector3(-0.615, 0.785, 0)
-        } else {
-            cameraNode.position = SCNVector3(targetX, 40, targetZ + 35)
-            cameraNode.eulerAngles = SCNVector3(-0.785, 0, 0)
-        }
+        cameraNode.position = SCNVector3(targetX, cameraHeight, targetZ + cameraDistance)
+        cameraNode.eulerAngles = SCNVector3(cameraPitch, 0, 0)
         scene.rootNode.addChildNode(cameraNode)
         
         // 2. Directional Sun Light with Shadows
@@ -320,13 +317,15 @@ public struct WorldExploration3DView: View {
         ]
         
         for (hx, hz, radius, height, color) in hillFormations {
-            let hillGeo = SCNCylinder(radius: radius, height: height)
+            let hillGeo = SCNCone(topRadius: radius * 0.15, bottomRadius: radius, height: height)
             let hillMat = SCNMaterial()
             hillMat.diffuse.contents = color
+            hillMat.roughness.contents = 0.95
             hillGeo.materials = [hillMat]
             
             let hillNode = SCNNode(geometry: hillGeo)
             hillNode.position = SCNVector3(hx, height / 2 - 0.5, hz)
+            hillNode.castsShadow = true
             scene.rootNode.addChildNode(hillNode)
         }
     }
@@ -438,6 +437,19 @@ public struct WorldExploration3DView: View {
             
             let treePlaneGeo = SCNPlane(width: planeW, height: planeH)
             treePlaneGeo.materials = [sharedTreeMat]
+            
+            // 3D Solid Wooden Trunk
+            let trunkH: CGFloat = 2.4 * CGFloat(tree.scale)
+            let trunkR: CGFloat = 0.36 * CGFloat(tree.scale)
+            let trunkGeo = SCNCylinder(radius: trunkR, height: trunkH)
+            let trunkMat = SCNMaterial()
+            trunkMat.diffuse.contents = NSColor(red: 0.26, green: 0.16, blue: 0.10, alpha: 1.0)
+            trunkMat.roughness.contents = 0.92
+            trunkGeo.materials = [trunkMat]
+            let trunkNode = SCNNode(geometry: trunkGeo)
+            trunkNode.position = SCNVector3(0, trunkH / 2, 0)
+            trunkNode.castsShadow = true
+            treeContainer.addChildNode(trunkNode)
             
             // Plane 1
             let plane1 = SCNNode(geometry: treePlaneGeo)
@@ -955,13 +967,20 @@ public struct WorldExploration3DView: View {
         sunLightNode.eulerAngles = SCNVector3(tod.sunPitchAngle, tod.sunYawAngle, 0)
         ambientLightNode.light?.color = tod.ambientColor
         
-        // Night sky background tint
+        // Night sky background tint & Atmospheric Depth Fog
+        scene.fogStartDistance = 65.0
+        scene.fogEndDistance = 290.0
+        scene.fogDensityExponent = 1.3
+        
         if tod == .night {
             scene.background.contents = NSColor(red: 0.04, green: 0.06, blue: 0.12, alpha: 1.0)
+            scene.fogColor = NSColor(red: 0.04, green: 0.06, blue: 0.14, alpha: 1.0)
         } else if tod == .sunset {
             scene.background.contents = NSColor(red: 0.22, green: 0.10, blue: 0.08, alpha: 1.0)
+            scene.fogColor = NSColor(red: 0.38, green: 0.20, blue: 0.16, alpha: 1.0)
         } else {
             scene.background.contents = NSColor(red: 0.45, green: 0.65, blue: 0.85, alpha: 1.0)
+            scene.fogColor = NSColor(red: 0.60, green: 0.76, blue: 0.88, alpha: 1.0)
         }
         
         SCNTransaction.commit()
@@ -1060,12 +1079,7 @@ public struct WorldExploration3DView: View {
         runBouncePhase += 0.8
         let bounceY = 1.5 + CGFloat(abs(sin(runBouncePhase)) * 0.07)
         
-        let camTargetPos: SCNVector3
-        if isIsometricDiagonal {
-            camTargetPos = SCNVector3(targetX - 28, 40, targetZ + 28)
-        } else {
-            camTargetPos = SCNVector3(targetX, 40, targetZ + 35)
-        }
+        let camTargetPos = SCNVector3(targetX, cameraHeight, targetZ + cameraDistance)
         let playerTargetPos = SCNVector3(targetX, bounceY, targetZ)
         
         SCNTransaction.begin()
@@ -1200,25 +1214,23 @@ public struct WorldExploration3DView: View {
             .background(RoundedRectangle(cornerRadius: 14).fill(.ultraThinMaterial))
             
             // 2.5D Isometric Angle Switcher
+            // 3D Depth Angle Mode Switcher
             Button {
-                isIsometricDiagonal.toggle()
+                isElevatedView.toggle()
+                cameraHeight = isElevatedView ? 18.0 : 11.5
+                cameraPitch = isElevatedView ? -0.55 : -0.38
                 let targetX = CGFloat(session.playerPosition.x * 0.8)
                 let targetZ = CGFloat(session.playerPosition.y * 0.8)
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.35
-                if isIsometricDiagonal {
-                    cameraNode.position = SCNVector3(targetX - 28, 40, targetZ + 28)
-                    cameraNode.eulerAngles = SCNVector3(-0.615, 0.785, 0)
-                } else {
-                    cameraNode.position = SCNVector3(targetX, 40, targetZ + 35)
-                    cameraNode.eulerAngles = SCNVector3(-0.785, 0, 0)
-                }
+                cameraNode.position = SCNVector3(targetX, cameraHeight, targetZ + cameraDistance)
+                cameraNode.eulerAngles = SCNVector3(cameraPitch, 0, 0)
                 SCNTransaction.commit()
             } label: {
                 HStack(spacing: 5) {
-                    Image(systemName: isIsometricDiagonal ? "cube.transparent" : "square.split.diagonal.2x2")
+                    Image(systemName: isElevatedView ? "eye.fill" : "mountain.2.fill")
                         .font(.caption)
-                    Text(isIsometricDiagonal ? "Isométrico 45°" : "2.5D Frontal")
+                    Text(isElevatedView ? "Visão Aérea" : "Profundidade 3D")
                         .font(.caption2.bold())
                 }
                 .foregroundStyle(.white)
@@ -1227,13 +1239,18 @@ public struct WorldExploration3DView: View {
                 .background(RoundedRectangle(cornerRadius: 10).fill(.ultraThinMaterial))
             }
             .buttonStyle(.plain)
-            .help("Alternar entre visualização 2.5D Frontal e Isométrica 45°")
+            .help("Alternar entre ângulo de máxima profundidade 3D e visão aérea ampla")
             
-            // 2.5D Orthographic Camera Zoom
+            // 3D Camera Distance Zoom (Closer / Farther)
             HStack(spacing: 8) {
                 Button {
-                    orthographicScale = min(44.0, orthographicScale + 3.0)
-                    cameraNode.camera?.orthographicScale = orthographicScale
+                    cameraDistance = min(28.0, cameraDistance + 3.0)
+                    let targetX = CGFloat(session.playerPosition.x * 0.8)
+                    let targetZ = CGFloat(session.playerPosition.y * 0.8)
+                    SCNTransaction.begin()
+                    SCNTransaction.animationDuration = 0.2
+                    cameraNode.position = SCNVector3(targetX, cameraHeight, targetZ + cameraDistance)
+                    SCNTransaction.commit()
                 } label: {
                     Image(systemName: "minus.magnifyingglass")
                         .font(.caption)
@@ -1242,11 +1259,16 @@ public struct WorldExploration3DView: View {
                         .background(Circle().fill(.ultraThinMaterial))
                 }
                 .buttonStyle(.plain)
-                .help("Diminuir zoom (visão mais ampla)")
+                .help("Afastar câmera")
                 
                 Button {
-                    orthographicScale = max(14.0, orthographicScale - 3.0)
-                    cameraNode.camera?.orthographicScale = orthographicScale
+                    cameraDistance = max(10.0, cameraDistance - 3.0)
+                    let targetX = CGFloat(session.playerPosition.x * 0.8)
+                    let targetZ = CGFloat(session.playerPosition.y * 0.8)
+                    SCNTransaction.begin()
+                    SCNTransaction.animationDuration = 0.2
+                    cameraNode.position = SCNVector3(targetX, cameraHeight, targetZ + cameraDistance)
+                    SCNTransaction.commit()
                 } label: {
                     Image(systemName: "plus.magnifyingglass")
                         .font(.caption)
@@ -1255,7 +1277,7 @@ public struct WorldExploration3DView: View {
                         .background(Circle().fill(.ultraThinMaterial))
                 }
                 .buttonStyle(.plain)
-                .help("Aumentar zoom (aproximar)")
+                .help("Aproximar câmera (mais perto)")
             }
             
             // Audio Mute Toggle Button
