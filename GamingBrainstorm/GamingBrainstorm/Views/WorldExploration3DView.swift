@@ -15,9 +15,9 @@ public struct WorldExploration3DView: View {
     @State private var isMoving = false
     @State private var isFacingLeft = false
     // 3D Perspective Depth Camera Configuration
-    @State private var cameraDistance: CGFloat = 16.0
-    @State private var cameraHeight: CGFloat = 11.5
-    @State private var cameraPitch: Float = -0.38
+    @State private var cameraDistance: CGFloat = 22.0
+    @State private var cameraHeight: CGFloat = 16.5
+    @State private var cameraPitch: Float = -0.58
     @State private var isElevatedView: Bool = false
     @State private var previousPlayerPos: CGPoint = .zero
     
@@ -1664,8 +1664,8 @@ public struct WorldExploration3DView: View {
             // 3D Depth Angle Mode Switcher
             Button {
                 isElevatedView.toggle()
-                cameraHeight = isElevatedView ? 18.0 : 11.5
-                cameraPitch = isElevatedView ? -0.55 : -0.38
+                cameraHeight = isElevatedView ? 24.0 : 16.5
+                cameraPitch = isElevatedView ? -0.72 : -0.58
                 let targetX = CGFloat(session.playerPosition.x * 0.8)
                 let targetZ = CGFloat(session.playerPosition.y * 0.8)
                 SCNTransaction.begin()
@@ -1677,7 +1677,7 @@ public struct WorldExploration3DView: View {
                 HStack(spacing: 5) {
                     Image(systemName: isElevatedView ? "eye.fill" : "mountain.2.fill")
                         .font(.caption)
-                    Text(isElevatedView ? "Visão Aérea" : "Profundidade 3D")
+                    Text(isElevatedView ? "Visão Aérea" : "Visão Padrão")
                         .font(.caption2.bold())
                 }
                 .foregroundStyle(.white)
@@ -1686,12 +1686,12 @@ public struct WorldExploration3DView: View {
                 .background(RoundedRectangle(cornerRadius: 10).fill(.ultraThinMaterial))
             }
             .buttonStyle(.plain)
-            .help("Alternar entre ângulo de máxima profundidade 3D e visão aérea ampla")
+            .help("Alternar entre ângulo padrão elevado e visão aérea ampla")
             
             // 3D Camera Distance Zoom (Closer / Farther)
             HStack(spacing: 8) {
                 Button {
-                    cameraDistance = min(28.0, cameraDistance + 3.0)
+                    cameraDistance = min(34.0, cameraDistance + 3.0)
                     let targetX = CGFloat(session.playerPosition.x * 0.8)
                     let targetZ = CGFloat(session.playerPosition.y * 0.8)
                     SCNTransaction.begin()
@@ -1709,7 +1709,7 @@ public struct WorldExploration3DView: View {
                 .help("Afastar câmera")
                 
                 Button {
-                    cameraDistance = max(10.0, cameraDistance - 3.0)
+                    cameraDistance = max(12.0, cameraDistance - 3.0)
                     let targetX = CGFloat(session.playerPosition.x * 0.8)
                     let targetZ = CGFloat(session.playerPosition.y * 0.8)
                     SCNTransaction.begin()
