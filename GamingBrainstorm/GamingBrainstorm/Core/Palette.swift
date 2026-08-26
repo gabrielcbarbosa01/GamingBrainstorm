@@ -81,6 +81,14 @@ enum Palette {
         rock: SKColor(hex: 0x6E6A5A), sand: SKColor(hex: 0xC2AC7C),
         accent: SKColor(hex: 0x3A7ADE), sky: SKColor(hex: 0x12241F))
 
+    static let caatinga = BiomePalette(
+        ground: SKColor(hex: 0x8A5A34), groundAlt: SKColor(hex: 0x9C6A3E),
+        grass: SKColor(hex: 0x8C9A52), grassAlt: SKColor(hex: 0x9DAC5E),
+        foliage: SKColor(hex: 0x6E7A3E), foliageDark: SKColor(hex: 0x4E5A2A),
+        water: SKColor(hex: 0x4E8494), waterDeep: SKColor(hex: 0x2E5C6C),
+        rock: SKColor(hex: 0x9A8266), sand: SKColor(hex: 0xD4B87C),
+        accent: SKColor(hex: 0xE8622E), sky: SKColor(hex: 0x2E1C10))
+
     static let amazonia = BiomePalette(
         ground: SKColor(hex: 0x33421F), groundAlt: SKColor(hex: 0x3E5026),
         grass: SKColor(hex: 0x3E7030), grassAlt: SKColor(hex: 0x4C8437),

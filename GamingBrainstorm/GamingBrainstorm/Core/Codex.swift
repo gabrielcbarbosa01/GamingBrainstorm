@@ -77,22 +77,41 @@ enum Codex {
             ]),
 
         CodexEntry(
-            id: AnimalForm.araraAzul.rawValue,
-            titulo: "Arara-azul-grande",
-            subtitulo: "Anodorhynchus hyacinthinus",
+            id: AnimalForm.oncaPintada.rawValue,
+            titulo: "Onça-pintada",
+            subtitulo: "Panthera onca",
             categoria: .animais,
-            status: "Vulnerável (IUCN)",
-            statusCor: .vulneravel,
+            status: "Quase Ameaçada (IUCN) — vulnerável fora do Pantanal",
+            statusCor: .quaseAmeacado,
             paragrafos: [
-                "É o maior papagaio voador do mundo, com cerca de um metro do bico à ponta da cauda. Ocorre no Pantanal, em partes do Cerrado e no leste da Amazônia.",
-                "Nos anos 1980 o tráfico de animais retirou dezenas de milhares de indivíduos da natureza. No fim daquela década a população selvagem havia despencado para poucos milhares.",
-                "A recuperação veio do trabalho de campo iniciado nos anos 1990: instalação de ninhos artificiais, proteção de árvores de manduvi e envolvimento direto dos fazendeiros pantaneiros.",
-                "Depende de dois recursos muito específicos: ocos de manduvi centenários para nidificar e palmeiras como acuri e bocaiúva para se alimentar. Perder qualquer um dos dois quebra a cadeia."
+                "É o maior felino das Américas e o terceiro maior do mundo, atrás só do leão e do tigre. No Pantanal vive a maior densidade de onças-pintadas do planeta.",
+                "Ao contrário da maioria dos grandes felinos, gosta de água: nada bem, caça jacaré e capivara na beira do rio e atravessa corixos sem hesitar.",
+                "O maior conflito não é caça esportiva — é defesa de rebanho. Onça que mata gado costuma ser morta em retaliação. Programas que indenizam o prejuízo do fazendeiro reduziram muito essas mortes nos últimos anos.",
+                "É solitária e territorial: cada fêmea usa uma área de dezenas de quilômetros quadrados, e machos usam áreas ainda maiores que se sobrepõem à de várias fêmeas."
             ],
             curiosidades: [
-                "O bico quebra coco de palmeira que resiste a marreta.",
-                "Casais são monogâmicos e costumam criar apenas um filhote por ninhada.",
-                "Uma árvore de manduvi leva décadas até formar um oco grande o bastante — por isso ninhos artificiais fazem tanta diferença."
+                "Tem a mordida proporcionalmente mais forte entre os grandes felinos — perfura o casco de jacarés.",
+                "A palavra 'jaguar' vem do tupi-guarani yaguara, 'o que mata de um bote só'.",
+                "Coleiras de rastreamento por GPS ajudam a mapear corredores e reduzir o conflito com a pecuária."
+            ]),
+
+        CodexEntry(
+            id: AnimalForm.araraAzul.rawValue,
+            titulo: "Ararinha-azul",
+            subtitulo: "Cyanopsitta spixii",
+            categoria: .animais,
+            status: "Extinta na Natureza (IUCN) — população reintroduzida",
+            statusCor: .critico,
+            paragrafos: [
+                "É uma das aves mais raras do mundo: ocorria apenas na Caatinga, ao longo de riachos e do rio São Francisco no norte da Bahia.",
+                "Em 2000 a espécie foi declarada extinta na natureza — não restava nenhum indivíduo livre, só uma pequena população em cativeiro espalhada pelo mundo.",
+                "Desde 2020 um programa internacional devolveu à Caatinga indivíduos nascidos em cativeiro, com reforço genético, monitoramento e proteção das últimas caraibeiras onde a espécie nidifica.",
+                "Depende quase inteiramente de ocos de caraibeira (Tabebuia aurea) centenária para nidificar — perder essas árvores foi tão decisivo para a extinção quanto o tráfico."
+            ],
+            curiosidades: [
+                "Ficou mundialmente conhecida pelo filme de animação 'Rio' — ainda que a história real seja bem mais dura que a da tela.",
+                "Cada indivíduo reintroduzido é monitorado por rádio ou GPS nos primeiros anos de solta.",
+                "A recuperação da espécie depende tanto de proteger caraibeiras quanto de soltar aves."
             ]),
 
         CodexEntry(
@@ -195,6 +214,18 @@ enum Codex {
                            "Fazendas pantaneiras tradicionais convivem com a fauna há gerações e são parceiras-chave da conservação."]),
 
         CodexEntry(
+            id: "bioma_caatinga", titulo: "Caatinga",
+            subtitulo: "Savana estépica semiárida", categoria: .biomas,
+            status: "Único bioma exclusivamente brasileiro", statusCor: .ameacado,
+            paragrafos: [
+                "É o único bioma que existe apenas no Brasil, cobrindo boa parte do interior do Nordeste. O nome vem do tupi e significa 'mata branca' — a vegetação clareia e perde folhas na seca.",
+                "Enfrenta longos períodos sem chuva, mas não é deserto: tem alta biodiversidade e um número grande de espécies que não existem em nenhum outro lugar.",
+                "É um dos biomas brasileiros historicamente menos estudados e menos protegidos, pressionado por desmatamento para pecuária, lenha e mineração."
+            ],
+            curiosidades: ["Muitas espécies da Caatinga só reaparecem visivelmente depois da chuva — sementes e animais 'esperam' o período úmido.",
+                           "A caraibeira é uma árvore-chave do bioma: sombra, forragem e, para a ararinha-azul, também ninho."]),
+
+        CodexEntry(
             id: "bioma_amazonia", titulo: "Amazônia",
             subtitulo: "Floresta tropical úmida", categoria: .biomas,
             status: "Maior floresta tropical do mundo", statusCor: .ameacado,
@@ -227,7 +258,7 @@ enum Codex {
             subtitulo: "Estação de campo dos Guardiões", categoria: .campo,
             status: "Base segura", statusCor: .estavel,
             paragrafos: [
-                "O Refúgio é o centro de tudo: daqui saem os portais para os cinco biomas e aqui ficam Dona Iara e Téo.",
+                "O Refúgio é o centro de tudo: daqui saem os portais para os seis biomas e aqui ficam Dona Iara e Téo.",
                 "Nenhuma ameaça entra no Refúgio. Use-o para recuperar essência, revisar o Códice e escolher a próxima expedição."
             ],
             curiosidades: ["A essência regenera sozinha na forma humana.",
@@ -239,7 +270,7 @@ enum Codex {
             status: "Estrutura da base", statusCor: .estavel,
             paragrafos: [
                 "Restaurar floresta não é jogar semente do avião: é produzir muda, cuidar dela por meses e plantar no lugar certo, na hora certa.",
-                "Cada espécie do viveiro cumpre um papel real — a lobeira alimenta o lobo-guará, o manduvi vira ninho de arara, o capim-das-dunas segura a areia sobre as galerias do tuco-tuco.",
+                "Cada espécie do viveiro cumpre um papel real — a lobeira alimenta o lobo-guará, a caraibeira vira ninho de ararinha, o capim-das-dunas segura a areia sobre as galerias do tuco-tuco.",
                 "Mudas colhidas viram matéria-prima das melhorias da oficina, e é o viveiro cheio que convence a Harpia a voltar."
             ],
             curiosidades: ["Sementes vêm de objetivos de restauro e resgate no campo.",
@@ -258,16 +289,16 @@ enum Codex {
                            "Peixes guardados são moeda de troca na oficina."]),
 
         CodexEntry(
-            id: "amuletos", titulo: "Os cinco amuletos",
+            id: "amuletos", titulo: "Os seis amuletos",
             subtitulo: "Como funcionam as transformações", categoria: .campo,
             status: "Mecânica central", statusCor: .estavel,
             paragrafos: [
-                "Cada amuleto transforma o guardião em um animal ameaçado e concede uma travessia exclusiva: cipoal, espinheiro, abismo, água funda e terra compactada.",
+                "Cada amuleto transforma o guardião em um animal ameaçado e concede uma travessia exclusiva: cipoal, espinheiro, matagal denso, abismo, água funda e terra compactada.",
                 "Transformar-se consome essência continuamente. Sem essência, você volta à forma humana automaticamente.",
                 "Só a forma humana interage com pessoas, armadilhas e equipamentos — parte do desafio é escolher a hora certa de voltar a ser gente."
             ],
             curiosidades: ["O lobo-guará fareja segredos a distância.",
-                           "A arara-azul amplia o campo de visão enquanto plana.",
-                           "O tuco-tuco fica invisível para ameaças enquanto escava."])
+                           "A ararinha-azul amplia o campo de visão enquanto voa.",
+                           "A onça-pintada, no Passo Invisível, e o tuco-tuco, escavando, ficam invisíveis para ameaças."])
     ]
 }

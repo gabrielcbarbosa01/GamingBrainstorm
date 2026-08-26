@@ -2,8 +2,8 @@
 //  Biome.swift
 //  Guardiões dos Biomas
 //
-//  Definição dos seis territórios do jogo: o Refúgio (centro seguro) e os
-//  cinco biomas brasileiros, cada um com um animal ameaçado e um amuleto.
+//  Definição dos sete territórios do jogo: o Refúgio (centro seguro) e os
+//  seis biomas brasileiros, cada um com um animal ameaçado e um amuleto.
 //
 
 import SpriteKit
@@ -13,14 +13,15 @@ enum BiomeID: String, CaseIterable, Codable, Identifiable {
     case mataAtlantica
     case cerrado
     case pantanal
+    case caatinga
     case amazonia
     case pampa
 
     var id: String { rawValue }
 
-    /// Os cinco biomas exploráveis, na ordem da história.
+    /// Os seis biomas exploráveis, na ordem da história.
     static var exploraveis: [BiomeID] {
-        [.mataAtlantica, .cerrado, .pantanal, .amazonia, .pampa]
+        [.mataAtlantica, .cerrado, .pantanal, .caatinga, .amazonia, .pampa]
     }
 }
 
@@ -114,17 +115,33 @@ struct Biome: Identifiable {
               nome: "Pantanal",
               subtitulo: "Planície que respira com a cheia",
               regiao: "Mato Grosso do Sul",
-              animal: .araraAzul,
+              animal: .oncaPintada,
               palette: Palette.pantanal,
               rules: BiomeTerrainRules(escalaRelevo: 0.032, limiarAgua: -0.34, limiarCharco: -0.06,
                                        densidadeArvore: 0.12, densidadeRocha: 0.03,
                                        densidadeGramaAlta: 0.16, densidadeEspecial: 0.10,
-                                       terrenoEspecial: .abismo, terrenoEspecialSecundario: .espinheiro,
+                                       terrenoEspecial: .matagalDenso, terrenoEspecialSecundario: .espinheiro,
                                        chaoBase: .grama, chaoAlternativo: .areia),
-              ameaca: .trafico,
+              ameaca: .conflitoRebanho,
               ordem: 3,
               requisito: .loboGuara,
               semente: 4423),
+
+        Biome(id: .caatinga,
+              nome: "Caatinga",
+              subtitulo: "Onde a seca vira paisagem viva",
+              regiao: "Norte da Bahia, vale do São Francisco",
+              animal: .araraAzul,
+              palette: Palette.caatinga,
+              rules: BiomeTerrainRules(escalaRelevo: 0.042, limiarAgua: -0.82, limiarCharco: -0.70,
+                                       densidadeArvore: 0.06, densidadeRocha: 0.10,
+                                       densidadeGramaAlta: 0.05, densidadeEspecial: 0.10,
+                                       terrenoEspecial: .abismo, terrenoEspecialSecundario: .terraDura,
+                                       chaoBase: .terra, chaoAlternativo: .areia),
+              ameaca: .trafico,
+              ordem: 4,
+              requisito: .oncaPintada,
+              semente: 7759),
 
         Biome(id: .amazonia,
               nome: "Amazônia",
@@ -138,7 +155,7 @@ struct Biome: Identifiable {
                                        terrenoEspecial: .agua, terrenoEspecialSecundario: .abismo,
                                        chaoBase: .folhagem, chaoAlternativo: .charco),
               ameaca: .pescaIlegal,
-              ordem: 4,
+              ordem: 5,
               requisito: .araraAzul,
               semente: 5531),
 
@@ -154,7 +171,7 @@ struct Biome: Identifiable {
                                        terrenoEspecial: .terraDura, terrenoEspecialSecundario: .agua,
                                        chaoBase: .grama, chaoAlternativo: .areia),
               ameaca: .monocultura,
-              ordem: 5,
+              ordem: 6,
               requisito: .pirarucu,
               semente: 6647)
     ]
@@ -163,17 +180,19 @@ struct Biome: Identifiable {
 /// A pressão real que ameaça cada bioma, virada em obstáculo de jogo.
 enum HazardKind: String, Codable {
     case nenhuma
-    case desmatamento   // motosserras avançando sobre a mata
-    case queimada       // fogo que se alastra pelo capim
-    case trafico        // traficantes de animais patrulhando ninhos
-    case pescaIlegal    // redes de malha fina no rio
-    case monocultura    // maquinário revirando o campo
+    case desmatamento    // motosserras avançando sobre a mata
+    case queimada        // fogo que se alastra pelo capim
+    case conflitoRebanho // queimada de pasto e retaliação contra predador
+    case trafico         // traficantes de animais patrulhando ninhos
+    case pescaIlegal     // redes de malha fina no rio
+    case monocultura     // maquinário revirando o campo
 
     var nome: String {
         switch self {
         case .nenhuma: return "—"
         case .desmatamento: return "Frente de desmatamento"
         case .queimada: return "Queimada"
+        case .conflitoRebanho: return "Conflito com o gado"
         case .trafico: return "Tráfico de animais"
         case .pescaIlegal: return "Pesca predatória"
         case .monocultura: return "Avanço da monocultura"
@@ -185,7 +204,8 @@ enum HazardKind: String, Codable {
         case .nenhuma: return "Território protegido."
         case .desmatamento: return "Equipes derrubam árvores e isolam os grupos de micos em fragmentos."
         case .queimada: return "O fogo corre pelo capim seco e fecha os corredores do lobo-guará."
-        case .trafico: return "Ninhos de arara são saqueados para o comércio ilegal."
+        case .conflitoRebanho: return "Queimadas de pastagem empurram a onça para perto do gado, e o conflito vira sentença de morte para a fera."
+        case .trafico: return "Ninhos de ararinha são saqueados para o comércio ilegal."
         case .pescaIlegal: return "Redes de malha fina levam pirarucus jovens antes da desova."
         case .monocultura: return "O arado destrói as galerias do tuco-tuco nas dunas."
         }
@@ -196,6 +216,7 @@ enum HazardKind: String, Codable {
         case .nenhuma: return "leaf.fill"
         case .desmatamento: return "hammer.fill"
         case .queimada: return "flame.fill"
+        case .conflitoRebanho: return "smoke.fill"
         case .trafico: return "shippingbox.fill"
         case .pescaIlegal: return "net"
         case .monocultura: return "gearshape.2.fill"

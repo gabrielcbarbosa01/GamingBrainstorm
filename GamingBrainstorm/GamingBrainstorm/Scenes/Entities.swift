@@ -277,7 +277,7 @@ final class PortalNode: WorldEntity {
             estado.avisar(checar(estado: estado).dica, icone: "lock.fill", cor: .alerta)
             return false
         }
-        estado.viajar(para: destino)
+        estado.iniciarViagem(para: destino)
         return false
     }
 }
@@ -309,7 +309,7 @@ final class PortalRetornoNode: WorldEntity {
     }
 
     override func interagir(estado: GameState, cena: GameScene) -> Bool {
-        estado.viajar(para: .refugio)
+        estado.iniciarViagem(para: .refugio)
         return false
     }
 }
@@ -533,8 +533,8 @@ final class HarpiaNode: WorldEntity {
 
     override func atualizar(delta: TimeInterval, jogador: CGPoint,
                             estado: GameState, cena: GameScene) {
-        // Ela só reaparece quando os cinco amuletos já estão com o jogador.
-        let deveAparecer = estado.save.amuletos.count >= 5
+        // Ela só reaparece quando os seis amuletos já estão com o jogador.
+        let deveAparecer = estado.save.amuletos.count >= 6
         guard deveAparecer != visivel else { return }
         visivel = deveAparecer
         if deveAparecer {

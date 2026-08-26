@@ -2,7 +2,7 @@
 //  GamingBrainstormApp.swift
 //  Guardiões dos Biomas
 //
-//  Um jogo sobre cinco animais brasileiros ameaçados de extinção.
+//  Um jogo sobre seis animais brasileiros ameaçados de extinção.
 //
 
 import SwiftUI

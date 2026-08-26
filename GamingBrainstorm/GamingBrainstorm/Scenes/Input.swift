@@ -16,7 +16,7 @@ enum GameAction: Hashable {
     case jornal
     case mapa
     case menu
-    case forma(Int)     // 1 a 5
+    case forma(Int)     // 1 a 7 (seis amuletos + harpia)
     case humano
     case expedicao
 }
@@ -35,7 +35,7 @@ final class InputManager {
         static let e: UInt16 = 14, q: UInt16 = 12, m: UInt16 = 46, r: UInt16 = 15
         static let tab: UInt16 = 48, space: UInt16 = 49, esc: UInt16 = 53
         static let n1: UInt16 = 18, n2: UInt16 = 19, n3: UInt16 = 20, n4: UInt16 = 21
-        static let n5: UInt16 = 23, n6: UInt16 = 22
+        static let n5: UInt16 = 23, n6: UInt16 = 22, n7: UInt16 = 26
     }
 
     private init() {}
@@ -83,6 +83,7 @@ final class InputManager {
         case Key.n4: return .forma(4)
         case Key.n5: return .forma(5)
         case Key.n6: return .forma(6)
+        case Key.n7: return .forma(7)
         default: return nil
         }
     }

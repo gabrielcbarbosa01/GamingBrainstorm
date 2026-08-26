@@ -83,6 +83,7 @@ enum Screen: Equatable {
     case jornal
     case mapa
     case creditos
+    case viagemMapa
 }
 
 // MARK: - Estado
@@ -104,6 +105,8 @@ final class GameState: ObservableObject {
     @Published var painelRefugio: PainelRefugio?
     /// Muda sempre que a cena precisa recarregar o mundo (viagem entre biomas).
     @Published var geracaoMundo: Int = 0
+    /// Bioma de destino durante a tela de viagem pelo mapa do Brasil.
+    @Published var viagemDestino: BiomeID?
 
     // Publicados pela cena para a HUD (atualizados com folga, não a cada frame).
     @Published var jogadorTile = GridPoint(x: 0, y: 0)
@@ -259,7 +262,7 @@ final class GameState: ObservableObject {
     var condicoesHarpia: [(texto: String, feito: Bool)] {
         let expedicoes = BiomeID.exploraveis.allSatisfy { save.biome($0).expedicoesConcluidas >= 1 }
         return [
-            ("Os cinco amuletos conquistados", save.amuletos.count >= 5),
+            ("Os seis amuletos conquistados", save.amuletos.count >= 6),
             ("Uma expedição concluída em cada bioma", expedicoes),
             ("15 mudas cultivadas no viveiro (\(min(save.refugio.mudasCultivadas, 15))/15)",
              save.refugio.mudasCultivadas >= 15)
@@ -432,6 +435,26 @@ final class GameState: ObservableObject {
     func podeEntrar(_ id: BiomeID) -> Bool {
         guard let req = Biome[id].requisito else { return true }
         return save.amuletos.contains(req)
+    }
+
+    /// Abre a tela do mapa do Brasil antes de efetivar a viagem — dá
+    /// continuidade geográfica ao que, tecnicamente, ainda é um teleporte.
+    func iniciarViagem(para id: BiomeID) {
+        guard podeEntrar(id) else {
+            let req = Biome[id].requisito!
+            avisar("O caminho exige o \(req.amuleto).", icone: "lock.fill", cor: .alerta)
+            return
+        }
+        guard id != biomaCarregado else { return }
+        viagemDestino = id
+        tela = .viagemMapa
+    }
+
+    /// Chamada pela tela de viagem quando a animação termina.
+    func concluirViagem() {
+        guard let destino = viagemDestino else { return }
+        viagemDestino = nil
+        viajar(para: destino)
     }
 
     func viajar(para id: BiomeID) {

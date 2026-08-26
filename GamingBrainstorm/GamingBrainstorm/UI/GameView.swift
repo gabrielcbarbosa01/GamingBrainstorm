@@ -35,6 +35,8 @@ struct GameView: View {
                 JournalView(st: st).transition(.opacity)
             case .mapa:
                 MapView(st: st).transition(.opacity)
+            case .viagemMapa:
+                ViagemMapaView(st: st).transition(.opacity)
             case .jogo:
                 HUDView(st: st)
                 if let sessao = st.dialogo {

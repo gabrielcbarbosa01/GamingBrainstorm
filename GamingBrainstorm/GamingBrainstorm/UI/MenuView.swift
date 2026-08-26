@@ -16,7 +16,7 @@ struct MenuView: View {
                            startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
 
-            // Faixa decorativa com os cinco bichos.
+            // Faixa decorativa com os seis bichos.
             HStack(spacing: 0) {
                 ForEach(AnimalForm.amuletos) { f in
                     Image(nsImage: Creatures.retrato(f))
@@ -35,7 +35,7 @@ struct MenuView: View {
                         .font(.system(size: 42, weight: .heavy, design: .serif))
                         .tracking(3)
                         .foregroundStyle(Tema.papel)
-                    Text("cinco animais ameaçados · cinco amuletos · um mundo sem fim")
+                    Text("seis animais ameaçados · seis amuletos · um mundo sem fim")
                         .font(.system(size: 14, weight: .medium, design: .serif))
                         .foregroundStyle(Tema.ouro.opacity(0.9))
                 }
@@ -45,7 +45,7 @@ struct MenuView: View {
                         Text("\(st.tituloGuardiao) · \(st.indiceBiodiversidade) pontos")
                             .font(Tema.corpo)
                             .foregroundStyle(Tema.papel.opacity(0.8))
-                        Text("\(st.save.amuletos.count)/5 amuletos · \(tempoFormatado) em campo")
+                        Text("\(st.save.amuletos.count)/6 amuletos · \(tempoFormatado) em campo")
                             .font(Tema.rotulo)
                             .foregroundStyle(Tema.papel.opacity(0.5))
                     }
@@ -74,7 +74,7 @@ struct MenuView: View {
             }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("Os cinco amuletos, o Índice de Biodiversidade e o Códice voltam ao zero.")
+            Text("Os seis amuletos, o Índice de Biodiversidade e o Códice voltam ao zero.")
         }
     }
 
@@ -110,16 +110,16 @@ struct ComoSeJogaView: View {
                     .foregroundStyle(Tema.papel)
 
                 secao("A ideia", [
-                    "Você é guardiã(o) de campo. Explora cinco biomas brasileiros gerados sem limite, registra vestígios, liberta animais presos e recupera áreas degradadas.",
+                    "Você é guardiã(o) de campo. Explora seis biomas brasileiros gerados sem limite, registra vestígios, liberta animais presos e recupera áreas degradadas.",
                     "Cada bioma tem um animal ameaçado e um Guardião. Concluindo as três tarefas do bioma, o Guardião entrega o amuleto — e o amuleto abre o bioma seguinte.",
-                    "Depois dos cinco amuletos o jogo não acaba: cada bioma passa a gerar expedições infinitas, cada uma mais difícil que a anterior."
+                    "Depois dos seis amuletos o jogo não acaba: cada bioma passa a gerar expedições infinitas, cada uma mais difícil que a anterior."
                 ])
 
                 secao("Controles", [
                     "WASD ou setas — andar",
                     "ESPAÇO — o movimento especial da forma atual (é o botão mais importante do jogo)",
                     "E — interagir e avançar diálogos",
-                    "1 a 6 — vestir um amuleto · Q — voltar à forma humana",
+                    "1 a 7 — vestir um amuleto · Q — voltar à forma humana",
                     "TAB — Códice · M — mapa · R — nova expedição · ESC — menu"
                 ])
 
@@ -128,7 +128,7 @@ struct ComoSeJogaView: View {
                 })
 
                 secao("As travessias", [
-                    "Cada amuleto abre um tipo de barreira: cipoal, espinheiro, abismo, água funda e terra compactada.",
+                    "Cada amuleto abre um tipo de barreira: cipoal, espinheiro, matagal denso, abismo, água funda e terra compactada.",
                     "Mas o movimento vale mais que a chave: saltando, o mico passa por cima de água, cipó e abismo sem precisar do amuleto correspondente.",
                     "No ar você atravessa quase tudo — só o paredão de rocha continua sendo parede."
                 ])
@@ -142,8 +142,8 @@ struct ComoSeJogaView: View {
 
                 secao("A Harpia", [
                     "Ela aparece na primeira noite, dá uma dica e some.",
-                    "Só volta quando o mundo inteiro tiver voltado: os cinco amuletos, uma expedição em cada bioma e quinze mudas cultivadas no viveiro.",
-                    "Aí ela vira a sexta forma — e nenhuma barreira deste mundo se aplica a você."
+                    "Só volta quando o mundo inteiro tiver voltado: os seis amuletos, uma expedição em cada bioma e quinze mudas cultivadas no viveiro.",
+                    "Aí ela vira a sétima forma — e nenhuma barreira deste mundo se aplica a você."
                 ])
 
                 secao("Essência", [
@@ -154,7 +154,7 @@ struct ComoSeJogaView: View {
 
                 secao("Ameaças", [
                     "Nenhum bicho morre neste jogo e você também não. Se uma ameaça te alcança, você é afugentado e perde pontos.",
-                    "Como tuco-tuco, escavando, ninguém enxerga você. Como pirarucu, submerso, também não.",
+                    "Como tuco-tuco, escavando, ninguém enxerga você. Como pirarucu, submerso, também não. Como onça, no Passo Invisível, também não.",
                     "A investida do lobo-guará empurra as ameaças para longe."
                 ])
 

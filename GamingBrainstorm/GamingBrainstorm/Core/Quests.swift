@@ -95,16 +95,29 @@ enum Quests {
             ])
 
         case .pantanal:
-            return QuestChain(biome: .pantanal, titulo: "Azul contra o céu", etapas: [
-                QuestStage(kind: .rastro, titulo: "Mapa dos ninhos",
-                           descricao: "Araras-azuis só nidificam em ocos de manduvi centenários. Registre as árvores-ninho da planície.",
+            return QuestChain(biome: .pantanal, titulo: "Sombra sobre o pasto", etapas: [
+                QuestStage(kind: .rastro, titulo: "Marcas nos barrancos",
+                           descricao: "A onça marca território arranhando troncos e barrancos às margens dos corixos. Registre as marcas para mapear o corredor que ela ainda usa.",
                            alvo: 8, dica: "A investida do lobo-guará abre os espinheiros do caminho."),
-                QuestStage(kind: .resgate, titulo: "Filhotes roubados",
-                           descricao: "Traficantes saquearam ninhos. Recupere os filhotes antes que saiam da região.",
-                           alvo: 5, dica: "Caçadores patrulham: como tuco-tuco, no subsolo, ninguém te vê."),
-                QuestStage(kind: .restauro, titulo: "Ninhos artificiais",
-                           descricao: "Instale ninhos artificiais nos manduvis ocos para devolver à arara o lugar de criar.",
-                           alvo: 6, dica: "Focos ficam do outro lado dos barrancos — voar ajuda.")
+                QuestStage(kind: .ameaca, titulo: "Fogo na pastagem",
+                           descricao: "Queimadas de manejo mal controladas empurram a onça para perto do gado, e o conflito vira bala. Contenha os focos de fogo antes que fechem os últimos corredores.",
+                           alvo: 6, dica: "O fogo se alastra: contenha os focos mais próximos primeiro."),
+                QuestStage(kind: .restauro, titulo: "Corredor da cheia",
+                           descricao: "Restaure a mata ciliar que liga os retiros de cheia aos corredores secos, para a onça atravessar a fazenda sem cruzar o pasto aberto.",
+                           alvo: 6, dica: "Os focos ficam do outro lado do matagal denso — o Passo Invisível atravessa sem espantar o gado.")
+            ])
+
+        case .caatinga:
+            return QuestChain(biome: .caatinga, titulo: "Ninho na pedra seca", etapas: [
+                QuestStage(kind: .rastro, titulo: "Ninhos na caraibeira",
+                           descricao: "A ararinha-azul só nidifica em ocos de caraibeiras centenárias, à beira dos riachos secos da Caatinga. Registre as árvores-ninho que ainda restam ao longo do leito.",
+                           alvo: 8, dica: "O Passo Invisível atravessa o matagal denso sem espantar quem ainda está por perto."),
+                QuestStage(kind: .resgate, titulo: "Gaiolas no sertão",
+                           descricao: "Traficantes ainda armam gaiolas nos poucos ocos que restam. Liberte cada ararinha antes que ela vire mercadoria.",
+                           alvo: 5, dica: "Só a forma humana abre gaiolas: destransforme antes de interagir."),
+                QuestStage(kind: .restauro, titulo: "Voo de volta",
+                           descricao: "A espécie já foi extinta na natureza. Ajude a devolver o que resta plantando caraibeiras e instalando ninhos artificiais para os indivíduos reintroduzidos.",
+                           alvo: 6, dica: "Focos ficam nos paredões acima do leito seco — voar ajuda a alcançar.")
             ])
 
         case .amazonia:

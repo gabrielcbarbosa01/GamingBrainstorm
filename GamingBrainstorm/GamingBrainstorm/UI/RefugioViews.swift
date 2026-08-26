@@ -294,7 +294,7 @@ struct HarpiaView: View {
                             .foregroundStyle(Tema.ouro)
                     }
                 } else {
-                    Text("Coroa da Harpia conquistada — atalho 6. Segure ESPAÇO para voar sobre qualquer barreira do mundo.")
+                    Text("Coroa da Harpia conquistada — atalho 7. Segure ESPAÇO para voar sobre qualquer barreira do mundo.")
                         .font(Tema.corpo)
                         .foregroundStyle(Tema.essencia)
                 }

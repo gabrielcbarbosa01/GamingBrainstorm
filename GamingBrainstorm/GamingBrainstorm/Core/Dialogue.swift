@@ -108,7 +108,7 @@ enum DialogueBook {
         let terceiro = DialogueNode(
             falante: "Dona Iara", papel: "bióloga, Refúgio Raízes",
             linhas: [
-                "São cinco amuletos. Cinco bichos que estão perto de sumir do mapa — e cinco biomas que estão perto de sumir junto com eles.",
+                "São seis amuletos. Seis bichos que estão perto de sumir do mapa — e seis biomas que estão perto de sumir junto com eles.",
                 "Cada amuleto está com um Guardião. Eles não entregam nada de graça: você tem que provar que sabe olhar antes de sair correndo.",
                 "Começa pela Mata Atlântica. O portal fica na clareira ao norte daqui. Vai com calma — e volta pra contar."
             ],
@@ -122,7 +122,7 @@ enum DialogueBook {
             falante: "Dona Iara", papel: "bióloga, Refúgio Raízes",
             linhas: [
                 "Sua avó passou quarenta anos anotando o que via nesses campos. O caderno dela agora é seu.",
-                "Só que na última página tem uma coisa que ela nunca me explicou: um desenho de cinco amuletos de barro.",
+                "Só que na última página tem uma coisa que ela nunca me explicou: um desenho de seis amuletos de barro.",
                 "Ela dizia que quem vestisse um deles deixava de olhar o bicho de fora. Passava a olhar o mundo de dentro dele."
             ],
             escolhas: [
@@ -152,7 +152,7 @@ enum DialogueBook {
                 "Cinco vão te chamar pelo nome. Eu não.",
                 "Eu como o que você veio salvar. Macaco, preguiça, filhote de tudo quanto é bicho. E mesmo assim, se eles sumirem, eu sumo junto.",
                 "É por isso que servir de sinal: onde eu ainda vivo, a floresta está inteira. Onde eu não vivo mais, ela virou retalho.",
-                "Quando os cinco estiverem com você — e a terra aqui embaixo voltar a dar fruto — eu volto.",
+                "Quando os seis estiverem com você — e a terra aqui embaixo voltar a dar fruto — eu volto.",
                 "Até lá, uma dica que sua avó também sabia: procure o que ficou preso, não o que ficou bonito."
             ],
             aoEntrar: { st in
@@ -197,7 +197,7 @@ enum DialogueBook {
                 st.conquistarAmuleto(.harpia)
                 st.ligarFlag("harpia_final")
                 st.somarPontos(2000)
-                st.avisar("Coroa da Harpia — atalho 6. Nada mais te barra.",
+                st.avisar("Coroa da Harpia — atalho 7. Nada mais te barra.",
                           icone: "crown.fill", cor: .conquista)
             })
 
@@ -221,7 +221,7 @@ enum DialogueBook {
             linhas: [
                 "Cheguei a duvidar que fosse te ver de novo de pé.",
                 "Você lembra o que eu pedi? Não era coragem. Era o que você devolve.",
-                "Cinco amuletos. Expedição em cada território. E terra dando fruto no seu próprio quintal.",
+                "Seis amuletos. Expedição em cada território. E terra dando fruto no seu próprio quintal.",
                 "Está tudo aí. Então vem, sobe."
             ],
             proximo: { prova })
@@ -261,10 +261,21 @@ enum DialogueBook {
                 falante: "Nalva", papel: "guia pantaneira",
                 linhas: [
                     "Bem-vindo à planície. Aqui a água manda: seis meses ela cobre tudo, seis meses ela devolve.",
-                    "A arara-azul quase acabou nos anos 80. Tiraram uns dez mil pro tráfico. Dez mil.",
-                    "Voltou porque gente daqui começou a botar ninho artificial no manduvi. Deu certo — mas não tá ganho.",
-                    "Cuidado com os caçadores. Se você não quer ser visto, vira tuco-tuco e some pelo subsolo. Nenhum deles olha pra baixo."
+                    "A onça-pintada é a maior fera das Américas, e mora bem aqui. Mas onça que ataca gado vira onça morta — foi sempre assim.",
+                    "O jeito que achamos de segurar isso foi pagar o fazendeiro pela onça viva, não pela onça morta. Vaca que ela mata, alguém indeniza.",
+                    "Se você não quer ser visto, siga o jeito dela: pelo matagal denso, sem barulho. Passo Invisível — é assim que os antigos chamavam."
                 ])
+
+        case .caatinga:
+            return DialogueNode(
+                falante: "Dona Creuza", papel: "guia do riacho seco",
+                linhas: [
+                    "Chegou no sertão. Água aqui não falta o ano inteiro: falta é bem onde não devia.",
+                    "A ararinha-azul já foi dada como extinta na natureza. Extinta mesmo — não sobrou nenhuma voando livre, só umas poucas em cativeiro.",
+                    "Voltou a voar aqui porque um bocado de gente teimosa não desistiu: soltou filhote criado em cativeiro, protegeu caraibeira, botou gente pra vigiar oco de árvore.",
+                    "Se achar gaiola armada num oco, não hesite: vira gente e solta o bicho antes que ele vire contrabando."
+                ],
+                aoEntrar: { $0.avisar("Etapa 1: registre 8 ninhos.", icone: "pawprint.fill", cor: .bom) })
 
         case .amazonia:
             return DialogueNode(
@@ -302,6 +313,7 @@ enum DialogueBook {
         case .mataAtlantica: falante = ("Seu Bento", "guia local")
         case .cerrado: falante = ("Dona Firmina", "raizeira")
         case .pantanal: falante = ("Nalva", "guia pantaneira")
+        case .caatinga: falante = ("Dona Creuza", "guia do riacho seco")
         case .amazonia: falante = ("Seu Raimundo", "pescador de manejo")
         case .pampa: falante = ("Seu Adão", "campeiro")
         }
@@ -378,7 +390,9 @@ enum DialogueBook {
         case .cerrado:
             return "Metade do cerrado virou lavoura em cinquenta anos. Eu ando à noite porque de dia não sobrou sombra."
         case .pantanal:
-            return "Já me arrancaram do ninho aos milhares e me venderam em caixa de papelão. Eu voltei. Nem todo mundo volta."
+            return "Onça que mata gado vira onça morta — essa sempre foi a lei do pasto. Eu ainda respiro porque alguém decidiu que minha vida valia mais viva do que minha pele."
+        case .caatinga:
+            return "Fui dada como extinta na natureza. Não sobrou nenhuma de nós livre. Eu voltei. Nem todo bicho volta."
         case .amazonia:
             return "Eu preciso subir pra respirar. Isso me faz o peixe mais fácil de matar do rio inteiro."
         case .pampa:
@@ -395,7 +409,7 @@ enum DialogueBook {
         if let seguinte = proximoBioma(depois: id) {
             return "Agora o portal de \(Biome[seguinte].nome) te aceita. Volta ao Refúgio e segue."
         }
-        return "Cinco amuletos. Agora o Refúgio te espera — e o campo nunca deixa de precisar de gente. As expedições não têm fim."
+        return "Seis amuletos. Agora o Refúgio te espera — e o campo nunca deixa de precisar de gente. As expedições não têm fim."
     }
 
     // ---------- Refúgio: NPCs permanentes ----------
@@ -407,12 +421,12 @@ enum DialogueBook {
         case 0:
             linhas = ["Ainda sem amuleto nenhum. Vai pra Mata Atlântica — é o portal ao norte.",
                       "E leva o caderno da sua avó. Ele anota sozinho o que você registra."]
-        case 1...4:
-            linhas = ["\(total) de 5 amuletos. Tá indo.",
+        case 1...5:
+            linhas = ["\(total) de 6 amuletos. Tá indo.",
                       "Cada bicho que você traz de volta pro mapa é uma linha que a gente pode botar num relatório e defender no papel.",
                       "Sem dado, não tem política. Sem política, não tem bicho."]
         default:
-            linhas = ["Cinco amuletos. Sua avó ia querer ver isso.",
+            linhas = ["Seis amuletos. Sua avó ia querer ver isso.",
                       "Só que agora vem a parte que ninguém conta: conservação não termina.",
                       "Todo bioma continua gerando expedição. Toda expedição sobe um degrau de dificuldade.",
                       "É pra sempre mesmo. O trabalho é esse."]

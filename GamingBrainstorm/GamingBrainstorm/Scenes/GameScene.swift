@@ -8,6 +8,7 @@
 //
 
 import SpriteKit
+import AppKit
 
 final class GameScene: SKScene {
 
@@ -39,6 +40,7 @@ final class GameScene: SKScene {
     private var ultimoAvisoBloqueio: TimeInterval = 0
     private var ultimoAvisoAmeaca: TimeInterval = 0
     private var recargaInvestida: TimeInterval = 0
+    private var recargaEspreitar: TimeInterval = 0
     private var avisoVerbo: TimeInterval = 0
     private var tempoAndando: TimeInterval = 0
     private var tempoPublicacao: TimeInterval = 0
@@ -108,9 +110,11 @@ final class GameScene: SKScene {
 
         processarAcoes(estado)
 
-        // Com diálogo aberto o mundo congela: a conversa é a cena.
+        // Com diálogo aberto o mundo congela: a conversa é a cena. A câmera
+        // continua se ajustando (ela aproxima durante o diálogo).
         guard estado.dialogo == nil, estado.pesca == nil,
               estado.painelRefugio == nil, estado.tela == .jogo else {
+            atualizarCamera(delta: delta, estado: estado)
             gerarChunksPendentes(orcamento: 1)
             return
         }
@@ -190,6 +194,8 @@ final class GameScene: SKScene {
                 case .menu:
                     // Do título só se sai para uma partida que já existe.
                     if estado.temPartidaSalva { estado.tela = .jogo }
+                case .viagemMapa:
+                    break   // a travessia não pode ser interrompida pelo ESC
                 }
 
             case .humano:
@@ -231,6 +237,7 @@ final class GameScene: SKScene {
 
     private func atualizarJogador(delta: TimeInterval, estado: GameState) {
         recargaInvestida = max(0, recargaInvestida - delta)
+        recargaEspreitar = max(0, recargaEspreitar - delta)
         let dir = InputManager.shared.direcao
         let forma = estado.formaAtual
 
@@ -295,6 +302,14 @@ final class GameScene: SKScene {
             estado.essencia -= 7
             jogador.investir(direcao: dir)
             espantarAmeacas(raio: 260)
+            poeiraDeImpulso(cor: forma.corSecundaria)
+
+        case .espreitar:
+            guard recargaEspreitar == 0 else { return }
+            guard estado.essencia > 6 else { return }
+            recargaEspreitar = 0.9
+            estado.essencia -= 5
+            jogador.investir(direcao: dir)
             poeiraDeImpulso(cor: forma.corSecundaria)
 
         case .nenhum:
@@ -535,15 +550,52 @@ final class GameScene: SKScene {
         ]))
     }
 
+    /// Câmera elevada e fixa: segue com zona morta e antecipação, e o zoom
+    /// reage à forma, ao movimento e ao diálogo — como pede o DESIGN.md.
     private func atualizarCamera(delta: TimeInterval, estado: GameState) {
-        let alvo = jogador.position
-        let suavidade = CGFloat(min(1, delta * 7))
-        cam.position.x += (alvo.x - cam.position.x) * suavidade
-        cam.position.y += (alvo.y - cam.position.y) * suavidade
+        let reduzMovimento = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let dir = estado.dialogo == nil ? InputManager.shared.direcao : .zero
+        let movendo = dir != .zero
 
-        let escalaAlvo = estado.formaAtual.zoomCamera
-        let atual = cam.xScale
-        cam.setScale(atual + (escalaAlvo - atual) * CGFloat(min(1, delta * 4)))
+        // Acumula enquanto anda, cai rápido ao parar — controla o zoom idle/andando.
+        if movendo {
+            tempoAndando = min(1.2, tempoAndando + delta)
+        } else {
+            tempoAndando = max(0, tempoAndando - delta * 2.2)
+        }
+
+        // Antecipação: mira um pouco à frente de para onde o jogador está indo.
+        let antecipacao: CGFloat = reduzMovimento ? 0 : 46
+        let alvo = CGPoint(x: jogador.position.x + dir.dx * antecipacao,
+                           y: jogador.position.y + dir.dy * antecipacao)
+
+        if reduzMovimento {
+            cam.position = alvo
+        } else {
+            // Zona morta: só persegue quando o alvo sai de um pequeno raio do centro.
+            let deadzone: CGFloat = 18
+            let offX = alvo.x - cam.position.x, offY = alvo.y - cam.position.y
+            let dist = (offX * offX + offY * offY).squareRoot()
+            if dist > deadzone {
+                let excedente = dist - deadzone
+                let suavidade = CGFloat(min(1, delta * 7))
+                cam.position.x += (offX / dist) * excedente * suavidade
+                cam.position.y += (offY / dist) * excedente * suavidade
+            }
+        }
+
+        // Zoom contextual: forma da vez × leve zoom out ao andar × aproximação em diálogo.
+        let zoomForma = estado.formaAtual.zoomCamera
+        let zoomAndando = 1 + CGFloat(tempoAndando / 1.2) * 0.10
+        let zoomDialogo: CGFloat = estado.dialogo != nil ? 0.86 : 1.0
+        let escalaAlvo = zoomForma * zoomAndando * zoomDialogo
+
+        if reduzMovimento {
+            cam.setScale(escalaAlvo)
+        } else {
+            let atual = cam.xScale
+            cam.setScale(atual + (escalaAlvo - atual) * CGFloat(min(1, delta * 4)))
+        }
     }
 
     // MARK: Entidades

@@ -128,6 +128,14 @@ enum Creatures {
                 p.cauda = sin(ciclo) * 8
                 p.boca = 0.7
 
+            case .espreitar:
+                // Corpo baixo, passo contido: o oposto da investida, deliberadamente.
+                p.giro = 0.08
+                p.recolhido = 0.35
+                p.passo = sin(ciclo * 1.8) * 1.0
+                p.squash = -0.12 + sin(ciclo * 2) * 0.06
+                p.cauda = sin(ciclo) * 6
+
             case .planar, .voo:
                 p.asa = sin(ciclo)
                 p.recolhido = 0.9
@@ -173,6 +181,7 @@ enum Creatures {
             case .humano: guardiao($0, p)
             case .micoLeaoDourado: mico($0, p)
             case .loboGuara: lobo($0, p)
+            case .oncaPintada: onca($0, p)
             case .araraAzul: arara($0, p)
             case .pirarucu: pirarucu($0, p)
             case .tucoTuco: tucoTuco($0, p)
@@ -355,6 +364,60 @@ enum Creatures {
 
         Draw.circle(ctx, CGPoint(x: cx - 4.5, y: 17), 1.9, SKColor(hex: 0xF6D98A))
         Draw.circle(ctx, CGPoint(x: cx + 4.5, y: 17), 1.9, SKColor(hex: 0xF6D98A))
+    }
+
+    // MARK: - Onça-pintada
+
+    private static func onca(_ ctx: CGContext, _ p: Pose) {
+        let cx = canvas / 2
+        let dourado = SKColor(hex: 0xD9A233)
+        let roseta = SKColor(hex: 0x2A1E14)
+        let ventre = SKColor(hex: 0xF0DBA0)
+
+        // Passo contido e corpo mais baixo que o lobo: robusta, não veloz.
+        membro(ctx, x: cx - 12, y: 42, comprimento: 22, largura: 6.5,
+               fase: p.passo, recolhido: p.recolhido, cor: roseta)
+        membro(ctx, x: cx - 5, y: 42, comprimento: 22, largura: 6.5,
+               fase: -p.passo * 0.8, recolhido: p.recolhido, cor: roseta)
+        membro(ctx, x: cx + 5, y: 42, comprimento: 22, largura: 6.5,
+               fase: -p.passo, recolhido: p.recolhido, cor: roseta)
+        membro(ctx, x: cx + 12, y: 42, comprimento: 22, largura: 6.5,
+               fase: p.passo * 0.8, recolhido: p.recolhido, cor: roseta)
+
+        cauda(ctx, base: CGPoint(x: cx + 13, y: 45),
+              ponta: CGPoint(x: cx + 24 + p.cauda, y: 32 - p.squash * 6),
+              curvatura: 10, largura: 7, cor: dourado)
+        Draw.circle(ctx, CGPoint(x: cx + 24 + p.cauda, y: 31 - p.squash * 6), 4, roseta)
+
+        // Corpo compacto e largo — mais massa que o lobo.
+        Draw.ellipse(ctx, CGRect(x: cx - 18, y: 28, width: 36, height: 20), dourado)
+        Draw.ellipse(ctx, CGRect(x: cx - 10, y: 32, width: 20, height: 13), ventre)
+
+        // Rosetas: manchas escuras espalhadas pelo dorso, marca registrada.
+        for (dx, dy, r) in [(CGFloat(-10), CGFloat(34), CGFloat(2.6)),
+                            (CGFloat(-2), CGFloat(31), CGFloat(2.2)),
+                            (CGFloat(7), CGFloat(33), CGFloat(2.4)),
+                            (CGFloat(13), CGFloat(37), CGFloat(2.0)),
+                            (CGFloat(-13), CGFloat(41), CGFloat(2.0))] {
+            Draw.circle(ctx, CGPoint(x: cx + dx, y: dy), r, roseta)
+        }
+
+        // Cabeça larga e mandíbula robusta.
+        Draw.circle(ctx, CGPoint(x: cx, y: 19), 11.5, dourado)
+        Draw.roundRect(ctx, CGRect(x: cx - 5, y: 12, width: 10, height: 10 + p.boca * 3),
+                       radius: 4, dourado.darker(0.05))
+        Draw.circle(ctx, CGPoint(x: cx, y: 16 + p.boca * 3), 2.0, roseta)
+
+        // Orelhas pequenas e arredondadas.
+        Draw.circle(ctx, CGPoint(x: cx - 9, y: 12), 3.6, dourado)
+        Draw.circle(ctx, CGPoint(x: cx + 9, y: 12), 3.6, dourado)
+        Draw.circle(ctx, CGPoint(x: cx - 9, y: 12), 1.8, roseta)
+        Draw.circle(ctx, CGPoint(x: cx + 9, y: 12), 1.8, roseta)
+
+        Draw.circle(ctx, CGPoint(x: cx - 4.3, y: 19), 1.8, SKColor(hex: 0xE8D060))
+        Draw.circle(ctx, CGPoint(x: cx + 4.3, y: 19), 1.8, SKColor(hex: 0xE8D060))
+        Draw.circle(ctx, CGPoint(x: cx - 4.3, y: 19), 0.8, roseta)
+        Draw.circle(ctx, CGPoint(x: cx + 4.3, y: 19), 0.8, roseta)
     }
 
     // MARK: - Arara-azul

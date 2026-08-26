@@ -14,7 +14,7 @@ A branch `testeDoGumgum` fornece uma base substancial com:
 - missões, diálogos, códice, mapa, HUD e salvamento;
 - arte procedural produzida em CoreGraphics.
 
-Essa implementação ainda representa uma versão anterior do design, com cinco biomas e sem o sistema de combate aprovado. A fonte de verdade para a adaptação é o GDD atual, que define Mata Atlântica, Cerrado, Caatinga, Amazônia, Pantanal e Pampa.
+Os seis biomas do GDD atual — Mata Atlântica, Cerrado, Pantanal, Caatinga, Amazônia e Pampa — e as espécies correspondentes (onça-pintada no Pantanal, ararinha-azul na Caatinga) já estão alinhados no código. O sistema de combate de ação-RPG aprovado no GDD ainda não está implementado: o que existe hoje é o sistema de "afugentar" herdado da base original (contato com uma ameaça tira pontos, sem dano nem risco de morte).
 
 ## Fontes de verdade
 
@@ -35,7 +35,7 @@ Essa implementação ainda representa uma versão anterior do design, com cinco 
 | WASD / setas | Andar |
 | Espaço | Habilidade da forma |
 | E | Interagir ou avançar diálogo |
-| 1–6 | Selecionar forma |
+| 1–7 | Selecionar forma |
 | Q | Voltar à forma humana |
 | Tab | Códice |
 | M | Mapa |

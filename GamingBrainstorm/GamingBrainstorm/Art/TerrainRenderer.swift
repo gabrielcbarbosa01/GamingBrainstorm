@@ -109,6 +109,8 @@ enum TerrainRenderer {
             return p.grass.blended(with: p.foliageDark, amount: 0.45)
         case .espinheiro:
             return p.ground.blended(with: p.sand, amount: 0.22 + v * 0.14)
+        case .matagalDenso:
+            return p.foliageDark.blended(with: p.ground, amount: 0.30 + v * 0.14)
         case .terraDura:
             return p.ground.darker(0.20).blended(with: p.sand, amount: 0.18)
         }

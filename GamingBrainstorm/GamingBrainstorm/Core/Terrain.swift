@@ -26,7 +26,8 @@ enum Terrain: UInt8, Codable {
     // --- bloqueios que um amuleto abre ---
     case cipos          // Mico-leão-dourado
     case espinheiro     // Lobo-guará
-    case abismo         // Arara-azul
+    case matagalDenso   // Onça-pintada
+    case abismo         // Ararinha-azul
     case agua           // Pirarucu
     case terraDura      // Tuco-tuco
 
@@ -48,6 +49,7 @@ enum Terrain: UInt8, Codable {
         switch self {
         case .cipos: return .micoLeaoDourado
         case .espinheiro: return .loboGuara
+        case .matagalDenso: return .oncaPintada
         case .abismo: return .araraAzul
         case .agua: return .pirarucu
         case .terraDura: return .tucoTuco
@@ -70,6 +72,7 @@ enum Terrain: UInt8, Codable {
         case .tronco: return "tronco caído"
         case .cipos: return "cipoal fechado"
         case .espinheiro: return "espinheiro"
+        case .matagalDenso: return "matagal denso"
         case .abismo: return "abismo"
         case .agua: return "água funda"
         case .terraDura: return "terra compactada"

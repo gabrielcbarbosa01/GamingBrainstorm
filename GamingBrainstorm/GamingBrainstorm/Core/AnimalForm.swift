@@ -12,6 +12,7 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
     case humano
     case micoLeaoDourado
     case loboGuara
+    case oncaPintada
     case araraAzul
     case pirarucu
     case tucoTuco
@@ -25,7 +26,8 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return "Guardiã(o)"
         case .micoLeaoDourado: return "Mico-leão-dourado"
         case .loboGuara: return "Lobo-guará"
-        case .araraAzul: return "Arara-azul-grande"
+        case .oncaPintada: return "Onça-pintada"
+        case .araraAzul: return "Ararinha-azul"
         case .pirarucu: return "Pirarucu"
         case .tucoTuco: return "Tuco-tuco"
         case .harpia: return "Harpia"
@@ -37,7 +39,8 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return "Homo sapiens"
         case .micoLeaoDourado: return "Leontopithecus rosalia"
         case .loboGuara: return "Chrysocyon brachyurus"
-        case .araraAzul: return "Anodorhynchus hyacinthinus"
+        case .oncaPintada: return "Panthera onca"
+        case .araraAzul: return "Cyanopsitta spixii"
         case .pirarucu: return "Arapaima gigas"
         case .tucoTuco: return "Ctenomys flamarioni"
         case .harpia: return "Harpia harpyja"
@@ -49,6 +52,7 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return "Sem amuleto"
         case .micoLeaoDourado: return "Amuleto da Copa"
         case .loboGuara: return "Amuleto da Campina"
+        case .oncaPintada: return "Amuleto da Sombra"
         case .araraAzul: return "Amuleto do Vento"
         case .pirarucu: return "Amuleto das Águas"
         case .tucoTuco: return "Amuleto do Subsolo"
@@ -61,7 +65,8 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return "Interagir e usar equipamentos"
         case .micoLeaoDourado: return "Escalar cipós e copas"
         case .loboGuara: return "Investida por espinheiros"
-        case .araraAzul: return "Planar sobre abismos"
+        case .oncaPintada: return "Passo Invisível pelo matagal denso"
+        case .araraAzul: return "Voar sobre abismos"
         case .pirarucu: return "Nadar em águas profundas"
         case .tucoTuco: return "Escavar túneis na terra dura"
         case .harpia: return "Sobrevoar tudo e mergulhar"
@@ -76,8 +81,10 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
             return "Atravessa cipoais fechados. Ágil e rápido, mas frágil diante de ameaças."
         case .loboGuara:
             return "Rompe cerrados espinhosos em disparada e fareja esconderijos num raio amplo."
+        case .oncaPintada:
+            return "Atravessa matagal denso sem fazer barulho. Nenhuma ameaça percebe sua passagem, mas a habilidade não ataca — só reposiciona e observa."
         case .araraAzul:
-            return "Plana sobre abismos e barrancos. Voando, a visão de campo se amplia."
+            return "Voa sobre abismos e barrancos. No ar, a visão de campo se amplia."
         case .pirarucu:
             return "Nada em rios e lagos. Fora d'água, se arrasta com dificuldade."
         case .tucoTuco:
@@ -93,6 +100,7 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return nil
         case .micoLeaoDourado: return .cipos
         case .loboGuara: return .espinheiro
+        case .oncaPintada: return .matagalDenso
         case .araraAzul: return .abismo
         case .pirarucu: return .agua
         case .tucoTuco: return .terraDura
@@ -109,6 +117,7 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return 210
         case .micoLeaoDourado: return 260
         case .loboGuara: return 300
+        case .oncaPintada: return 245
         case .araraAzul: return 280
         case .pirarucu: return 170
         case .tucoTuco: return 165
@@ -122,6 +131,7 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return 0
         case .micoLeaoDourado: return 3.0
         case .loboGuara: return 3.6
+        case .oncaPintada: return 3.8
         case .araraAzul: return 4.6
         case .pirarucu: return 3.2
         case .tucoTuco: return 3.4
@@ -149,14 +159,15 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    /// Caçadores não percebem quem está escavando o subsolo.
-    var invisivelParaAmeacas: Bool { self == .tucoTuco }
+    /// Caçadores não percebem quem está no Passo Invisível ou escavando o subsolo.
+    var invisivelParaAmeacas: Bool { self == .oncaPintada || self == .tucoTuco }
 
     var corPrimaria: SKColor {
         switch self {
         case .humano: return SKColor(hex: 0xE0C08A)
         case .micoLeaoDourado: return SKColor(hex: 0xE8952C)
         case .loboGuara: return SKColor(hex: 0xC96A2E)
+        case .oncaPintada: return SKColor(hex: 0xD9A233)
         case .araraAzul: return SKColor(hex: 0x2F6FD8)
         case .pirarucu: return SKColor(hex: 0x4E6E62)
         case .tucoTuco: return SKColor(hex: 0x9A7A4E)
@@ -169,6 +180,7 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return SKColor(hex: 0x3E6A4E)
         case .micoLeaoDourado: return SKColor(hex: 0xF6C860)
         case .loboGuara: return SKColor(hex: 0x2A2620)
+        case .oncaPintada: return SKColor(hex: 0x2A1E14)
         case .araraAzul: return SKColor(hex: 0xF2D24E)
         case .pirarucu: return SKColor(hex: 0xC24A44)
         case .tucoTuco: return SKColor(hex: 0x5E4A32)
@@ -182,6 +194,7 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return "🧭"
         case .micoLeaoDourado: return "🐒"
         case .loboGuara: return "🐺"
+        case .oncaPintada: return "🐆"
         case .araraAzul: return "🦜"
         case .pirarucu: return "🐟"
         case .tucoTuco: return "🐹"
@@ -189,12 +202,12 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    /// Os cinco amuletos da história principal, na ordem dos atalhos 1..5.
+    /// Os seis amuletos da história principal, na ordem dos atalhos 1..6.
     static var amuletos: [AnimalForm] {
-        [.micoLeaoDourado, .loboGuara, .araraAzul, .pirarucu, .tucoTuco]
+        [.micoLeaoDourado, .loboGuara, .oncaPintada, .araraAzul, .pirarucu, .tucoTuco]
     }
 
-    /// Tudo que o jogador pode vestir, incluindo a recompensa final no atalho 6.
+    /// Tudo que o jogador pode vestir, incluindo a recompensa final no atalho 7.
     static var vestiveis: [AnimalForm] { amuletos + [.harpia] }
 
     // MARK: - Verbo ativo
@@ -206,6 +219,7 @@ enum AnimalForm: String, CaseIterable, Codable, Identifiable {
         case .humano: return .nenhum
         case .micoLeaoDourado: return .pulo
         case .loboGuara: return .investida
+        case .oncaPintada: return .espreitar
         case .araraAzul: return .planar
         case .pirarucu: return .arranco
         case .tucoTuco: return .escavar
@@ -219,6 +233,7 @@ enum FormVerb {
     case nenhum
     case pulo        // mico: arco alto, atravessa qualquer barreira em pleno ar
     case investida   // lobo: disparada curta que rompe espinheiros e espanta ameaças
+    case espreitar   // onça: passo silencioso que atravessa o matagal sem alertar ameaças
     case planar      // arara: mantém no ar enquanto houver essência
     case arranco     // pirarucu: mergulha e dispara embaixo d'água
     case escavar     // tuco-tuco: entra no subsolo e some do mapa
@@ -229,6 +244,7 @@ enum FormVerb {
         case .nenhum: return "—"
         case .pulo: return "Salto"
         case .investida: return "Investida"
+        case .espreitar: return "Espreita"
         case .planar: return "Planar"
         case .arranco: return "Arranco"
         case .escavar: return "Escavar"
@@ -241,6 +257,7 @@ enum FormVerb {
         case .nenhum: return "Esta forma não tem movimento especial."
         case .pulo: return "ESPAÇO salta em arco. No ar você passa por cima de água, cipó e abismo."
         case .investida: return "ESPAÇO dispara para frente, rompe espinheiros e afasta ameaças."
+        case .espreitar: return "ESPAÇO avança em silêncio: atravessa o matagal denso e ameaças não notam."
         case .planar: return "Segure ESPAÇO para se manter no ar. Consome essência rápido."
         case .arranco: return "ESPAÇO mergulha: dentro d'água você fica veloz e invisível."
         case .escavar: return "Segure ESPAÇO para ir ao subsolo: atravessa quase tudo e ninguém te vê."

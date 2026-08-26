@@ -115,6 +115,7 @@ enum Objects {
         Draw.shadow(ctx, center: CGPoint(x: 32, y: 54), w: 34, h: 12)
         switch kind {
         case .queimada: fogo(ctx, c: c)
+        case .conflitoRebanho: fogo(ctx, c: c)
         case .desmatamento: motosserra(ctx, c: c)
         case .trafico: cacador(ctx, c: c)
         case .pescaIlegal: rede(ctx, c: c)

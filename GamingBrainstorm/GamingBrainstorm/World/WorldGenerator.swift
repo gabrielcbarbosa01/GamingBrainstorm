@@ -210,8 +210,12 @@ struct WorldGenerator {
                       "Nascente protegida — aqui começa a água de milhões de pessoas.",
                       "Passagem de fauna sob a rodovia: 800 m à frente."]
         case .pantanal:
-            textos = ["Ninho artificial nº \(rng.int(10, 340)) — monitorado desde a última cheia.",
-                      "Manduvi centenário. Uma árvore, um berçário.",
+            textos = ["Corredor de fauna monitorado por câmera-trap desde a última cheia.",
+                      "Manduvi centenário. Copa alta, sombra funda — corredor de passagem.",
+                      "Programa de indenização por perda de gado: onça viva vale mais que onça morta."]
+        case .caatinga:
+            textos = ["Ninho artificial nº \(rng.int(10, 90)) — monitorado desde a última solta.",
+                      "Caraibeira centenária. Um oco, um berçário.",
                       "Denuncie o tráfico de animais silvestres."]
         case .amazonia:
             textos = ["Lago de manejo comunitário. Pesca permitida somente na cota acordada.",

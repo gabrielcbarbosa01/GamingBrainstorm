@@ -4,7 +4,7 @@
 //
 //  Mapa de campo: um recorte do terreno em volta do jogador (gerado com a
 //  mesma semente da cena, então bate exatamente com o mundo) e o painel de
-//  situação dos cinco biomas.
+//  situação dos seis biomas.
 //
 
 import SwiftUI
@@ -132,6 +132,7 @@ struct MapView: View {
         case .tronco: return Tema.cor(p.foliageDark)
         case .cipos: return Tema.cor(p.foliage.lighter(0.08))
         case .espinheiro: return Tema.cor(p.accent.darker(0.35))
+        case .matagalDenso: return Tema.cor(p.foliageDark.darker(0.15))
         case .terraDura: return Tema.cor(p.ground.darker(0.30))
         case .areia: return Tema.cor(p.sand)
         case .pedraChao: return Tema.cor(p.rock.lighter(0.15))
@@ -161,7 +162,7 @@ struct MapView: View {
                     Text("A viagem é feita pelos portais.")
                         .font(Tema.corpo)
                         .foregroundStyle(Tema.papel.opacity(0.7))
-                    Text("Os cinco portais ficam no Refúgio Raízes; em cada bioma há um portal de retorno ao lado do ponto de chegada.")
+                    Text("Os seis portais ficam no Refúgio Raízes; em cada bioma há um portal de retorno ao lado do ponto de chegada.")
                         .font(.system(size: 12, design: .rounded))
                         .foregroundStyle(Tema.papel.opacity(0.45))
                         .fixedSize(horizontal: false, vertical: true)
