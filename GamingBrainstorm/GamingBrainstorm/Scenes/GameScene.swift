@@ -35,7 +35,7 @@ final class GameScene: SKScene {
 
     private var ultimoUpdate: TimeInterval = 0
     private var formaDesenhada: AnimalForm = .humano
-    private var kindObjetivoAtual: ObjectiveKind?
+    private var pendentes: [ObjectiveKind] = []
     private var ultimoAvisoBloqueio: TimeInterval = 0
     private var ultimoAvisoAmeaca: TimeInterval = 0
     private var recargaInvestida: TimeInterval = 0
@@ -43,6 +43,7 @@ final class GameScene: SKScene {
     private var alteracoes: [GridPoint: Terrain] = [:]
     private var marcasDeTerreno: [GridPoint: SKNode] = [:]
     private let escuridao = SKSpriteNode()
+    private var operacao: OperacaoDirector?
     private var avisoVerbo: TimeInterval = 0
     private var tempoAndando: TimeInterval = 0
     private var tempoPublicacao: TimeInterval = 0
@@ -54,7 +55,19 @@ final class GameScene: SKScene {
 
     // MARK: Ciclo de vida
 
+    /// A cena é reapresentada toda vez que o jogador volta de uma corrida.
+    /// Sem esta trava, didMove tentava adicionar de novo nós que já têm pai —
+    /// e o SpriteKit levanta NSInvalidArgumentException, derrubando o app.
+    private var montado = false
+
     override func didMove(to view: SKView) {
+        InputManager.shared.start()
+        guard !montado else {
+            InputManager.shared.limparTeclas()
+            return
+        }
+        montado = true
+
         scaleMode = .resizeFill
         addChild(mundo)
         mundo.addChild(camadaTerreno)
@@ -97,13 +110,28 @@ final class GameScene: SKScene {
         marcasDeTerreno.values.forEach { $0.removeFromParent() }
         marcasDeTerreno.removeAll()
 
-        jogador.position = WorldMetrics.center(of: GridPoint(x: 0, y: 0))
-        kindObjetivoAtual = estado?.etapaAtual(id)?.kind
+        // Nos biomas o jogador chega na borda segura do território; no Refúgio,
+        // no centro da praça.
+        jogador.position = id == .refugio ? WorldMetrics.center(of: GridPoint(x: 0, y: 0))
+                                          : Territorio.chegada
+        pendentes = estado?.objetivosPendentes(id) ?? []
+
+        // Monta a frente do bioma, se ainda há operação a fazer aqui.
+        operacao?.desmontar()
+        operacao = nil
+        estado?.operacao = nil
         atualizarStreaming(imediato: false)
         gerarChunksPendentes(orcamento: 9)
         jogador.aplicarForma(estado?.formaAtual ?? .humano, forcar: true)
         formaDesenhada = estado?.formaAtual ?? .humano
         cam.position = jogador.position
+
+        if let estado, id != .refugio, let cfg = Operacao[id],
+           pendentes.contains(.acesso) || pendentes.contains(.desafio) || estado.ato(id) == .livre {
+            let d = OperacaoDirector(config: cfg, ritmo: estado.ritmoDaFrente(id))
+            d.montar(cena: self, estado: estado)
+            operacao = d
+        }
     }
 
     // MARK: Loop
@@ -122,8 +150,9 @@ final class GameScene: SKScene {
         processarAcoes(estado)
 
         // Com diálogo aberto o mundo congela: a conversa é a cena.
-        guard estado.dialogo == nil, estado.pesca == nil,
-              estado.painelRefugio == nil, estado.tela == .jogo else {
+        let balanco = estado.operacao?.encerrada ?? false
+        guard estado.dialogo == nil, estado.pesca == nil, estado.corrida == nil,
+              estado.painelRefugio == nil, !balanco, estado.tela == .jogo else {
             gerarChunksPendentes(orcamento: 1)
             return
         }
@@ -137,6 +166,8 @@ final class GameScene: SKScene {
         gerarChunksPendentes(orcamento: 1)
         atualizarCamera(delta: delta, estado: estado)
         verificarTrocaDeObjetivo(estado)
+        verificarCinematicaDaHarpia(estado, delta: delta)
+        operacao?.atualizar(delta: delta, jogador: jogador.position, estado: estado, cena: self)
         publicarHUD(delta: delta, estado: estado)
     }
 
@@ -515,6 +546,7 @@ final class GameScene: SKScene {
         camadaEntidades.addChild(n)
     }
 
+
     var jogadorInvestindo: Bool { jogador.estado == .investindo }
     var jogadorSubmerso: Bool { jogador.estado == .mergulhado }
 
@@ -530,6 +562,46 @@ final class GameScene: SKScene {
 
     /// O jogador está fora de vista (subsolo ou submerso)?
     var jogadorEscondido: Bool { jogador.estado.enterrado }
+    var posicaoDoJogador: CGPoint { jogador.position }
+
+    /// Busca em largura a partir do jogador, andando só por onde um humano
+    /// passa. Sem isto o guia podia parar do outro lado de um rio e travar o
+    /// ato 1 — e os vestígios podiam cair em lugar inalcançável.
+    func tilesAlcancaveis(limite: Int = 1200) -> [GridPoint] {
+        let inicio = WorldMetrics.tile(at: jogador.position)
+        var vistos: Set<GridPoint> = [inicio]
+        var ordem: [GridPoint] = [inicio]
+        var i = 0
+        let vizinhos = [GridPoint(x: 1, y: 0), GridPoint(x: -1, y: 0),
+                        GridPoint(x: 0, y: 1), GridPoint(x: 0, y: -1)]
+        while i < ordem.count, ordem.count < limite {
+            let g = ordem[i]; i += 1
+            for d in vizinhos {
+                let n = g + d
+                guard !vistos.contains(n) else { continue }
+                guard terrenoNoTile(n).passavel(para: .humano) else { continue }
+                vistos.insert(n)
+                ordem.append(n)
+            }
+        }
+        return ordem
+    }
+
+    /// Um tile alcançável a mais ou menos `distancia` pontos do jogador.
+    func tileAlcancavel(distancia: CGFloat, rng: inout SeededRandom) -> GridPoint? {
+        let candidatos = tilesAlcancaveis()
+        guard candidatos.count > 1 else { return nil }
+        let inicio = WorldMetrics.tile(at: jogador.position)
+        func passos(_ g: GridPoint) -> CGFloat {
+            hypot(CGFloat(g.x - inicio.x), CGFloat(g.y - inicio.y))
+        }
+        let alvo = distancia / WorldMetrics.tileSize
+        let faixa = candidatos.filter { abs(passos($0) - alvo) < 3.5 }
+        if !faixa.isEmpty { return faixa[rng.int(0, faixa.count - 1)] }
+        // O bolso alcançável é menor que a distância pedida: usa o ponto mais
+        // distante que existe, em vez de mandar o guia para fora do mapa andável.
+        return candidatos.max { passos($0) < passos($1) }
+    }
 
     func terrenoLivreParaAmeaca(_ p: CGPoint) -> Bool {
         terreno(em: p).passavel(para: .humano)
@@ -669,22 +741,24 @@ final class GameScene: SKScene {
         }
     }
 
-    /// Se a etapa mudou, os pontos de missão espalhados pelo mundo mudam de tipo.
+    /// Quando um estilhaço é concluído, os marcadores daquele tipo somem do
+    /// mundo e os dos tipos que ainda faltam continuam.
     private func verificarTrocaDeObjetivo(_ estado: GameState) {
-        let atual = estado.etapaAtual(biomaID)?.kind
-        guard atual != kindObjetivoAtual else { return }
-        kindObjetivoAtual = atual
+        let atual = estado.objetivosPendentes(biomaID)
+        guard atual != pendentes else { return }
+        pendentes = atual
 
         for (coord, var chunk) in chunks {
-            chunk.entidades.filter { $0 is ObjetivoNode }.forEach { $0.removeFromParent() }
-            chunk.entidades.removeAll { $0 is ObjetivoNode }
-            if let kind = atual {
-                for spawn in chunk.dados.spawns where spawn.kind == .objetivo {
-                    let n = ObjetivoNode(tile: spawn.tile, kind: kind, bioma: biomaID)
+            chunk.entidades.filter { $0 is ObjetivoNode || $0 is LargadaNode }
+                .forEach { $0.removeFromParent() }
+            chunk.entidades.removeAll { $0 is ObjetivoNode || $0 is LargadaNode }
+            for spawn in chunk.dados.spawns where spawn.kind == .objetivo {
+                if let n = criarEntidade(spawn) {
                     camadaEntidades.addChild(n)
                     chunk.entidades.append(n)
                 }
             }
+
             chunks[coord] = chunk
         }
     }
@@ -759,6 +833,7 @@ final class GameScene: SKScene {
             let n = PortalRetornoNode(tile: GridPoint(x: 0, y: -4))
             camadaEntidades.addChild(n)
             entidades.append(n)
+
         }
 
         chunks[coord] = ChunkCarregado(dados: dados, terreno: sprite, entidades: entidades)
@@ -767,7 +842,20 @@ final class GameScene: SKScene {
     private func criarEntidade(_ spawn: Spawn) -> WorldEntity? {
         switch spawn.kind {
         case .objetivo:
-            guard let kind = kindObjetivoAtual else { return nil }
+            guard !pendentes.isEmpty else { return nil }
+            // Cada ponto do mundo assume um dos objetivos que ainda faltam —
+            // assim os três estilhaços convivem no mesmo território.
+            // Acesso e desafio agora são a operação; no mundo só ficam a
+            // largada da prova e os objetivos das expedições.
+            let espalhaveis = pendentes.filter { $0 != .acesso && $0 != .desafio }
+            guard !espalhaveis.isEmpty else { return nil }
+            let i = Int(Hashing.hash(spawn.tile.x, spawn.tile.y, 2024) % UInt64(espalhaveis.count))
+            let kind = espalhaveis[i]
+            if kind == .corrida {
+                // A largada é única no chunk: a prova é um evento, não um item.
+                guard Hashing.unit(spawn.tile.x, spawn.tile.y, 8080) < 0.4 else { return nil }
+                return LargadaNode(tile: spawn.tile, bioma: biomaID)
+            }
             if kind == .desafio {
                 // Desafios ocupam muito espaço e atenção: no máximo um por chunk.
                 guard Hashing.unit(spawn.tile.x, spawn.tile.y, 4242) < 0.34 else { return nil }
@@ -852,6 +940,125 @@ final class GameScene: SKScene {
             }
         }
         return nil
+    }
+
+    // MARK: A sombra da Harpia
+
+    /// A abertura: uma sombra grande demais atravessa a clareira, a luz cai
+    /// por um instante, e sobra uma pena no chão. Nenhuma fala.
+    /// Contagem até a pena tocar o chão. Fica no laço de update, e não numa
+    /// SKAction, porque SKAction só avança enquanto a view renderiza — a pena
+    /// é obrigatória para a partida começar e não pode depender disso.
+    private var contagemPena: TimeInterval = -1
+    private var origemSobrevoo: CGPoint = .zero
+
+    private func verificarCinematicaDaHarpia(_ estado: GameState, delta: TimeInterval) {
+        if contagemPena > 0 {
+            contagemPena -= delta
+            if contagemPena <= 0 {
+                contagemPena = -1
+                largarPena(perto: origemSobrevoo, estado: estado)
+            }
+        }
+        guard biomaID == .refugio,
+              estado.temFlag("aguardando_sombra"),
+              !estado.temFlag("sombra_passou") else { return }
+        estado.ligarFlag("sombra_passou")
+        rodarSobrevoo(estado)
+    }
+
+    private func rodarSobrevoo(_ estado: GameState) {
+        let origem = jogador.position
+
+        // Escurece de leve: alguma coisa passou na frente do sol.
+        let penumbra = SKSpriteNode(color: .black, size: CGSize(width: 6000, height: 6000))
+        penumbra.alpha = 0
+        penumbra.zPosition = 700
+        penumbra.position = origem
+        mundo.addChild(penumbra)
+        penumbra.run(.sequence([
+            .wait(forDuration: 0.5),
+            .fadeAlpha(to: 0.40, duration: 0.7),
+            .wait(forDuration: 0.5),
+            .fadeAlpha(to: 0, duration: 1.1),
+            .removeFromParent()
+        ]))
+
+        // A sombra em si: entra por um lado da clareira e sai pelo outro.
+        let sombra = SKSpriteNode(texture: Objects.sombraDeAsas())
+        sombra.size = CGSize(width: 1500, height: 640)
+        sombra.zPosition = 690
+        sombra.alpha = 0
+        sombra.position = CGPoint(x: origem.x - 1500, y: origem.y + 620)
+        mundo.addChild(sombra)
+        sombra.run(.sequence([
+            .wait(forDuration: 0.4),
+            .group([
+                .fadeAlpha(to: 0.85, duration: 0.5),
+                .move(to: CGPoint(x: origem.x + 1500, y: origem.y - 500), duration: 2.6),
+                // Bater de asas: a sombra "respira" enquanto atravessa.
+                .repeat(.sequence([.scaleX(to: 1.06, y: 0.9, duration: 0.42),
+                                   .scaleX(to: 0.94, y: 1.08, duration: 0.42)]), count: 3)
+            ]),
+            .fadeOut(withDuration: 0.4),
+            .removeFromParent()
+        ]))
+
+        // Tremor curto quando ela passa mais perto.
+        run(.sequence([.wait(forDuration: 1.3), .run { [weak self] in
+            guard let self else { return }
+            self.cam.run(.sequence([
+                .moveBy(x: 6, y: -4, duration: 0.05),
+                .moveBy(x: -12, y: 8, duration: 0.07),
+                .moveBy(x: 6, y: -4, duration: 0.05)
+            ]))
+        }]))
+
+        estado.avisar("Alguma coisa grande demais passou por cima da clareira.",
+                      icone: "eye.fill", cor: .alerta)
+
+        // E então a pena, descendo devagar até o chão.
+        origemSobrevoo = origem
+        contagemPena = 2.4
+    }
+
+    private func largarPena(perto origem: CGPoint, estado: GameState) {
+        // Procura um tile livre logo à frente do jogador.
+        var destino = WorldMetrics.tile(at: CGPoint(x: origem.x + 90, y: origem.y + 60))
+        for r in 0...5 {
+            let t = GridPoint(x: destino.x + r, y: destino.y)
+            if terrenoNoTile(t).livre { destino = t; break }
+        }
+
+        // A pena de verdade já nasce no lugar certo e interagível: a queda é
+        // um enfeite por cima, não a mecânica.
+        let pena = PenaNode(tile: destino)
+        camadaEntidades.addChild(pena)
+        if var chunk = chunks[WorldMetrics.chunk(containing: destino)] {
+            chunk.entidades.append(pena)
+            chunks[WorldMetrics.chunk(containing: destino)] = chunk
+        }
+
+        let queda = SKSpriteNode(texture: Objects.pena())
+        queda.position = CGPoint(x: pena.position.x, y: pena.position.y + 520)
+        queda.zPosition = 260
+        camadaEntidades.addChild(queda)
+        queda.run(.sequence([
+            .group([
+                .moveTo(y: pena.position.y, duration: 3.2),
+                .sequence([
+                    .moveBy(x: 34, y: 0, duration: 0.8), .moveBy(x: -40, y: 0, duration: 0.8),
+                    .moveBy(x: 30, y: 0, duration: 0.8), .moveBy(x: -24, y: 0, duration: 0.8)
+                ]),
+                .repeat(.sequence([.rotate(byAngle: 0.5, duration: 0.8),
+                                   .rotate(byAngle: -0.5, duration: 0.8)]), count: 2)
+            ]),
+            .fadeOut(withDuration: 0.25),
+            .removeFromParent()
+        ]))
+
+        estado.avisar("Uma pena caiu na clareira. Vá até ela (E).",
+                      icone: "sparkles", cor: .conquista)
     }
 
     // MARK: Efeitos e reações

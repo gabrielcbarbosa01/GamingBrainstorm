@@ -9,6 +9,24 @@
 import SwiftUI
 import SpriteKit
 
+/// Mantém a cena do santuário viva enquanto o jogador está dentro dele.
+struct SantuarioHost: View {
+    @ObservedObject var st: GameState
+    @State private var cena: SantuarioScene
+
+    init(st: GameState) {
+        self.st = st
+        let s = SantuarioScene(size: CGSize(width: 900, height: 720))
+        s.estado = st
+        _cena = State(wrappedValue: s)
+    }
+
+    var body: some View {
+        SpriteView(scene: cena, preferredFramesPerSecond: 60)
+            .ignoresSafeArea()
+    }
+}
+
 struct GameView: View {
     @ObservedObject var st: GameState
     @State private var cena: GameScene
@@ -23,8 +41,29 @@ struct GameView: View {
 
     var body: some View {
         ZStack {
-            SpriteView(scene: cena, preferredFramesPerSecond: 60)
-                .ignoresSafeArea()
+            // Durante uma prova arcade a cena de exploração dá lugar à corrida.
+            if let prova = st.corrida {
+                CorridaHost(st: st, config: prova.config)
+                    .id(prova.config.bioma.rawValue)
+                CorridaView(st: st, sessao: prova)
+            } else {
+                exploracao
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: st.tela)
+        .onAppear { InputManager.shared.start() }
+    }
+
+    private var exploracao: some View {
+        ZStack {
+            // O Refúgio é mundo aberto; os biomas são santuários de salas.
+            if st.biomaCarregado == .refugio {
+                SpriteView(scene: cena, preferredFramesPerSecond: 60)
+                    .ignoresSafeArea()
+            } else {
+                SantuarioHost(st: st)
+                    .id("\(st.biomaCarregado.rawValue)_\(st.geracaoMundo)")
+            }
 
             switch st.tela {
             case .menu:
@@ -41,6 +80,9 @@ struct GameView: View {
                     Color.black.opacity(0.25).ignoresSafeArea().allowsHitTesting(false)
                     DialogueView(st: st, sessao: sessao)
                 }
+                if let op = st.operacao, op.encerrada {
+                    OperacaoResultado(st: st, sessao: op)
+                }
                 if let pescaria = st.pesca {
                     PescaView(st: st, sessao: pescaria)
                 }
@@ -52,7 +94,5 @@ struct GameView: View {
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: st.tela)
-        .onAppear { InputManager.shared.start() }
     }
 }

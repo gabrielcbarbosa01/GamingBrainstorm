@@ -47,6 +47,9 @@ final class PlayerNode: SKNode {
     private let alturaVoo: CGFloat = 96
     private let profundidade: CGFloat = -12
 
+    /// Nas provas arcade todo bicho salta, não só o mico.
+    var saltoLivre = false
+
     /// Impulso horizontal aplicado por investida e salto, decai sozinho.
     private(set) var impulso: CGVector = .zero
 
@@ -182,7 +185,8 @@ final class PlayerNode: SKNode {
                 if altura == 0 { velZ = 0; aterrissar() }
             } else {
                 altura = 0
-                saltosRestantes = max(saltosRestantes, formaDesenhada.verbo == .pulo ? 2 : 0)
+                let maximo = saltoLivre ? 1 : (formaDesenhada.verbo == .pulo ? 2 : 0)
+                saltosRestantes = max(saltosRestantes, maximo)
             }
             if estado == .investindo && tempoNoEstado > 0.34 { entrar(.andando) }
         }
@@ -198,7 +202,8 @@ final class PlayerNode: SKNode {
     }
 
     private func aterrissar() {
-        if formaDesenhada.verbo == .pulo { saltosRestantes = 2 }
+        if saltoLivre { saltosRestantes = 1 }
+        else if formaDesenhada.verbo == .pulo { saltosRestantes = 2 }
         if estado == .pulando {
             entrar(.andando)
             // Amortecimento: o sprite achata um instante ao tocar o chão.

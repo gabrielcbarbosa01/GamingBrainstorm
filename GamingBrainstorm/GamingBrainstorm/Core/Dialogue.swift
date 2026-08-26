@@ -115,8 +115,9 @@ enum DialogueBook {
             aoEntrar: { st in
                 st.ligarFlag("abertura_ok")
                 st.descobrirCodex("refugio")
-            },
-            proximo: { harpiaAbertura() })
+                // A Harpia não conversa: ela passa por cima. A cena cuida disso.
+                st.ligarFlag("aguardando_sombra")
+            })
 
         let segundo = DialogueNode(
             falante: "Dona Iara", papel: "bióloga, Refúgio Raízes",
@@ -144,43 +145,30 @@ enum DialogueBook {
 
     // ---------- A Harpia ----------
 
-    /// Ela abre o jogo e some. Não explica nada direito — é esse o ponto.
-    static func harpiaAbertura() -> DialogueNode {
-        let despedida = DialogueNode(
-            falante: "Harpia", papel: "a que veio antes", retrato: .harpia,
+    /// A pena no chão. Ela não aparece: passa por cima e deixa isto.
+    static func penaDaHarpia() -> DialogueNode {
+        let iara = DialogueNode(
+            falante: "Dona Iara", papel: "bióloga, Refúgio Raízes", retrato: .humano,
             linhas: [
-                "Cinco vão te chamar pelo nome. Eu não.",
-                "Eu como o que você veio salvar. Macaco, preguiça, filhote de tudo quanto é bicho. E mesmo assim, se eles sumirem, eu sumo junto.",
-                "É por isso que servir de sinal: onde eu ainda vivo, a floresta está inteira. Onde eu não vivo mais, ela virou retalho.",
-                "Quando os cinco estiverem com você — e a terra aqui embaixo voltar a dar fruto — eu volto.",
-                "Até lá, uma dica que sua avó também sabia: procure o que ficou preso, não o que ficou bonito."
+                "Guarda essa pena. Guarda mesmo.",
+                "Harpia não sobrevoa refúgio à toa. Ela caça no meio da mata fechada, e faz anos que ninguém vê uma por aqui.",
+                "Se ela voltou a passar, é porque está procurando alguma coisa. Ou alguém.",
+                "Sua avó dizia que onde a harpia ainda voa, a floresta está inteira. Onde ela sumiu, sobrou retalho.",
+                "Começa pela Mata Atlântica. O portal fica na clareira ao norte."
             ],
             aoEntrar: { st in
-                st.ligarFlag("harpia_conheceu")
-                st.descobrirCodex("harpia")
                 st.avisar("Missão: atravesse o portal ao norte do Refúgio.",
                           icone: "signpost.right.fill", cor: .bom)
             })
 
-        let resposta = DialogueNode(
-            falante: "Harpia", papel: "a que veio antes", retrato: .harpia,
-            linhas: ["Não perguntei o que você quer. Perguntei o que você devolve.",
-                     "Guarde a resposta. Vou cobrar."],
-            proximo: { despedida })
-
         return DialogueNode(
-            falante: "???", papel: "uma sombra grande demais", retrato: .harpia,
+            falante: "", papel: "", retrato: .harpia,
             linhas: [
-                "A luz sai da clareira antes do tempo. Alguma coisa pousou no galho seco.",
-                "Não é um pássaro. É do tamanho de uma pessoa, e olha para você como quem já decidiu.",
-                "— Então é você. A neta.",
-                "— Eu sou mais velha que este refúgio, que essa cerca e que o nome que deram a essa serra. Me chamam de Harpia."
+                "A pena é maior que a sua mão. Cinza-ardósia, com três faixas claras atravessando.",
+                "Está morna.",
+                "Você olha para cima e não tem mais nada lá — só a copa balançando onde alguma coisa passou."
             ],
-            escolhas: [
-                DialogueChoice(texto: "O que você quer de mim?", destino: { resposta }),
-                DialogueChoice(texto: "Você é real?", destino: { resposta }),
-                DialogueChoice(texto: "…", destino: { resposta })
-            ])
+            proximo: { iara })
     }
 
     /// O reencontro: só acontece quando o mundo inteiro já foi devolvido.
@@ -290,12 +278,9 @@ enum DialogueBook {
 
     // ---------- Entre etapas ----------
 
-    static func avancoDeEtapa(de id: BiomeID, etapa: Int) -> DialogueNode? {
+    static func fragmentoRecuperado(de id: BiomeID, frag: Fragmento,
+                                    feitos: Int, total: Int) -> DialogueNode? {
         let b = Biome[id]
-        let chain = Quests.chain(for: id)
-        guard chain.etapas.indices.contains(etapa) else { return nil }
-        let proxima = chain.etapas[etapa]
-
         let falante: (String, String)
         switch id {
         case .refugio: falante = ("Dona Iara", "bióloga")
@@ -306,17 +291,93 @@ enum DialogueBook {
         case .pampa: falante = ("Seu Adão", "campeiro")
         }
 
+        let restantes = Quests.fragmentos(for: id)
+            .filter { $0.kind != frag.kind }
+            .map { $0.nome }
+
         return DialogueNode(
             falante: falante.0, papel: falante.1,
             linhas: [
-                "Boa. Isso já é dado — dado de verdade, do tipo que vira política pública.",
-                "Mas não acabou. \(b.ameaca.descricao)",
-                "Próxima tarefa: \(proxima.titulo). \(proxima.descricao)",
-                proxima.dica
+                "O barro esquentou na sua mão. Isso é pedaço de amuleto — \(frag.nome).",
+                "\(feitos) de \(total). Os outros estão espalhados por aí, e cada um se ganha de um jeito diferente.",
+                "Faltam: \(restantes.joined(separator: " e ")).",
+                "\(b.ameaca.descricao) Vai buscando na ordem que você quiser — o campo não segue roteiro."
             ],
             aoEntrar: { st in
-                st.avisar("Nova etapa: \(proxima.titulo)", icone: proxima.kind.icone, cor: .bom)
+                st.avisar("Faltam \(total - feitos) estilhaços neste bioma.",
+                          icone: "puzzlepiece.fill", cor: .bom)
             })
+    }
+
+    /// Fecho do ato 2: o amuleto deixa de ser empréstimo.
+    static func meritoProvado(de id: BiomeID) -> DialogueNode? {
+        let b = Biome[id]
+        guard id != .refugio else { return nil }
+        let seguinte = BiomeID.exploraveis.first { Biome[$0].ordem == b.ordem + 1 }
+
+        return DialogueNode(
+            falante: "Guardião", papel: b.animal.nome, retrato: b.animal,
+            linhas: [
+                "Agora sim.",
+                "Receber o amuleto qualquer um recebe — foi só você aparecer e prestar atenição em mim. Difícil é o que você acabou de fazer: usar o que eu te dei e não estragar nada.",
+                proezaTexto(id),
+                seguinte != nil
+                    ? "Pode seguir. O portal de \(Biome[seguinte!].nome) aceita você agora — e ele não aceitaria antes."
+                    : "Cinco territórios, cinco provas. Volta ao Refúgio: tem alguém te esperando lá desde o primeiro dia."
+            ],
+            aoEntrar: { st in
+                st.somarPontos(800)
+                st.ligarFlag("merito_\(id.rawValue)")
+                if let s = seguinte {
+                    st.avisar("Portal liberado: \(Biome[s].nome)",
+                              icone: "arrow.triangle.branch", cor: .conquista)
+                } else {
+                    st.avisar("Os cinco territórios provados.", icone: "crown.fill", cor: .conquista)
+                }
+            })
+    }
+
+    private static func proezaTexto(_ id: BiomeID) -> String {
+        switch id {
+        case .refugio: return ""
+        case .mataAtlantica:
+            return "Você atravessou a copa em velocidade e trouxe grupo isolado de volta para mata grande. Isso é corredor ecológico feito com o corpo."
+        case .cerrado:
+            return "Você correu na frente do fogo e cercou o que sobrou. Aceiro não apaga incêndio: decide onde ele para."
+        case .pantanal:
+            return "Você cruzou a baía pelo alto e chegou aos ninhos antes de quem ia levá-los. Ninho protegido é filhote que voa."
+        case .amazonia:
+            return "Você atravessou o lago pelos troncos e cortou as redes de fundo prendendo o fôlego. Sabe agora por que somos fáceis de matar."
+        case .pampa:
+            return "Você correu na galeria escura com a lâmina em cima e tirou bicho de baixo da terra. Ninguém vê o que acontece aí embaixo — você viu."
+        }
+    }
+
+    /// O item da masmorra: o momento em que o amuleto vira uma chave de mapa.
+    static func itemDoSantuario(_ id: BiomeID) -> DialogueNode {
+        let f = Biome[id].animal
+        return DialogueNode(
+            falante: "", papel: "", retrato: f,
+            linhas: [
+                "Dentro do baú há barro cozido, morno, do tamanho da sua palma.",
+                "É o \(f.amuleto). Vestindo, você \(f.habilidade.lowercased()).",
+                usoNoSantuario(id),
+                "E o selo lá em cima — aquele com a marca do bicho — agora reconhece você."
+            ],
+            aoEntrar: { st in
+                st.avisar("\(f.amuleto) — a porta selada abriu.", icone: "key.fill", cor: .conquista)
+            })
+    }
+
+    private static func usoNoSantuario(_ id: BiomeID) -> String {
+        switch id {
+        case .mataAtlantica: return "Saltando, você cruza os vãos que cortam este santuário ao meio."
+        case .cerrado: return "Na investida, você arromba o que estiver atravancando a passagem."
+        case .pantanal: return "Planando, os fossos deixam de ser obstáculo."
+        case .amazonia: return "Submerso, os alagados viram caminho em vez de parede."
+        case .pampa: return "Escavando, você passa por baixo do que não tem porta."
+        case .refugio: return ""
+        }
     }
 
     // ---------- Guardiões ----------
@@ -335,7 +396,7 @@ enum DialogueBook {
                 proximaEtapaTexto(depois: id)
             ],
             aoEntrar: { st in
-                st.conquistarAmuleto(forma)
+                // O amuleto já foi concedido ao fechar o ato; aqui é só a cena.
                 st.ligarFlag("guardiao_\(id.rawValue)")
                 if let seguinte = proximoBioma(depois: id) {
                     st.avisar("Portal liberado: \(Biome[seguinte].nome)", icone: "arrow.triangle.branch", cor: .conquista)

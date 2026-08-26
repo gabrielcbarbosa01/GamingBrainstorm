@@ -38,7 +38,50 @@ Ela é predadora dos próprios micos que você passou o jogo protegendo — e é
 exatamente por isso que serve de sinal: onde a harpia ainda se reproduz, a
 floresta está inteira.
 
-### Cada bioma joga diferente
+### A Operação — o laço central
+
+Atravessar o portal não te larga num campo vazio. Você cai no meio de uma
+operação em andamento: uma **frente de destruição** avança sobre o território
+num relógio visível, e à frente dela há focos de vida.
+
+| Bioma | Frente | O que há para salvar |
+|---|---|---|
+| Mata Atlântica | Frente de corte | grupos de micos |
+| Cerrado | Frente de fogo | ninhadas |
+| Pantanal | Linha de saqueadores | ninhos de arara |
+| Amazônia | Arrastão de malhadeiras | cardumes |
+| Pampa | Linha do arado | galerias |
+
+**Não dá para salvar todos** — a meta é sempre menor que o total. A rota que
+você escolhe decide quem fica. Focos ao norte valem mais risco; os do sul
+sobrevivem mais tempo sozinhos. Parte deles são **grupos em fuga**: recuam mais
+devagar que a máquina e precisam ser escoltados até a borda sul.
+
+O balanço no fim mostra os dois números — salvos e perdidos — porque a perda faz
+parte do resultado.
+
+**Ato 1:** bata a meta uma vez e o Guardião entrega o amuleto.
+**Ato 2:** a frente volta mais rápida, e agora você tem o corpo do bicho para
+alcançar o que antes estava do outro lado da água, do cipó ou do abismo. Só
+então o portal seguinte abre. Cada operação corrida deixa a próxima mais rápida.
+
+### As provas
+
+Cada prova é um minijogo com laço próprio, cena separada, câmera travada e
+rolagem contínua — e guarda recorde.
+
+| Bioma | Prova | Como joga |
+|---|---|---|
+| Mata Atlântica | **Corrida na copa** | Runner de 3 faixas. A/D trocam de galho, ESPAÇO salta o baixo; o alto só se desvia. Acelera sem parar. |
+| Cerrado | **Fuga do fogo** | Mesma pista, com uma parede de fogo atrás. Cada batida deixa ela ganhar terreno. Sem vidas extras. |
+| Pantanal | **Voo entre os manduvis** | Segure ESPAÇO para subir, solte para cair. Passe pelos vãos entre as árvores. |
+| Amazônia | **Travessia dos jacarés** | Frogger: pule de tronco em tronco. Eles derivam em velocidades diferentes, e o jacaré afunda se você demorar. |
+| Pampa | **Galeria sob o arado** | Túnel escuro com lâminas descendo, telegrafadas por uma marca vermelha. |
+
+O motor é um só (`RunScene`), com cinco modos: `pistas`, `fuga`, `voo`,
+`travessia`, `tunel`. As provas também entram no sorteio das expedições infinitas.
+
+### No mundo aberto, cada bioma joga diferente
 
 A etapa central de cada território não é "apertar E num marcador": é uma
 mecânica própria, com regras que só existem ali.

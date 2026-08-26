@@ -13,14 +13,25 @@ import SpriteKit
 // MARK: - Persistência
 
 struct BiomeSave: Codable {
-    var etapa: Int = 0             // índice na cadeia principal
-    var progresso: Int = 0         // contagem da etapa atual
+    /// Progresso de cada estilhaço do amuleto, por tipo de objetivo.
+    var fragmentos: [String: Int] = [:]
+    var etapa: Int = 0             // legado
+    var progresso: Int = 0         // legado
     var visitado: Bool = false
     var nivelExpedicao: Int = 1
     var expedicaoAtiva: Bool = false
     var expedicaoProgresso: Int = 0
     var expedicoesConcluidas: Int = 0
     var vestigiosTotais: Int = 0
+    // --- Santuário (a masmorra do bioma) ---
+    var salasLimpas: [String] = []
+    var bausAbertos: [String] = []
+    var chaves: Int = 0
+    var santuarioConcluido = false
+    var temMapa = false
+    var temBussola = false
+    var temChaveDoGuardiao = false
+    var salasVisitadas: [String] = []
 }
 
 struct SaveData: Codable {
@@ -34,6 +45,12 @@ struct SaveData: Codable {
     var tempoJogado: Double = 0
     var criadoEm: Date = Date()
     var refugio = RefugioSave()
+    /// Melhor marca de cada prova arcade.
+    var recordes: [String: Int] = [:]
+    /// Corações de vida conquistados em baús pelos santuários.
+    var coracoes: Int = 3
+    /// Os Cantos conquistados ao vencer cada Guardião — os instrumentos.
+    var cantos: [String] = []
 
     func biome(_ id: BiomeID) -> BiomeSave { biomas[id.rawValue] ?? BiomeSave() }
     mutating func setBiome(_ id: BiomeID, _ v: BiomeSave) { biomas[id.rawValue] = v }
@@ -102,6 +119,13 @@ final class GameState: ObservableObject {
     @Published var pesca: PescaSession?
     /// O pirarucu respira ar: submerso, isto cai; na superfície, volta.
     @Published var folego: CGFloat = 100
+    /// Prova arcade em andamento. Quando existe, a cena de corrida assume.
+    @Published var corrida: CorridaSessao?
+    /// Operação em andamento no bioma: a frente avançando e o que resta salvar.
+    @Published var operacao: OperacaoSessao?
+    /// Vida em meios-corações: 6 = três corações cheios.
+    @Published var vida: Int = 6
+    @Published var salaAtual = GridPoint(x: 0, y: 0)
     /// Painel do Refúgio aberto no momento (viveiro, oficina…).
     @Published var painelRefugio: PainelRefugio?
     /// Muda sempre que a cena precisa recarregar o mundo (viagem entre biomas).
@@ -255,6 +279,89 @@ final class GameState: ObservableObject {
 
     func encerrarPesca() { pesca = nil }
 
+    // MARK: Provas arcade
+
+    func iniciarCorrida(_ bioma: BiomeID) {
+        guard let c = Corrida[bioma] else { return }
+        guard temAmuleto(c.forma) else {
+            avisar("A prova de \(Biome[bioma].nome) exige o \(c.forma.amuleto).",
+                   icone: "lock.fill", cor: .alerta)
+            return
+        }
+        painelRefugio = nil
+        dialogo = nil
+        corrida = CorridaSessao(config: c, recorde: save.recordes[bioma.rawValue] ?? 0)
+    }
+
+    func encerrarCorrida() {
+        corrida = nil
+        salvar()
+    }
+
+    /// Fecha a conta da prova: recorde, pontos e progresso de missão.
+    func concluirCorrida(sucesso: Bool, progresso: Int, coletados: Int) {
+        guard let c = corrida?.config else { return }
+        let chave = c.bioma.rawValue
+        if progresso > (save.recordes[chave] ?? 0) {
+            save.recordes[chave] = progresso
+            avisar("Novo recorde em \(c.titulo): \(progresso)\(c.modo == .travessia ? " fileiras" : " m")",
+                   icone: "flag.checkered", cor: .conquista)
+        }
+        somarPontos(progresso * 2 + coletados * 15)
+
+        if sucesso {
+            // Se a prova era a etapa atual, ela conta como cumprida.
+            if !registrarObjetivo(.corrida, em: c.bioma) {
+                avisar("Prova concluída: +\(progresso * 2 + coletados * 15) pontos.",
+                       icone: "figure.run", cor: .conquista)
+            }
+            ganharSementes(2)
+        } else {
+            avisar("Prova interrompida. O percurso continua ali quando quiser tentar de novo.",
+                   icone: "arrow.counterclockwise", cor: .neutro)
+        }
+        salvar()
+    }
+
+    func recorde(_ b: BiomeID) -> Int { save.recordes[b.rawValue] ?? 0 }
+
+    // MARK: Operações
+
+    /// Fecha a conta da operação: o que foi salvo, o que se perdeu, e se isso
+    /// bastou para o Guardião.
+    func concluirOperacao() {
+        guard let s = operacao else { return }
+        let id = s.config.bioma
+        somarPontos(s.salvos * 120)
+        ganharSementes(max(1, s.salvos / 3))
+
+        if s.atingiuMeta {
+            let contou = registrarObjetivo(ato(id) == .acesso ? .acesso : .desafio, em: id)
+            if !contou {
+                avisar("Operação encerrada: \(s.salvos) \(s.config.focoPlural) salvos.",
+                       icone: "checkmark.seal.fill", cor: .conquista)
+            }
+        } else {
+            avisar("A frente passou. \(s.salvos) de \(s.total) — a meta era \(s.config.meta).",
+                   icone: "xmark.octagon.fill", cor: .alerta)
+        }
+        salvar()
+    }
+
+    /// Recomeça a operação do bioma (nova frente, novos focos).
+    func reiniciarOperacao() {
+        operacao = nil
+        geracaoMundo += 1
+        biomaCarregado = save.biomaAtual
+    }
+
+    /// A frente fica mais rápida a cada operação já corrida naquele bioma.
+    func ritmoDaFrente(_ id: BiomeID) -> CGFloat {
+        let feitas = save.biome(id).expedicoesConcluidas
+        let ato2 = ato(id) != .acesso ? 0.18 : 0
+        return 1.0 + CGFloat(feitas) * 0.12 + ato2
+    }
+
     // MARK: A Harpia
 
     /// Ela só se mostra a quem devolveu a floresta inteira, não um pedaço.
@@ -330,96 +437,280 @@ final class GameState: ObservableObject {
 
     var folegoMaximo: CGFloat { 100 }
 
+    // MARK: Vida e santuário
+
+    var vidaMaxima: Int { save.coracoes * 2 }
+
+    func machucar(_ meios: Int = 1) {
+        vida = max(0, vida - meios)
+    }
+
+    func curar(_ meios: Int) { vida = min(vidaMaxima, vida + meios) }
+
+    func ganharCoracao() {
+        save.coracoes += 1
+        vida = vidaMaxima
+        avisar("Fruto do Vigor — um coração a mais, para sempre.",
+               icone: "heart.fill", cor: .conquista)
+        salvar()
+    }
+
+    func chaves(_ id: BiomeID) -> Int { save.biome(id).chaves }
+    func temMapa(_ id: BiomeID) -> Bool { save.biome(id).temMapa }
+    func temBussola(_ id: BiomeID) -> Bool { save.biome(id).temBussola }
+    func temChaveDoGuardiao(_ id: BiomeID) -> Bool { save.biome(id).temChaveDoGuardiao }
+
+    func ganharTesouroDeSantuario(_ t: Tesouro, em id: BiomeID) {
+        var b = save.biome(id)
+        switch t {
+        case .mapa:
+            b.temMapa = true
+            avisar("Planta do santuário — abra o mapa (M) para ver as salas.",
+                   icone: "map.fill", cor: .conquista)
+        case .bussola:
+            b.temBussola = true
+            avisar("Bússola do zelador — agora a planta marca baús e o Guardião.",
+                   icone: "location.north.circle.fill", cor: .conquista)
+        case .chaveDoGuardiao:
+            b.temChaveDoGuardiao = true
+            avisar("Chave do Guardião — a porta do fundo se abre.",
+                   icone: "key.horizontal.fill", cor: .conquista)
+        default: break
+        }
+        save.setBiome(id, b)
+        salvar()
+    }
+
+    /// O Canto de cada Guardião: o instrumento que se leva de cada santuário.
+    func cantoDe(_ id: BiomeID) -> String { "Canto d" + (id == .pampa ? "as Dunas" : "o " + Biome[id].animal.nome) }
+
+    func temCanto(_ id: BiomeID) -> Bool { save.cantos.contains(id.rawValue) }
+    var cantosReunidos: Int { save.cantos.count }
+
+    func ganharCanto(_ id: BiomeID) {
+        guard !save.cantos.contains(id.rawValue) else { return }
+        save.cantos.append(id.rawValue)
+        somarPontos(1200)
+        avisar("\(cantoDe(id)) — \(save.cantos.count) de 5 Cantos.",
+               icone: "music.note", cor: .conquista)
+        salvar()
+    }
+
+    func ganharChave(_ id: BiomeID) {
+        var b = save.biome(id); b.chaves += 1; save.setBiome(id, b)
+        avisar("Chave pequena (\(b.chaves))", icone: "key.fill", cor: .bom)
+        salvar()
+    }
+
+    @discardableResult
+    func gastarChave(_ id: BiomeID) -> Bool {
+        var b = save.biome(id)
+        guard b.chaves > 0 else {
+            avisar("Trancada. Falta uma chave pequena.", icone: "lock.fill", cor: .alerta)
+            return false
+        }
+        b.chaves -= 1; save.setBiome(id, b)
+        salvar()
+        return true
+    }
+
+    func salaVisitada(_ id: BiomeID, _ c: GridPoint) -> Bool {
+        save.biome(id).salasVisitadas.contains("\(c.x),\(c.y)")
+    }
+
+    func marcarSalaVisitada(_ id: BiomeID, _ c: GridPoint) {
+        var b = save.biome(id)
+        let k = "\(c.x),\(c.y)"
+        guard !b.salasVisitadas.contains(k) else { return }
+        b.salasVisitadas.append(k)
+        save.setBiome(id, b)
+    }
+
+    func salaLimpa(_ id: BiomeID, _ c: GridPoint) -> Bool {
+        save.biome(id).salasLimpas.contains("\(c.x),\(c.y)")
+    }
+
+    func marcarSalaLimpa(_ id: BiomeID, _ c: GridPoint) {
+        var b = save.biome(id)
+        let k = "\(c.x),\(c.y)"
+        guard !b.salasLimpas.contains(k) else { return }
+        b.salasLimpas.append(k); save.setBiome(id, b)
+        salvar()
+    }
+
+    func bauAberto(_ id: BiomeID, _ c: GridPoint) -> Bool {
+        save.biome(id).bausAbertos.contains("\(c.x),\(c.y)")
+    }
+
+    func marcarBauAberto(_ id: BiomeID, _ c: GridPoint) {
+        var b = save.biome(id)
+        b.bausAbertos.append("\(c.x),\(c.y)"); save.setBiome(id, b)
+        salvar()
+    }
+
+    /// O santuário do bioma, sempre o mesmo para a mesma semente.
+    func santuario(_ id: BiomeID) -> Santuario {
+        Santuario.gerar(bioma: id, seed: Biome[id].semente)
+    }
+
+    /// Sem vida, você acorda na entrada do santuário — não perde o que juntou.
+    func desmaiar(_ id: BiomeID) {
+        vida = vidaMaxima
+        save.pontos = max(0, save.pontos - 60)
+        avisar("Você foi afugentado. Acordou na entrada do santuário.",
+               icone: "figure.fall", cor: .alerta)
+        salvar()
+    }
+
     func ganharEssencia(_ v: CGFloat) {
         essencia = min(essenciaMaxima, essencia + v)
     }
 
-    // MARK: Missões
+    // MARK: Os dois atos de cada bioma
 
-    /// Etapa ativa do bioma: a da cadeia principal ou a expedição infinita.
-    func etapaAtual(_ id: BiomeID) -> QuestStage? {
-        let chain = Quests.chain(for: id)
+    /// Ato 1: conquistar o amuleto. Ato 2: provar que merece. Depois, campo livre.
+    enum AtoBioma: Equatable { case acesso, merito, livre }
+
+    func ato(_ id: BiomeID) -> AtoBioma {
+        guard let a = Quests.acesso(for: id) else { return .livre }
         let bs = save.biome(id)
-        if bs.etapa < chain.etapas.count { return chain.etapas[bs.etapa] }
-        if bs.expedicaoAtiva {
-            return Quests.expedicao(biome: id, nivel: bs.nivelExpedicao, seed: Biome[id].semente)
+        if (bs.fragmentos[a.kind.rawValue] ?? 0) < a.alvo { return .acesso }
+        let pendente = Quests.merito(for: id).contains {
+            (bs.fragmentos[$0.kind.rawValue] ?? 0) < $0.alvo
         }
-        return nil
+        return pendente ? .merito : .livre
+    }
+
+    /// Objetivos do ato corrente, com progresso.
+    func objetivosDoAto(_ id: BiomeID) -> [(frag: Fragmento, feito: Int, completo: Bool)] {
+        let bs = save.biome(id)
+        let lista: [Fragmento]
+        switch ato(id) {
+        case .acesso: lista = Quests.acesso(for: id).map { [$0] } ?? []
+        case .merito, .livre: lista = Quests.merito(for: id)
+        }
+        return lista.map { f in
+            let feito = min(bs.fragmentos[f.kind.rawValue] ?? 0, f.alvo)
+            return (f, feito, feito >= f.alvo)
+        }
+    }
+
+    /// Tipos de objetivo que ainda valem alguma coisa neste bioma.
+    func objetivosPendentes(_ id: BiomeID) -> [ObjectiveKind] {
+        switch ato(id) {
+        case .acesso:
+            return Quests.acesso(for: id).map { [$0.kind] } ?? []
+        case .merito:
+            return objetivosDoAto(id).filter { !$0.completo }.map { $0.frag.kind }
+        case .livre:
+            let bs = save.biome(id)
+            guard bs.expedicaoAtiva else { return [] }
+            return [Quests.expedicao(biome: id, nivel: bs.nivelExpedicao,
+                                     seed: Biome[id].semente).kind]
+        }
+    }
+
+    func biomaConcluido(_ id: BiomeID) -> Bool { ato(id) == .livre }
+
+    /// Nome antigo, mantido para o modo infinito e para a Harpia.
+    func cadeiaConcluida(_ id: BiomeID) -> Bool { biomaConcluido(id) }
+
+    func etapaAtual(_ id: BiomeID) -> QuestStage? {
+        let bs = save.biome(id)
+        guard ato(id) == .livre, bs.expedicaoAtiva else { return nil }
+        return Quests.expedicao(biome: id, nivel: bs.nivelExpedicao, seed: Biome[id].semente)
     }
 
     func progressoAtual(_ id: BiomeID) -> (feito: Int, alvo: Int)? {
         guard let etapa = etapaAtual(id) else { return nil }
-        let bs = save.biome(id)
-        let chain = Quests.chain(for: id)
-        let feito = bs.etapa < chain.etapas.count ? bs.progresso : bs.expedicaoProgresso
-        return (min(feito, etapa.alvo), etapa.alvo)
-    }
-
-    func cadeiaConcluida(_ id: BiomeID) -> Bool {
-        save.biome(id).etapa >= Quests.chain(for: id).etapas.count
+        return (min(save.biome(id).expedicaoProgresso, etapa.alvo), etapa.alvo)
     }
 
     /// Registra um objetivo cumprido no mundo. Retorna true se contou.
     @discardableResult
     func registrarObjetivo(_ kind: ObjectiveKind, em id: BiomeID) -> Bool {
-        guard let etapa = etapaAtual(id), etapa.kind == kind else { return false }
         var bs = save.biome(id)
-        let chain = Quests.chain(for: id)
-        let naCadeia = bs.etapa < chain.etapas.count
+        let atoCorrente = ato(id)
 
-        if naCadeia { bs.progresso += 1 } else { bs.expedicaoProgresso += 1 }
+        if atoCorrente != .livre {
+            // Só conta o que pertence ao ato em andamento.
+            let candidatos: [Fragmento] = atoCorrente == .acesso
+                ? (Quests.acesso(for: id).map { [$0] } ?? [])
+                : Quests.merito(for: id)
+            guard let alvo = candidatos.first(where: { $0.kind == kind }) else { return false }
+            let feito = bs.fragmentos[kind.rawValue] ?? 0
+            guard feito < alvo.alvo else { return false }
+
+            bs.fragmentos[kind.rawValue] = feito + 1
+            bs.vestigiosTotais += 1
+            save.setBiome(id, bs)
+            somarPontos(Int(40 * multiplicadorPontos))
+            if kind == .desafio || kind == .corrida { ganharSementes(2) }
+
+            if feito + 1 >= alvo.alvo {
+                concluirObjetivo(id, alvo, atoAnterior: atoCorrente)
+            } else {
+                avisar("\(alvo.nome): \(feito + 1)/\(alvo.alvo)", icone: kind.icone, cor: .bom)
+            }
+            salvar()
+            return true
+        }
+
+        // --- Expedição infinita ---
+        guard let etapa = etapaAtual(id), etapa.kind == kind else { return false }
+        bs.expedicaoProgresso += 1
         bs.vestigiosTotais += 1
         save.setBiome(id, bs)
         somarPontos(Int(35 * multiplicadorPontos))
-        // Restauro e resgate rendem sementes para o viveiro do Refúgio.
         if kind == .restauro || kind == .resgate { ganharSementes(1) }
 
-        let feito = naCadeia ? bs.progresso : bs.expedicaoProgresso
-        if feito >= etapa.alvo {
-            concluirEtapa(id)
+        if bs.expedicaoProgresso >= etapa.alvo {
+            concluirExpedicao(id)
         } else {
-            avisar("\(etapa.kind.nome): \(feito)/\(etapa.alvo)", icone: etapa.kind.icone, cor: .bom)
+            avisar("\(etapa.kind.nome): \(bs.expedicaoProgresso)/\(etapa.alvo)",
+                   icone: etapa.kind.icone, cor: .bom)
         }
         salvar()
         return true
     }
 
-    private func concluirEtapa(_ id: BiomeID) {
-        var bs = save.biome(id)
-        let chain = Quests.chain(for: id)
+    private func concluirObjetivo(_ id: BiomeID, _ frag: Fragmento, atoAnterior: AtoBioma) {
+        somarPontos(400)
+        let novoAto = ato(id)
 
-        if bs.etapa < chain.etapas.count {
-            let concluida = chain.etapas[bs.etapa]
-            bs.etapa += 1
-            bs.progresso = 0
-            save.setBiome(id, bs)
-            somarPontos(250)
-            avisar("Etapa concluída: \(concluida.titulo)", icone: "checkmark.seal.fill", cor: .conquista)
-
-            if bs.etapa >= chain.etapas.count {
-                // Cadeia inteira concluída: o Guardião do bioma aparece.
-                iniciarDialogo(DialogueBook.guardiao(de: id), contexto: id)
-            } else {
-                iniciarDialogo(DialogueBook.avancoDeEtapa(de: id, etapa: bs.etapa), contexto: id)
-            }
+        if atoAnterior == .acesso {
+            // O amuleto é concedido aqui, não dentro da árvore de diálogo:
+            // fechar a conversa no ESC não pode deixar o jogador sem ele.
+            conquistarAmuleto(Biome[id].animal)
+            iniciarDialogo(DialogueBook.guardiao(de: id), contexto: id)
+        } else if novoAto == .livre {
+            // Ato 2 inteiro cumprido: o amuleto foi merecido.
+            iniciarDialogo(DialogueBook.meritoProvado(de: id), contexto: id)
         } else {
-            // Expedição infinita concluída — sobe o nível de dificuldade.
-            bs.expedicaoAtiva = false
-            bs.expedicaoProgresso = 0
-            bs.expedicoesConcluidas += 1
-            bs.nivelExpedicao += 1
-            save.setBiome(id, bs)
-            let recompensa = 300 + bs.nivelExpedicao * 60
-            somarPontos(recompensa)
-            ganharEssencia(60)
-            avisar("Expedição concluída! +\(recompensa) pontos. Próximo nível: \(bs.nivelExpedicao)",
-                   icone: "flag.checkered", cor: .conquista)
+            let faltam = objetivosDoAto(id).filter { !$0.completo }.map { $0.frag.nome }
+            avisar("\(frag.nome) cumprido. Falta: \(faltam.joined(separator: ", "))",
+                   icone: "checkmark.circle.fill", cor: .conquista)
         }
         salvar()
     }
 
+    private func concluirExpedicao(_ id: BiomeID) {
+        var bs = save.biome(id)
+        bs.expedicaoAtiva = false
+        bs.expedicaoProgresso = 0
+        bs.expedicoesConcluidas += 1
+        bs.nivelExpedicao += 1
+        save.setBiome(id, bs)
+        let recompensa = 300 + bs.nivelExpedicao * 60
+        somarPontos(recompensa)
+        ganharEssencia(60)
+        avisar("Expedição concluída! +\(recompensa) pontos. Próximo nível: \(bs.nivelExpedicao)",
+               icone: "flag.checkered", cor: .conquista)
+        salvar()
+    }
+
     func iniciarExpedicao(_ id: BiomeID) {
-        guard cadeiaConcluida(id) else { return }
+        guard ato(id) == .livre else { return }
         var bs = save.biome(id)
         guard !bs.expedicaoAtiva else { return }
         bs.expedicaoAtiva = true
@@ -433,15 +724,24 @@ final class GameState: ObservableObject {
 
     // MARK: Viagem
 
+    /// Não basta ter o amuleto: é preciso ter provado que o merece.
     func podeEntrar(_ id: BiomeID) -> Bool {
         guard let req = Biome[id].requisito else { return true }
-        return save.amuletos.contains(req)
+        guard save.amuletos.contains(req) else { return false }
+        guard let anterior = BiomeID.exploraveis.first(where: { Biome[$0].animal == req })
+        else { return true }
+        return biomaConcluido(anterior)
     }
 
     func viajar(para id: BiomeID) {
         guard podeEntrar(id) else {
             let req = Biome[id].requisito!
-            avisar("O caminho exige o \(req.amuleto).", icone: "lock.fill", cor: .alerta)
+            if save.amuletos.contains(req) {
+                avisar("Você tem o \(req.amuleto), mas ainda não provou que o merece.",
+                       icone: "lock.fill", cor: .alerta)
+            } else {
+                avisar("O caminho exige o \(req.amuleto).", icone: "lock.fill", cor: .alerta)
+            }
             return
         }
         var bs = save.biome(id)

@@ -12,10 +12,6 @@ import SpriteKit
 
 struct MapView: View {
     @ObservedObject var st: GameState
-    @State private var amostras: [[Color]] = []
-
-    /// Lado do recorte, em tiles.
-    private let lado = 61
 
     var body: some View {
         HStack(spacing: 0) {
@@ -24,8 +20,6 @@ struct MapView: View {
             painelBiomas
         }
         .background(Tema.cor(Palette.refugio.sky).opacity(0.98).ignoresSafeArea())
-        .onAppear(perform: amostrar)
-        .onChange(of: st.jogadorTile) { _, _ in amostrar() }
     }
 
     // MARK: Recorte do terreno
@@ -50,33 +44,102 @@ struct MapView: View {
                 .font(Tema.rotulo)
                 .foregroundStyle(Tema.papel.opacity(0.55))
 
-            Canvas { ctx, size in
-                guard !amostras.isEmpty else { return }
-                let passo = size.width / CGFloat(lado)
-                for (j, linha) in amostras.enumerated() {
-                    for (i, cor) in linha.enumerated() {
-                        let r = CGRect(x: CGFloat(i) * passo, y: CGFloat(j) * passo,
-                                       width: passo + 0.5, height: passo + 0.5)
-                        ctx.fill(Path(r), with: .color(cor))
-                    }
-                }
-                // Marcador do jogador no centro.
-                let c = size.width / 2
-                ctx.fill(Path(ellipseIn: CGRect(x: c - 5, y: c - 5, width: 10, height: 10)),
-                         with: .color(Tema.ouro))
-                ctx.stroke(Path(ellipseIn: CGRect(x: c - 9, y: c - 9, width: 18, height: 18)),
-                           with: .color(Tema.ouro.opacity(0.5)), lineWidth: 1.5)
+            if st.biomaCarregado != .refugio {
+                plantaDoSantuario
+            } else {
+            ZStack {
+                Image(nsImage: Minimapa.imagem(bioma: st.biomaCarregado,
+                                               centro: st.jogadorTile,
+                                               nivel: st.save.biome(st.biomaCarregado).nivelExpedicao))
+                    .interpolation(.none)
+                    .resizable()
+                    .frame(width: 380, height: 380)
+
+                // Marcador do jogador, sempre no centro do recorte.
+                Circle().fill(Tema.ouro).frame(width: 9, height: 9)
+                Circle().strokeBorder(Tema.ouro.opacity(0.55), lineWidth: 1.5)
+                    .frame(width: 19, height: 19)
             }
-            .frame(width: 380, height: 380)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(Tema.ouro.opacity(0.3), lineWidth: 1))
 
-            legenda
+            Text("recorte de \(Minimapa.lado)×\(Minimapa.lado) tiles em volta de você")
+                .font(Tema.rotulo)
+                .foregroundStyle(Tema.papel.opacity(0.4))
+            }
+
+            if st.biomaCarregado == .refugio { legenda }
             Spacer()
         }
         .padding(24)
         .frame(width: 430)
+    }
+
+    /// A planta da masmorra: o que a Planta e a Bússola revelam.
+    private var plantaDoSantuario: some View {
+        let s = st.santuario(st.biomaCarregado)
+        let temMapa = st.temMapa(st.biomaCarregado)
+        let temBussola = st.temBussola(st.biomaCarregado)
+        return VStack(alignment: .leading, spacing: 10) {
+            Text(s.nome)
+                .font(.system(size: 17, weight: .bold, design: .serif))
+                .foregroundStyle(Tema.papel)
+
+            Image(nsImage: PlantaArt.imagem(santuario: s, estado: st, bioma: st.biomaCarregado))
+                .interpolation(.high)
+                .resizable().scaledToFit()
+                .frame(maxWidth: 380, maxHeight: 340)
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.4)))
+                .overlay(RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Tema.ouro.opacity(0.3), lineWidth: 1))
+
+            VStack(alignment: .leading, spacing: 4) {
+                item(temMapa, "map.fill", "Planta do santuário",
+                     temMapa ? "todas as salas desenhadas" : "só o que você já pisou")
+                item(temBussola, "location.north.circle.fill", "Bússola do zelador",
+                     temBussola ? "baús e Guardião marcados" : "conteúdo das salas oculto")
+                item(st.temChaveDoGuardiao(st.biomaCarregado), "key.horizontal.fill",
+                     "Chave do Guardião",
+                     st.temChaveDoGuardiao(st.biomaCarregado) ? "a porta do fundo abre"
+                                                              : "a porta do fundo continua selada")
+                HStack(spacing: 6) {
+                    Image(systemName: "key.fill").font(.system(size: 10)).foregroundStyle(Tema.ouro)
+                    Text("Chaves pequenas: \(st.chaves(st.biomaCarregado))")
+                        .font(Tema.rotulo).foregroundStyle(Tema.papel.opacity(0.8))
+                }
+            }
+
+            HStack(spacing: 12) {
+                cor(Tema.ouro, "trancada")
+                cor(Tema.cor(Biome[st.biomaCarregado].animal.corPrimaria), "selada")
+                cor(Tema.perigo, "do Guardião")
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    private func item(_ tem: Bool, _ icone: String, _ nome: String, _ detalhe: String) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: tem ? icone : "questionmark.circle")
+                .font(.system(size: 11))
+                .foregroundStyle(tem ? Tema.essencia : Tema.papel.opacity(0.3))
+            Text(nome)
+                .font(Tema.rotulo)
+                .foregroundStyle(Tema.papel.opacity(tem ? 0.95 : 0.4))
+            Text("· \(detalhe)")
+                .font(.system(size: 10, design: .rounded))
+                .foregroundStyle(Tema.papel.opacity(0.45))
+        }
+    }
+
+    private func cor(_ c: Color, _ nome: String) -> some View {
+        HStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 2).fill(c).frame(width: 14, height: 5)
+            Text(nome).font(.system(size: 10, design: .rounded))
+                .foregroundStyle(Tema.papel.opacity(0.55))
+        }
     }
 
     private var legenda: some View {
@@ -90,7 +153,8 @@ struct MapView: View {
                 if let forma = t.formaNecessaria {
                     HStack(spacing: 8) {
                         RoundedRectangle(cornerRadius: 3)
-                            .fill(cor(de: t))
+                            .fill(Tema.cor(Minimapa.cor(de: t,
+                                                        palette: Biome[st.biomaCarregado].palette)))
                             .frame(width: 12, height: 12)
                         Text("\(t.nome) — \(forma.icone) \(forma.nome)")
                             .font(.system(size: 12, design: .rounded))
@@ -100,46 +164,6 @@ struct MapView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func amostrar() {
-        let bioma = Biome[st.biomaCarregado]
-        let nivel = st.save.biome(st.biomaCarregado).nivelExpedicao
-        let gen = WorldGenerator(biome: bioma, dificuldade: nivel)
-        let meio = lado / 2
-        var grade: [[Color]] = []
-        // O eixo Y do mundo cresce para cima; o do Canvas, para baixo.
-        for j in 0..<lado {
-            var linha: [Color] = []
-            for i in 0..<lado {
-                let t = GridPoint(x: st.jogadorTile.x + i - meio,
-                                  y: st.jogadorTile.y + meio - j)
-                linha.append(cor(de: gen.terrain(at: t)))
-            }
-            grade.append(linha)
-        }
-        amostras = grade
-    }
-
-    private func cor(de t: Terrain) -> Color {
-        let p = Biome[st.biomaCarregado].palette
-        switch t {
-        case .agua: return Tema.cor(p.water)
-        case .charco: return Tema.cor(p.water.blended(with: p.ground, amount: 0.5))
-        case .abismo: return Color.black
-        case .rocha: return Tema.cor(p.rock)
-        case .tronco: return Tema.cor(p.foliageDark)
-        case .cipos: return Tema.cor(p.foliage.lighter(0.08))
-        case .espinheiro: return Tema.cor(p.accent.darker(0.35))
-        case .terraDura: return Tema.cor(p.ground.darker(0.30))
-        case .areia: return Tema.cor(p.sand)
-        case .pedraChao: return Tema.cor(p.rock.lighter(0.15))
-        case .trilha: return Tema.cor(p.ground.lighter(0.20))
-        case .folhagem: return Tema.cor(p.ground.blended(with: p.foliageDark, amount: 0.4))
-        case .terra: return Tema.cor(p.ground)
-        case .gramaAlta: return Tema.cor(p.grass.darker(0.10))
-        case .grama: return Tema.cor(p.grass)
         }
     }
 
@@ -177,9 +201,8 @@ struct MapView: View {
     private func cartao(_ id: BiomeID) -> some View {
         let b = Biome[id]
         let bs = st.save.biome(id)
-        let chain = Quests.chain(for: id)
         let liberado = st.podeEntrar(id)
-        let concluido = st.cadeiaConcluida(id)
+        let concluido = st.biomaConcluido(id)
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
@@ -217,12 +240,29 @@ struct MapView: View {
                     rotulo("nível \(bs.nivelExpedicao)", cor: Tema.papel.opacity(0.6))
                 }
             } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Etapa \(min(bs.etapa + 1, chain.etapas.count)) de \(chain.etapas.count) · \(chain.titulo)")
+                VStack(alignment: .leading, spacing: 5) {
+                    let frags = st.objetivosDoAto(id)
+                    let feitos = frags.filter { $0.completo }.count
+                    Text(st.ato(id) == .acesso
+                         ? "Ato 1 · conquistar o \(b.animal.amuleto)"
+                         : "Ato 2 · provar o mérito — \(feitos)/\(frags.count)")
                         .font(Tema.rotulo)
                         .foregroundStyle(Tema.papel.opacity(0.7))
-                    BarraDeProgresso(valor: Double(bs.etapa) / Double(chain.etapas.count),
-                                     cor: Tema.cor(b.palette.accent), altura: 5)
+                    HStack(spacing: 6) {
+                        ForEach(frags, id: \.frag.id) { item in
+                            HStack(spacing: 4) {
+                                Image(systemName: item.completo ? "checkmark.circle.fill" : item.frag.kind.icone)
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(item.completo
+                                                     ? Tema.essencia : Tema.papel.opacity(0.45))
+                                Text("\(item.feito)/\(item.frag.alvo)")
+                                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(Tema.papel.opacity(0.6))
+                            }
+                            .padding(.horizontal, 6).padding(.vertical, 3)
+                            .background(Capsule().fill(Color.white.opacity(0.06)))
+                        }
+                    }
                 }
             }
 

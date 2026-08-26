@@ -14,7 +14,9 @@ enum ObjectiveKind: String, Codable, CaseIterable {
     case resgate     // libertar animais presos
     case restauro    // recuperar focos degradados
     case ameaca      // neutralizar a ameaça do bioma
-    case desafio     // a mecânica própria daquele bioma
+    case desafio     // a mecânica própria daquele bioma, no mundo aberto
+    case corrida     // a prova arcade daquele bioma
+    case acesso      // ato 1: conquistar o amuleto, ainda sem ele
 
     var nome: String {
         switch self {
@@ -23,6 +25,8 @@ enum ObjectiveKind: String, Codable, CaseIterable {
         case .restauro: return "Restauração"
         case .ameaca: return "Contenção"
         case .desafio: return "Desafio do bioma"
+        case .corrida: return "Prova"
+        case .acesso: return "Prova de acesso"
         }
     }
 
@@ -33,6 +37,8 @@ enum ObjectiveKind: String, Codable, CaseIterable {
         case .restauro: return "Recuperar"
         case .ameaca: return "Conter"
         case .desafio: return "Resolver"
+        case .corrida: return "Correr"
+        case .acesso: return "Acompanhar"
         }
     }
 
@@ -43,100 +49,85 @@ enum ObjectiveKind: String, Codable, CaseIterable {
         case .restauro: return "leaf.arrow.trianglehead.clockwise"
         case .ameaca: return "exclamationmark.shield.fill"
         case .desafio: return "flame.circle.fill"
+        case .corrida: return "figure.run"
+        case .acesso: return "pawprint.circle.fill"
         }
     }
 }
 
+/// Um pedaço do amuleto. Cada bioma tem três, conquistados de formas
+/// diferentes — e em qualquer ordem: é o jogador que decide o caminho.
+struct Fragmento: Identifiable {
+    let kind: ObjectiveKind
+    let nome: String
+    let descricao: String
+    let dica: String
+    let alvo: Int
+    var id: String { kind.rawValue }
+}
+
+/// Mantido para as expedições infinitas, que continuam sendo tarefa avulsa.
 struct QuestStage {
     let kind: ObjectiveKind
     let titulo: String
     let descricao: String
     let alvo: Int
-    /// Amuleto que ajuda (ou é indispensável) nesta etapa — usado nas dicas.
     let dica: String
 }
 
-struct QuestChain {
-    let biome: BiomeID
-    let titulo: String
-    let etapas: [QuestStage]
-}
-
 enum Quests {
-    static func chain(for biome: BiomeID) -> QuestChain {
-        switch biome {
-        case .refugio:
-            return QuestChain(biome: .refugio, titulo: "Primeiros passos", etapas: [
-                QuestStage(kind: .rastro, titulo: "Calibrar o rastreador",
-                           descricao: "Colete três amostras ao redor do Refúgio para calibrar o rastreador de campo.",
-                           alvo: 3, dica: "Ande até os pontos brilhantes e pressione E.")
-            ])
 
-        case .mataAtlantica:
-            return QuestChain(biome: .mataAtlantica, titulo: "O grito dourado", etapas: [
-                QuestStage(kind: .rastro, titulo: "Seguir o grupo",
-                           descricao: "Micos-leões vivem em grupos familiares. Registre vestígios — frutos mordidos, pelos em galhos, marcas de garra — para mapear o território do grupo.",
-                           alvo: 6, dica: "Vestígios se escondem no capim alto e sob as copas."),
-                QuestStage(kind: .desafio, titulo: "Travessia da copa",
-                           descricao: "A estrada partiu a mata em dois. Grupos de micos ficaram presos de um lado e não descem ao chão de jeito nenhum — ali embaixo é onde eles morrem. Vire mico, ganhe a confiança do grupo e leve a comitiva saltando até o outro fragmento.",
-                           alvo: 3, dica: "Só na forma de mico eles seguem você. Se ficar longe demais, o grupo entra em pânico e se dispersa."),
-                QuestStage(kind: .restauro, titulo: "Corredor da copa",
-                           descricao: "Plante mudas nos focos degradados para reconectar os fragmentos de floresta.",
-                           alvo: 5, dica: "Focos ficam em clareiras abertas pelo desmatamento.")
-            ])
+    // MARK: Ato 1 — a prova de acesso
 
-        case .cerrado:
-            return QuestChain(biome: .cerrado, titulo: "As pernas do horizonte", etapas: [
-                QuestStage(kind: .rastro, titulo: "Pegadas na poeira",
-                           descricao: "O lobo-guará caminha quilômetros por noite. Registre pegadas e restos de lobeira para traçar sua rota.",
-                           alvo: 7, dica: "Use a forma de mico para cortar caminho pelos cipoais."),
-                QuestStage(kind: .desafio, titulo: "Aceiro contra o fogo",
-                           descricao: "O fogo corre pelo capim seco, tile por tile, e dobra de tamanho se você hesitar. Não dá para apagar: dá para cercar. Abra aceiros — faixas de terra nua — até o fogo não ter para onde ir.",
-                           alvo: 3, dica: "A investida do lobo-guará raspa o chão e abre aceiro em linha. Corte à frente das chamas, não atrás."),
-                QuestStage(kind: .resgate, titulo: "Travessia da rodovia",
-                           descricao: "Atropelamentos são a maior causa de morte da espécie. Guie os lobos feridos até os pontos de travessia segura.",
-                           alvo: 4, dica: "Aproxime-se devagar, em forma humana.")
-            ])
+    /// O ato 1 de cada bioma: aguentar uma frente inteira e salvar o bastante
+    /// para o Guardião entender que você serve.
+    static func acesso(for biome: BiomeID) -> Fragmento? {
+        guard let o = Operacao[biome] else { return nil }
+        return Fragmento(
+            kind: .acesso,
+            nome: "Operação: \(o.frente.lowercased())",
+            descricao: o.chamada,
+            dica: "Salve pelo menos \(o.meta) de \(o.quantidade) \(o.focoPlural) antes de a linha atravessar. Segure E no foco; grupos em fuga têm de ser escoltados até a borda sul.",
+            alvo: 1)
+    }
 
-        case .pantanal:
-            return QuestChain(biome: .pantanal, titulo: "Azul contra o céu", etapas: [
-                QuestStage(kind: .rastro, titulo: "Mapa dos ninhos",
-                           descricao: "Araras-azuis só nidificam em ocos de manduvi centenários. Registre as árvores-ninho da planície.",
-                           alvo: 8, dica: "A investida do lobo-guará abre os espinheiros do caminho."),
-                QuestStage(kind: .desafio, titulo: "Vigília dos ninhos",
-                           descricao: "Cada manduvi com oco é um berçário, e há saqueadores caminhando na direção deles agora. Chegue antes. Voar é o único jeito de cobrir a distância a tempo — mas instalar a proteção exige mão humana.",
-                           alvo: 4, dica: "Plane até o ninho como arara, pouse e volte a ser gente (Q) para instalar a proteção."),
-                QuestStage(kind: .restauro, titulo: "Ninhos artificiais",
-                           descricao: "Instale ninhos artificiais nos manduvis ocos para devolver à arara o lugar de criar.",
-                           alvo: 6, dica: "Focos ficam do outro lado dos barrancos — voar ajuda.")
-            ])
+    // MARK: Ato 2 — a prova de mérito
 
-        case .amazonia:
-            return QuestChain(biome: .amazonia, titulo: "O gigante do lago", etapas: [
-                QuestStage(kind: .rastro, titulo: "Contagem de bodecos",
-                           descricao: "O pirarucu sobe para respirar. Conte as subidas nos lagos para estimar a população — é assim que o manejo comunitário funciona de verdade.",
-                           alvo: 9, dica: "Planando como arara você enxerga muito mais lago."),
-                QuestStage(kind: .desafio, titulo: "Malhadeiras",
-                           descricao: "As redes ilegais estão no fundo, e o pirarucu tem um problema que nenhum outro peixe grande tem: ele respira ar. Mergulhe, corte a rede segurando E — e volte à tona antes que o fôlego acabe.",
-                           alvo: 4, dica: "Segure ESPAÇO para submergir. O fôlego cai enquanto você está embaixo e só volta na superfície."),
-                QuestStage(kind: .restauro, titulo: "Lagos de manejo",
-                           descricao: "Reabra os canais que ligam os lagos ao rio para os cardumes voltarem a circular.",
-                           alvo: 6, dica: "Alguns canais estão entupidos de terra compactada.")
-            ])
+    /// Depois do amuleto: usar o poder do bicho para valer.
+    static func merito(for biome: BiomeID) -> [Fragmento] {
+        guard biome != .refugio, let c = Corrida[biome] else { return [] }
+        let animal = Biome[biome].animal
+        let corrida = Fragmento(
+            kind: .corrida, nome: c.titulo,
+            descricao: c.chamada,
+            dica: "Vista o amuleto (\(animal.nome)) e ache a largada no bioma.", alvo: 1)
 
-        case .pampa:
-            return QuestChain(biome: .pampa, titulo: "A cidade sob as dunas", etapas: [
-                QuestStage(kind: .rastro, titulo: "Ouvir o chão",
-                           descricao: "O tuco-tuco é ouvido antes de ser visto. Registre montículos e galerias ativas nas dunas.",
-                           alvo: 8, dica: "Ele vive só no litoral gaúcho — em nenhum outro lugar do mundo."),
-                QuestStage(kind: .desafio, titulo: "Sob o arado",
-                           descricao: "O arado avança em linha reta sobre a duna e desaba tudo que houver embaixo. As galerias com bicho dentro estão no caminho. Escave até cada uma e tire os tuco-tucos antes da lâmina chegar.",
-                           alvo: 4, dica: "Só se chega às galerias por baixo. Segure ESPAÇO para escavar — mas embaixo da terra você quase não enxerga."),
-                QuestStage(kind: .restauro, titulo: "Dunas vivas",
-                           descricao: "Refixe a vegetação das dunas para que as galerias voltem a se sustentar.",
-                           alvo: 7, dica: "Restaurar duna é devolver casa a uma espécie que só existe aqui.")
-            ])
+        let o = Operacao[biome]
+        let campo = Fragmento(
+            kind: .desafio,
+            nome: "Segunda operação",
+            descricao: "A frente voltou, e mais rápida. Só que agora você tem o corpo do bicho: alcança o que antes estava do outro lado da água, do cipó, do abismo. \(segundaOperacaoTexto(biome))",
+            dica: "Mesma regra, menos tempo: salve \(o?.meta ?? 6) \(o?.focoPlural ?? "focos"). Use o amuleto para cortar caminho.",
+            alvo: 1)
+
+        return [corrida, campo]
+    }
+
+    private static func segundaOperacaoTexto(_ b: BiomeID) -> String {
+        switch b {
+        case .mataAtlantica: return "Saltando pela copa você chega a fragmento que a pé não tem acesso."
+        case .cerrado: return "Na investida você cruza o espinheiro em vez de contorná-lo."
+        case .pantanal: return "Planando, a baía deixa de ser desvio e vira atalho."
+        case .amazonia: return "Submerso, o lago inteiro passa a ser caminho."
+        case .pampa: return "Pelo subsolo você passa por baixo da própria linha do arado."
+        case .refugio: return ""
         }
+    }
+
+    /// Todos os objetivos do bioma, na ordem dos atos.
+    static func fragmentos(for biome: BiomeID) -> [Fragmento] {
+        guard let a = acesso(for: biome) else { return [] }
+        return [a] + merito(for: biome)
     }
 
     /// Resumo do desafio característico de cada bioma, para as expedições.
@@ -154,23 +145,27 @@ enum Quests {
     /// Missão infinita gerada após a conclusão da cadeia principal.
     static func expedicao(biome: BiomeID, nivel: Int, seed: UInt64) -> QuestStage {
         var rng = SeededRandom(seed: seed &+ UInt64(nivel &* 7919))
-        let kinds: [ObjectiveKind] = [.rastro, .resgate, .restauro, .ameaca, .desafio, .desafio]
+        let kinds: [ObjectiveKind] = [.rastro, .resgate, .restauro, .ameaca, .desafio, .corrida]
         let kind = kinds[rng.int(0, kinds.count - 1)]
-        let alvo = 5 + Int(Double(nivel) * 1.6) + rng.int(0, 3)
+        var alvo = 5 + Int(Double(nivel) * 1.6) + rng.int(0, 3)
+        // A prova arcade é uma só: o que cresce é a dificuldade dentro dela.
+        if kind == .corrida { alvo = 1 }
         let b = Biome[biome]
         let titulos: [ObjectiveKind: String] = [
             .rastro: "Monitoramento nº \(nivel)",
             .resgate: "Operação resgate nº \(nivel)",
             .restauro: "Mutirão de restauro nº \(nivel)",
             .ameaca: "Contenção nº \(nivel)",
-            .desafio: "\(Biome[biome].animal.nome) nº \(nivel)"
+            .desafio: "\(Biome[biome].animal.nome) nº \(nivel)",
+            .corrida: "\(Corrida[biome]?.titulo ?? "Prova") — repescagem \(nivel)"
         ]
         let descricoes: [ObjectiveKind: String] = [
             .rastro: "A população de \(b.animal.nome.lowercased()) precisa de censo contínuo. Registre novos vestígios pelo território.",
             .resgate: "Chegaram denúncias de novos animais presos em \(b.nome). Vá até lá e liberte cada um.",
             .restauro: "Novas clareiras se abriram. Recupere os focos degradados antes que virem deserto.",
             .ameaca: "\(b.ameaca.nome) voltou a avançar. Contenha as frentes ativas.",
-            .desafio: desafioTexto(biome)
+            .desafio: desafioTexto(biome),
+            .corrida: Corrida[biome]?.chamada ?? ""
         ]
         return QuestStage(kind: kind,
                           titulo: titulos[kind] ?? "Expedição",

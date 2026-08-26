@@ -282,6 +282,35 @@ final class PortalNode: WorldEntity {
     }
 }
 
+/// Largada da prova, encontrada dentro do próprio bioma.
+final class LargadaNode: WorldEntity {
+    private let bioma: BiomeID
+    override var consumivel: Bool { false }
+    override var raioInteracao: CGFloat { 72 }
+
+    init(tile: GridPoint, bioma: BiomeID) {
+        self.bioma = bioma
+        super.init(tile: tile)
+        addChild(SKSpriteNode(texture: Objects.objetivo(.corrida, bioma: bioma)))
+        pulsar()
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) não usado") }
+
+    override func checar(estado: GameState) -> Interacao {
+        guard let c = Corrida[bioma] else { return Interacao(pode: false, dica: "") }
+        guard estado.temAmuleto(c.forma) else {
+            return Interacao(pode: false, dica: "A prova exige o \(c.forma.amuleto)")
+        }
+        return Interacao(pode: true, dica: "Largada: \(c.titulo)")
+    }
+
+    override func interagir(estado: GameState, cena: GameScene) -> Bool {
+        estado.iniciarCorrida(bioma)
+        return false
+    }
+}
+
 // MARK: - Portal de volta ao Refúgio
 
 final class PortalRetornoNode: WorldEntity {
@@ -568,5 +597,39 @@ final class HarpiaNode: WorldEntity {
             estado.painelRefugio = .harpia
         }
         return false
+    }
+}
+
+// MARK: - A pena da Harpia
+
+/// Fica no chão depois do sobrevoo de abertura. Pegá-la é o que dá a partida.
+final class PenaNode: WorldEntity {
+    override var consumivel: Bool { true }
+    override var raioInteracao: CGFloat { 64 }
+
+    override init(tile: GridPoint) {
+        super.init(tile: tile)
+        let s = SKSpriteNode(texture: Objects.pena())
+        addChild(s)
+        zPosition = 250
+        // Balanço leve, como pena assentando.
+        s.run(.repeatForever(.sequence([
+            .group([.rotate(byAngle: 0.10, duration: 1.3), .moveBy(x: 3, y: 4, duration: 1.3)]),
+            .group([.rotate(byAngle: -0.10, duration: 1.3), .moveBy(x: -3, y: -4, duration: 1.3)])
+        ])))
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) não usado") }
+
+    override func checar(estado: GameState) -> Interacao {
+        Interacao(pode: true, dica: "Pegar a pena")
+    }
+
+    override func interagir(estado: GameState, cena: GameScene) -> Bool {
+        estado.ligarFlag("harpia_conheceu")
+        estado.descobrirCodex("harpia")
+        estado.iniciarDialogo(DialogueBook.penaDaHarpia(), contexto: .refugio)
+        cena.efeitoConquista(em: position, cor: Palette.gold)
+        return true
     }
 }

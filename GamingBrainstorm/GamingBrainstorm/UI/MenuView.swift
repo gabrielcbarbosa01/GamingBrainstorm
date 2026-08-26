@@ -110,9 +110,11 @@ struct ComoSeJogaView: View {
                     .foregroundStyle(Tema.papel)
 
                 secao("A ideia", [
-                    "Você é guardiã(o) de campo. Explora cinco biomas brasileiros gerados sem limite, registra vestígios, liberta animais presos e recupera áreas degradadas.",
-                    "Cada bioma tem um animal ameaçado e um Guardião. Concluindo as três tarefas do bioma, o Guardião entrega o amuleto — e o amuleto abre o bioma seguinte.",
-                    "Depois dos cinco amuletos o jogo não acaba: cada bioma passa a gerar expedições infinitas, cada uma mais difícil que a anterior."
+                    "Ao atravessar o portal você não cai num campo vazio: cai no meio de uma OPERAÇÃO já em andamento.",
+                    "Uma frente de destruição avança sobre o território num relógio visível — motosserras, fogo, saqueadores, arrastão de redes, arado. À frente dela há focos de vida: grupos, ninhadas, ninhos, cardumes, galerias.",
+                    "Você não consegue salvar todos. Esse é o ponto. Cada foco tem um tempo até a linha chegar, e a rota que você escolhe decide quem fica.",
+                    "Segure E no foco para resgatar. Alguns são grupos em fuga: recuam mais devagar que a máquina e precisam ser escoltados até a borda sul.",
+                    "ATO 1 · bata a meta uma vez e o Guardião entrega o amuleto. ATO 2 · a frente volta mais rápida, e agora você tem o corpo do bicho para alcançar o que antes era inalcançável. Só então o portal seguinte abre."
                 ])
 
                 secao("Controles", [
@@ -133,7 +135,17 @@ struct ComoSeJogaView: View {
                     "No ar você atravessa quase tudo — só o paredão de rocha continua sendo parede."
                 ])
 
-                secao("Cada bioma, um problema diferente", [
+                secao("As provas — um dos três estilhaços", [
+                    "A prova não é um modo separado: é uma largada que você encontra explorando o bioma. Chega nela, aperta E, e a corrida começa ali mesmo.",
+                    "🐒 CORRIDA NA COPA (Mata Atlântica) — pista de três galhos em velocidade crescente. A/D trocam de faixa, ESPAÇO salta o que é baixo; o que é alto só se desvia.",
+                    "🐺 FUGA DO FOGO (Cerrado) — a mesma pista, mas com uma parede de fogo colada nas suas costas. Cada batida deixa ela ganhar terreno. Uma vida só.",
+                    "🦜 VOO ENTRE OS MANDUVIS (Pantanal) — segure ESPAÇO para subir, solte para cair. Passe pelos vãos entre as árvores.",
+                    "🐟 TRAVESSIA DOS JACARÉS (Amazônia) — pule de tronco em tronco sobre o rio. Eles se movem em velocidades diferentes, e o jacaré afunda se você demorar em cima.",
+                    "🐹 GALERIA SOB O ARADO (Pampa) — túnel escuro com lâminas descendo. Elas avisam com uma marca vermelha antes.",
+                    "Toda prova guarda recorde e pode ser repetida por pontos a qualquer momento."
+                ])
+
+                secao("No mundo aberto, cada bioma tem outro problema", [
                     "🐒 Mata Atlântica — TRAVESSIA DA COPA: grupos de micos ficaram isolados e não descem ao chão. Vire mico, reúna a comitiva e guie-a saltando; se você se afastar demais, o grupo entra em pânico.",
                     "🐺 Cerrado — ACEIRO: o fogo se alastra tile a tile pelo capim seco. Não dá para apagar, dá para cercar — a investida do lobo raspa o chão e abre faixas de terra nua à frente das chamas.",
                     "🦜 Pantanal — VIGÍLIA DOS NINHOS: saqueadores caminham na direção dos ninhos de manduvi. Só voando se chega a tempo, mas instalar a proteção exige mão humana.",

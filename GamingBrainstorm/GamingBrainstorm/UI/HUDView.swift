@@ -15,8 +15,38 @@ struct HUDView: View {
     var body: some View {
         ZStack {
             VStack {
+                // Vida e chaves ficam no alto, como nos Zelda antigos.
+                if st.biomaCarregado != .refugio {
+                    HStack(spacing: 10) {
+                        HStack(spacing: 3) {
+                            ForEach(0..<st.save.coracoes, id: \.self) { i in
+                                let cheio = st.vida - i * 2
+                                Image(nsImage: nsCoracao(cheio >= 2 ? 2 : (cheio == 1 ? 1 : 0)))
+                                    .interpolation(.high).resizable()
+                                    .frame(width: 26, height: 26)
+                            }
+                        }
+                        if st.chaves(st.biomaCarregado) > 0 {
+                            HStack(spacing: 3) {
+                                Image(nsImage: nsChave())
+                                    .interpolation(.high).resizable()
+                                    .frame(width: 22, height: 22)
+                                Text("×\(st.chaves(st.biomaCarregado))")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundStyle(Tema.ouro)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.bottom, 6)
+                }
+
                 HStack(alignment: .top) {
-                    painelMissao
+                    if let op = st.operacao, !op.encerrada {
+                        OperacaoHUD(st: st, sessao: op)
+                    } else {
+                        painelMissao
+                    }
                     Spacer()
                     painelPontuacao
                 }
@@ -40,6 +70,15 @@ struct HUDView: View {
         }
     }
 
+    private func nsCoracao(_ e: Int) -> NSImage {
+        let t = SalaArt.coracao(e)
+        return NSImage(cgImage: t.cgImage(), size: NSSize(width: 40, height: 40))
+    }
+
+    private func nsChave() -> NSImage {
+        NSImage(cgImage: SalaArt.chave().cgImage(), size: NSSize(width: 44, height: 44))
+    }
+
     // MARK: Missão
 
     private var painelMissao: some View {
@@ -54,8 +93,14 @@ struct HUDView: View {
                     .foregroundStyle(Tema.papel.opacity(0.85))
             }
 
-            if let etapa = st.etapaAtual(st.biomaCarregado),
-               let prog = st.progressoAtual(st.biomaCarregado) {
+            if st.biomaCarregado == .refugio {
+                Text("Base segura — escolha um portal")
+                    .font(Tema.subtitulo)
+                    .foregroundStyle(Tema.papel)
+            } else if !st.biomaConcluido(st.biomaCarregado) {
+                objetivosDoAto
+            } else if let etapa = st.etapaAtual(st.biomaCarregado),
+                      let prog = st.progressoAtual(st.biomaCarregado) {
                 Text(etapa.titulo)
                     .font(Tema.subtitulo)
                     .foregroundStyle(Tema.papel)
@@ -70,21 +115,6 @@ struct HUDView: View {
                         .font(Tema.rotulo)
                         .foregroundStyle(Tema.papel.opacity(0.85))
                 }
-                if let b = st.bussola, let d = st.distanciaObjetivo {
-                    HStack(spacing: 6) {
-                        Image(systemName: "location.north.fill")
-                            .rotationEffect(.radians(atan2(Double(b.dx), Double(b.dy))))
-                            .foregroundStyle(Tema.essencia)
-                            .font(.system(size: 11))
-                        Text("ponto mais próximo a \(Int(d / WorldMetrics.tileSize)) passos")
-                            .font(Tema.rotulo)
-                            .foregroundStyle(Tema.papel.opacity(0.6))
-                    }
-                }
-            } else if st.biomaCarregado == .refugio {
-                Text("Base segura — escolha um portal")
-                    .font(Tema.subtitulo)
-                    .foregroundStyle(Tema.papel)
             } else {
                 Text("Território liberado")
                     .font(Tema.subtitulo)
@@ -93,9 +123,59 @@ struct HUDView: View {
                     .font(Tema.rotulo)
                     .foregroundStyle(Tema.ouro)
             }
+
+            if let b = st.bussola, let d = st.distanciaObjetivo {
+                HStack(spacing: 6) {
+                    Image(systemName: "location.north.fill")
+                        .rotationEffect(.radians(atan2(Double(b.dx), Double(b.dy))))
+                        .foregroundStyle(Tema.essencia)
+                        .font(.system(size: 11))
+                    Text("ponto mais próximo a \(Int(d / WorldMetrics.tileSize)) passos")
+                        .font(Tema.rotulo)
+                        .foregroundStyle(Tema.papel.opacity(0.6))
+                }
+            }
         }
-        .frame(width: 264, alignment: .leading)
+        .frame(width: 282, alignment: .leading)
         .painelDeCampo()
+    }
+
+    /// Os objetivos do ato corrente.
+    private var objetivosDoAto: some View {
+        let itens = st.objetivosDoAto(st.biomaCarregado)
+        let feitos = itens.filter { $0.completo }.count
+        let ato = st.ato(st.biomaCarregado)
+        return VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 6) {
+                Image(systemName: ato == .acesso ? "pawprint.circle.fill" : "checkmark.seal.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Tema.ouro)
+                Text(ato == .acesso
+                     ? "Ato 1 · conquistar o \(Biome[st.biomaCarregado].animal.amuleto)"
+                     : "Ato 2 · provar que merece — \(feitos)/\(itens.count)")
+                    .font(Tema.subtitulo)
+                    .foregroundStyle(Tema.papel)
+            }
+
+            ForEach(itens, id: \.frag.id) { item in
+                HStack(spacing: 7) {
+                    Image(systemName: item.completo ? "checkmark.circle.fill" : item.frag.kind.icone)
+                        .font(.system(size: 11))
+                        .foregroundStyle(item.completo ? Tema.essencia : Tema.ouro.opacity(0.85))
+                        .frame(width: 14)
+                    Text(item.frag.nome)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(Tema.papel.opacity(item.completo ? 0.5 : 0.95))
+                        .strikethrough(item.completo, color: Tema.essencia.opacity(0.5))
+                    Spacer(minLength: 4)
+                    if !item.completo {
+                        Text("\(item.feito)/\(item.frag.alvo)")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(Tema.papel.opacity(0.7))
+                    }
+                }
+            }
+        }
     }
 
     // MARK: Pontuação

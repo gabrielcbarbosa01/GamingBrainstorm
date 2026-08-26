@@ -40,6 +40,31 @@ enum Objects {
         case .restauro: muda(ctx, c: c, palette: p)
         case .ameaca: alerta(ctx, c: c)
         case .desafio: desafio(ctx, c: c, bioma: bioma, palette: p)
+        case .corrida: largada(ctx, c: c, palette: p)
+        case .acesso: pegada(ctx, c: c, cor: p.accent)
+        }
+    }
+
+    /// Largada da prova arcade: pórtico com bandeira quadriculada.
+    private static func largada(_ ctx: CGContext, c: CGPoint, palette p: BiomePalette) {
+        Draw.roundRect(ctx, CGRect(x: c.x - 17, y: c.y - 4, width: 5, height: 20),
+                       radius: 2, SKColor(hex: 0x6A4E2E))
+        Draw.roundRect(ctx, CGRect(x: c.x + 12, y: c.y - 4, width: 5, height: 20),
+                       radius: 2, SKColor(hex: 0x6A4E2E))
+        Draw.roundRect(ctx, CGRect(x: c.x - 18, y: c.y - 14, width: 36, height: 12),
+                       radius: 2, SKColor(hex: 0xF0EAE0))
+        for linha in 0..<2 {
+            for col in 0..<6 where (col + linha) % 2 == 0 {
+                Draw.fill(ctx, CGRect(x: c.x - 18 + CGFloat(col) * 6,
+                                      y: c.y - 14 + CGFloat(linha) * 6,
+                                      width: 6, height: 6), SKColor(hex: 0x1E1E22))
+            }
+        }
+        // Setas de velocidade
+        for i in 0..<3 {
+            let x = c.x - 8 + CGFloat(i) * 8
+            Draw.polygon(ctx, [CGPoint(x: x, y: c.y + 6), CGPoint(x: x + 5, y: c.y + 11),
+                               CGPoint(x: x, y: c.y + 16)], p.accent)
         }
     }
 
@@ -441,6 +466,139 @@ extension Objects {
             Draw.circle(ctx, CGPoint(x: 44, y: 29), 6, SKColor(hex: 0x3E7A8C))
             Draw.roundRect(ctx, CGRect(x: 50, y: 26, width: 10, height: 8), radius: 2,
                            SKColor(hex: 0xE8B23A))
+        }
+    }
+}
+
+// MARK: - A pena da Harpia
+
+extension Objects {
+
+    /// Sombra difusa de asas abertas, para o sobrevoo de abertura.
+    static func sombraDeAsas() -> SKTexture {
+        cached("sombra_asas", 900, 380) { ctx in
+            // Corpo e asas em manchas concêntricas: dá contorno sem borda dura.
+            func borrao(_ c: CGPoint, _ rx: CGFloat, _ ry: CGFloat) {
+                for i in stride(from: CGFloat(1.0), through: 0.2, by: -0.16) {
+                    Draw.ellipse(ctx, CGRect(x: c.x - rx * i, y: c.y - ry * i,
+                                             width: rx * 2 * i, height: ry * 2 * i),
+                                 SKColor(white: 0, alpha: 0.10))
+                }
+            }
+            borrao(CGPoint(x: 450, y: 190), 90, 130)     // corpo
+            borrao(CGPoint(x: 250, y: 165), 210, 62)     // asa esquerda
+            borrao(CGPoint(x: 650, y: 165), 210, 62)     // asa direita
+            borrao(CGPoint(x: 450, y: 300), 55, 90)      // cauda
+            borrao(CGPoint(x: 450, y: 80), 45, 45)       // cabeça
+        }
+    }
+
+    /// A pena que ela deixa cair.
+    static func pena() -> SKTexture {
+        cached("pena", 40, 96) { ctx in
+            // Halo, para achar no meio do mato.
+            Draw.ellipse(ctx, CGRect(x: 2, y: 14, width: 36, height: 70),
+                         Palette.gold.withAlphaComponent(0.10))
+            // Barbas
+            Draw.leaf(ctx, from: CGPoint(x: 20, y: 8), to: CGPoint(x: 20, y: 82),
+                      bulge: 13, SKColor(hex: 0x585E68))
+            Draw.leaf(ctx, from: CGPoint(x: 20, y: 16), to: CGPoint(x: 20, y: 76),
+                      bulge: 8, SKColor(hex: 0x6E747E))
+            // Faixas claras, como as da cauda
+            for i in 0..<3 {
+                let y = 28 + CGFloat(i) * 17
+                Draw.line(ctx, from: CGPoint(x: 10, y: y), to: CGPoint(x: 30, y: y + 3),
+                          width: 2.4, SKColor(hex: 0xD9DCD8, alpha: 0.7))
+            }
+            // Raque
+            Draw.line(ctx, from: CGPoint(x: 20, y: 6), to: CGPoint(x: 20, y: 90),
+                      width: 2.2, SKColor(hex: 0xE8E4DC))
+        }
+    }
+}
+
+// MARK: - Sinais deixados pelo bicho
+
+extension Objects {
+
+    /// O vestígio que se recolhe enquanto se segue o guia. Cada bioma tem o seu.
+    static func sinal(_ bioma: BiomeID) -> SKTexture {
+        let p = Biome[bioma].palette
+        return cached("sinal_\(bioma.rawValue)", 44, 44) { ctx in
+            let c = CGPoint(x: 22, y: 22)
+            Draw.circle(ctx, c, 19, p.accent.withAlphaComponent(0.13))
+            Draw.circle(ctx, c, 13, p.accent.withAlphaComponent(0.22))
+
+            switch bioma {
+            case .mataAtlantica:
+                // Fruto mordido
+                Draw.circle(ctx, c, 9, SKColor(hex: 0xC8442E))
+                Draw.circle(ctx, CGPoint(x: c.x + 6, y: c.y - 4), 5, SKColor(hex: 0x2A1E14))
+                Draw.line(ctx, from: CGPoint(x: c.x, y: c.y - 8),
+                          to: CGPoint(x: c.x + 3, y: c.y - 14), width: 2, SKColor(hex: 0x4A6A2E))
+            case .cerrado:
+                // Tufo de pelo ruivo
+                for i in 0..<6 {
+                    let a = Double(i) / 6 * .pi * 2
+                    Draw.line(ctx, from: c,
+                              to: CGPoint(x: c.x + CGFloat(cos(a)) * 11,
+                                          y: c.y + CGFloat(sin(a)) * 11),
+                              width: 3, SKColor(hex: 0xC96A2E))
+                }
+                Draw.circle(ctx, c, 4, SKColor(hex: 0x241E18))
+            case .pantanal:
+                // Pena azul
+                Draw.leaf(ctx, from: CGPoint(x: c.x, y: c.y - 11),
+                          to: CGPoint(x: c.x, y: c.y + 11), bulge: 6, SKColor(hex: 0x2F6FD8))
+                Draw.line(ctx, from: CGPoint(x: c.x, y: c.y - 12),
+                          to: CGPoint(x: c.x, y: c.y + 12), width: 1.6, SKColor(hex: 0xE8E4DC))
+            case .amazonia:
+                // Escama grande
+                Draw.ellipse(ctx, CGRect(x: c.x - 9, y: c.y - 10, width: 18, height: 20),
+                             SKColor(hex: 0x4E6E62))
+                Draw.ellipse(ctx, CGRect(x: c.x - 6, y: c.y - 6, width: 12, height: 14),
+                             SKColor(hex: 0xC24A44))
+            case .pampa:
+                // Montículo de areia revirada
+                Draw.ellipse(ctx, CGRect(x: c.x - 12, y: c.y - 2, width: 24, height: 12),
+                             SKColor(hex: 0xC6B584))
+                Draw.ellipse(ctx, CGRect(x: c.x - 7, y: c.y - 6, width: 14, height: 9),
+                             SKColor(hex: 0x9A8A5E))
+            case .refugio:
+                Draw.circle(ctx, c, 8, p.accent)
+            }
+        }
+    }
+}
+
+// MARK: - Combate e sombras
+
+extension Objects {
+
+    /// Sombra elíptica genérica, usada por inimigos e objetos em pé.
+    static func sombraChao() -> SKTexture {
+        cached("sombra_chao", 64, 26) { ctx in
+            Draw.ellipse(ctx, CGRect(x: 0, y: 0, width: 64, height: 26),
+                         SKColor(white: 0, alpha: 0.32))
+        }
+    }
+
+    /// Arco do golpe do bastão de campo.
+    static func golpe() -> SKTexture {
+        cached("golpe", 110, 96) { ctx in
+            let c = CGPoint(x: 18, y: 48)
+            for i in 0..<3 {
+                let r = CGFloat(58 + i * 12)
+                ctx.setStrokeColor(SKColor(white: 1, alpha: 0.55 - CGFloat(i) * 0.16).cgColor)
+                ctx.setLineWidth(CGFloat(9 - i * 2))
+                ctx.setLineCap(.round)
+                ctx.addArc(center: c, radius: r, startAngle: -0.7, endAngle: 0.7, clockwise: false)
+                ctx.strokePath()
+            }
+            ctx.setStrokeColor(Palette.parchment.withAlphaComponent(0.9).cgColor)
+            ctx.setLineWidth(4)
+            ctx.addArc(center: c, radius: 62, startAngle: -0.55, endAngle: 0.55, clockwise: false)
+            ctx.strokePath()
         }
     }
 }
