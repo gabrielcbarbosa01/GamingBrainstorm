@@ -1,132 +1,37 @@
 # Guardiões dos Biomas
 
-Jogo de exploração em Swift sobre cinco animais brasileiros ameaçados de extinção.
-Aplicativo macOS: SwiftUI para a interface, SpriteKit para o mundo.
-
-**Não há um único arquivo de imagem no projeto** — todo o sprite e todo o terreno
-são desenhados em CoreGraphics em tempo de execução.
+Jogo de exploração e conservação ambiental sobre cinco animais brasileiros ameaçados de extinção e a lendária Harpia Real.
+Aplicativo nativo macOS em SwiftUI com motor SceneKit 3D em projeção **2.5D Isométrica**, com áudio procedural e geração dinâmica de mundo.
 
 ## A ideia
 
-Você é guardiã(o) de campo. Sai do **Refúgio Raízes** por portais, explora biomas
-gerados proceduralmente sem limite de tamanho, registra vestígios, liberta animais
-presos e recupera áreas degradadas. Cada bioma termina no encontro com um Guardião,
-que entrega um amuleto — e cada amuleto abre o bioma seguinte.
+Você é guardiã(o) de campo. Explora os biomas brasileiros em um mundo contínuo, registra vestígios ecológicos, liberta animais presos, abre aceiros contra o fogo, corta redes de pesca clandestinas e recupera áreas degradadas. Cada bioma apresenta desafios ecológicos inspirados em ameaças reais.
 
-| Bioma | Animal | Amuleto | Travessia | ESPAÇO faz |
+| Bioma | Animal | Amuleto / Forma | Travessia & Habilidade | Desafio Central |
 |---|---|---|---|---|
-| Mata Atlântica | Mico-leão-dourado | da Copa | cipoais | **Salto** em arco, com salto duplo |
-| Cerrado | Lobo-guará | da Campina | espinheiros | **Investida** que rompe e empurra ameaças |
-| Pantanal | Arara-azul-grande | do Vento | abismos | **Planar**: segure para se manter no ar |
-| Amazônia | Pirarucu | das Águas | água funda | **Arranco**: mergulha, veloz e invisível |
-| Pampa | Tuco-tuco-das-dunas | do Subsolo | terra compactada | **Escavar**: some no subsolo |
-| — (lendária) | Harpia | Coroa | tudo | **Voo** livre, sem barreira nenhuma |
+| Mata Atlântica | Mico-leão-dourado | Amuleto da Copa | Salto e escalada nas copas | **Travessia da copa & Corredor**: Restauração da conectividade biológica |
+| Cerrado | Lobo-guará | Amuleto da Campina | Disparada ágil e rasante | **Aceiro contra o fogo & Rodovias**: Conter queimadas no capim seco |
+| Pantanal | Arara-azul-grande | Amuleto do Vento | Voo livre e vigilância | **Vigília dos ninhos (45s)**: Proteger manduvis de saqueadores de fauna |
+| Amazônia | Pirarucu / Ariranha | Amuleto das Águas | Nado veloz e mergulho | **Malhadeiras submersas**: Cortar redes clandestinas no leito do rio |
+| Pampa | Tuco-tuco / Tatu | Amuleto do Subsolo | Escavação subterrânea | **Evacuação sob o arado (45s)**: Resgatar famílias antes da lâmina avançar |
+| Clímax | Harpia Real | Coroa da Harpia | Voo supremo e consagração | **Reconhecimento dos Céus**: Consagração como Guardião Supremo |
 
-Cada forma tem um verbo próprio na barra de espaço — é isso, e não a velocidade,
-que diferencia jogar de mico e jogar de lobo. O jogador tem **altura real**: o
-salto sobe cerca de um tile, a sombra se separa do corpo e no ar você passa por
-cima de água, cipó e abismo mesmo sem o amuleto correspondente. Só o paredão de
-rocha continua sendo parede.
-
-### A Harpia
-
-Aparece na abertura, dá uma dica enigmática e some. Só volta quando o mundo
-inteiro tiver voltado: os cinco amuletos, uma expedição concluída em cada bioma
-e quinze mudas cultivadas no viveiro. Aí vira a sexta forma jogável.
-
-Ela é predadora dos próprios micos que você passou o jogo protegendo — e é
-exatamente por isso que serve de sinal: onde a harpia ainda se reproduz, a
-floresta está inteira.
-
-### Cada bioma joga diferente
-
-A etapa central de cada território não é "apertar E num marcador": é uma
-mecânica própria, com regras que só existem ali.
-
-| Bioma | Desafio | O laço de jogo |
-|---|---|---|
-| Mata Atlântica | **Travessia da copa** | Escolta. Um grupo de micos segue o seu rastro com atraso; a confiança cai se você se afasta, e o grupo se dispersa se você deixa de ser mico. |
-| Cerrado | **Aceiro** | Simulação de incêndio. O fogo pula de tile em tile pelo material inflamável; a investida do lobo raspa o chão e abre faixas de terra nua. Cercar, não apagar. |
-| Pantanal | **Vigília dos ninhos** | Corrida. Um saqueador caminha até o ninho num relógio visível. Voar é o único jeito de chegar; proteger exige voltar à forma humana. |
-| Amazônia | **Malhadeiras** | Mergulho com fôlego. Cortar a rede leva 2 s segurando E, e submerso o fôlego cai — a vulnerabilidade real da espécie virada regra. |
-| Pampa | **Sob o arado** | Escavação às cegas. A lâmina avança em linha reta; as galerias só se alcançam por baixo, e no subsolo a visão fecha num círculo. |
-
-Todos os cinco também entram no sorteio das expedições infinitas.
-
-### Fauna
-
-Quinze espécies de fundo, três por bioma, montadas a partir de cinco arquétipos
-de corpo (quadrúpede, ave, réptil, aquático, pendurado) parametrizados por cor,
-porte e um traço marcante — o bico do tucano, o pescoço da ema, o focinho do
-tamanduá.
-
-Elas perambulam e fogem. O raio de fuga depende de quem se aproxima: na forma
-humana disparam de longe, em forma animal deixam chegar mais perto, e de quem
-está no subsolo ou submerso não fogem. Cada primeiro registro abre uma ficha.
-
-### O Refúgio como base
-
-O centro deixou de ser um saguão com portais:
-
-- **Viveiro** — plante juçara, lobeira, manduvi, castanheira e capim-das-dunas.
-  Crescem com o tempo de jogo e viram mudas. Sementes vêm dos objetivos de
-  restauro e resgate no campo.
-- **Açude** — minigame de pesca por tempo. Espécies migradoras e juvenis abaixo
-  do tamanho mínimo valem o **dobro** quando devolvidas à água.
-- **Oficina** — pontos, mudas e peixes viram melhorias permanentes: mais
-  canteiros, mais essência máxima, cais melhor, torre de observação (revela
-  caches mesmo na forma humana) e ferramenta que rende mais pontos.
-
-Como cada amuleto vale em todos os biomas, voltar a um território antigo abre
-áreas que antes eram intransponíveis.
-
-Depois dos cinco amuletos o jogo **não acaba**: cada bioma passa a gerar expedições
-infinitas, com alvo e hostilidade crescentes, alimentando o Índice de Biodiversidade.
+Após purificar os cinco biomas e vencer a provação da Harpia, o jogo gera **Expedições Infinitas de Monitoramento** com dificuldade escalonável.
 
 ## Controles
 
 | Tecla | Ação |
 |---|---|
-| WASD / setas | andar |
-| ESPAÇO | movimento especial da forma atual |
-| E | interagir · avançar diálogo |
-| 1–6 | vestir um amuleto |
-| Q | voltar à forma humana |
-| TAB | Códice |
-| M | mapa de campo |
-| R | iniciar nova expedição |
-| ESC | menu |
+| WASD / Setas | Movimentação pelo mundo |
+| ESPAÇO | Interagir com pontos ecológicos, desarmar ameaças e purificar totens |
+| 1 a 6 | Metamorfose rápida para formas animais desbloqueadas |
+| 0 | Retornar à forma humana (obrigatório para manusear ferramentas e ninhos) |
+| +/- | Zoom da câmera 2.5D isométrica |
 
-**Essência** é o recurso central: transformar-se consome essência continuamente e,
-quando ela acaba, você volta a ser humano na hora. Só a forma humana conversa com
-pessoas, abre armadilhas e planta mudas — a troca entre bicho e gente é o ritmo do jogo.
+## Fontes de verdade e Documentação
 
-Ninguém morre. Quem é pego por uma ameaça é afugentado e perde pontos.
-
-## Estrutura
-
-```
-GamingBrainstorm/
-  Core/    regras: biomas, amuletos, terreno, missões, diálogo, códice, save
-  World/   geração procedural infinita por chunks
-  Art/     desenho de todo o sprite e terreno em CoreGraphics.
-           Creatures.swift gera cada quadro a partir de uma Pose — os ciclos de
-           caminhada, salto, investida e batida de asa são calculados, não
-           desenhados à mão.
-  Scenes/  cena SpriteKit, entidades do mundo, teclado
-  UI/      SwiftUI: HUD, diálogo, códice, mapa, menu
-```
-
-O Códice traz fichas de conservação baseadas em dados reais (IUCN, ICMBio e
-projetos brasileiros de campo) sobre cada espécie e cada bioma.
-
-## Rodar
-
-Abra `GamingBrainstorm.xcodeproj` no Xcode e rode o esquema `GamingBrainstorm`,
-ou pela linha de comando:
-
-```
-xcodebuild -project GamingBrainstorm/GamingBrainstorm.xcodeproj -scheme GamingBrainstorm build
-```
-
-O progresso é salvo em `~/Library/Application Support/GuardioesDosBiomas/save.json`.
+- [GDD.md](GDD.md) — Game Design Document
+- [DESIGN.md](DESIGN.md) — Direção Visual e Design Tokens
+- [APPLE_TECHNOLOGIES.md](APPLE_TECHNOLOGIES.md) — Tecnologias nativas Apple
+- [TEST_PLAN.md](TEST_PLAN.md) — Estratégia de testes
+- [docs/adr/](docs/adr/) — Architecture Decision Records
