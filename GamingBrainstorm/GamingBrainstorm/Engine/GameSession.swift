@@ -26,6 +26,9 @@ public final class GameSession: @unchecked Sendable {
     public var atmosphere: AtmosphereState = AtmosphereState()
     public var ambientFauna: AmbientFaunaEngine = AmbientFaunaEngine()
     
+    // Active Mystical Portals (Refúgio Raízes Arc & Biome Return Portals)
+    public var activePortals: [BiomePortal] = []
+    
     // UI Event Notification & Biome Announcements
     public var recentNotification: String?
     
@@ -58,8 +61,9 @@ public final class GameSession: @unchecked Sendable {
             resources: SanctuaryResources(wood: 120, stone: 80, cleanWater: 150, carePoints: 100)
         )
         
-        // Generate World Points for all biomes across the unified grand map
+        // Generate World Points and Portals across the unified grand map
         self.worldPoints = GameSession.generateInitialWorldPoints()
+        self.activePortals = GameSession.generateInitialPortals()
         self.currentBiome = GameSession.biomeForPosition(x: playerPosition.x, y: playerPosition.y)
         
         // Start Chapter 1 intro dialogue
@@ -229,14 +233,51 @@ public final class GameSession: @unchecked Sendable {
         }
     }
     
+    public func getNearbyPortal() -> BiomePortal? {
+        let radius: Double = 26.0
+        var closest: (portal: BiomePortal, dist: Double)? = nil
+        for portal in activePortals {
+            let d = Double(hypot(portal.position.x - playerPosition.x, portal.position.y - playerPosition.y))
+            if d <= radius {
+                if closest == nil || d < closest!.dist {
+                    closest = (portal, d)
+                }
+            }
+        }
+        return closest?.portal
+    }
+    
+    @discardableResult
+    public func teleportThroughPortal(_ portal: BiomePortal) -> (success: Bool, message: String) {
+        playerPosition = portal.targetPosition
+        currentBiome = GameSession.biomeForPosition(x: playerPosition.x, y: playerPosition.y)
+        #if !TEST_RUNNER
+        SoundManager.shared.playPortalTeleport()
+        SoundManager.shared.updateBiomeMusic(for: currentBiome)
+        #endif
+        let msg = portal.isReturnPortal ?
+            "🌀 Você atravessou o portal e retornou em segurança ao Refúgio Raízes!" :
+            "🌀 Você viajou através do \(portal.portalName) até o bioma \(portal.targetBiome.rawValue)!"
+        recentNotification = msg
+        return (true, msg)
+    }
+    
     @discardableResult
     public func interactWithNearbyPoint() -> (success: Bool, message: String) {
-        // 1. Check NPC Interaction (with proximity priority over world points)
+        // 0. Check Portal Proximity (Priority when closest)
+        let nearbyPortal = getNearbyPortal()
         let nearbyNPC = getNearbyNPC()
         let initialPoint = getNearbyPoint()
+        
+        let distPortal = nearbyPortal != nil ? hypot(nearbyPortal!.position.x - playerPosition.x, nearbyPortal!.position.y - playerPosition.y) : Double.infinity
         let distNPC = nearbyNPC != nil ? hypot(nearbyNPC!.position.x - playerPosition.x, nearbyNPC!.position.y - playerPosition.y) : Double.infinity
         let distPointInitial = initialPoint != nil ? hypot(initialPoint!.x - playerPosition.x, initialPoint!.y - playerPosition.y) : Double.infinity
         
+        if let portal = nearbyPortal, distPortal <= min(distNPC, distPointInitial) {
+            return teleportThroughPortal(portal)
+        }
+        
+        // 1. Check NPC Interaction (with proximity priority over world points)
         if let npc = nearbyNPC, distNPC <= distPointInitial {
             #if !TEST_RUNNER
             SoundManager.shared.playDialogueBeep()
@@ -680,6 +721,120 @@ public final class GameSession: @unchecked Sendable {
                 title: "Coxilha dos Ventos",
                 description: "Gramíneas ondulantes com rastros de formigueiros gigantes.",
                 requiredPerk: nil
+            )
+        ]
+    }
+    
+    // MARK: - Initial Biome Portals (Refúgio Raízes Arc & Biome Return Portals)
+    public static func generateInitialPortals() -> [BiomePortal] {
+        return [
+            // Outbound from Refúgio Raízes Arc (to North of central plaza)
+            BiomePortal(
+                id: "portal_to_mata_atlantica",
+                portalName: "Portal da Mata Atlântica",
+                sourceBiome: .mataAtlantica,
+                targetBiome: .mataAtlantica,
+                position: CGPoint(x: -24.0, y: -26.0),
+                targetPosition: CGPoint(x: 55.0, y: 155.0),
+                colorHex: "#34C759",
+                description: "Conduz à Estação das Copas e aos cipoais montanhosos da Mata Atlântica."
+            ),
+            BiomePortal(
+                id: "portal_to_cerrado",
+                portalName: "Portal do Cerrado",
+                sourceBiome: .cerrado,
+                targetBiome: .cerrado,
+                position: CGPoint(x: -12.0, y: -30.0),
+                targetPosition: CGPoint(x: 125.0, y: -20.0),
+                colorHex: "#FF9500",
+                description: "Conduz ao Posto dos Brigadistas e às planícies de capim seco do Cerrado."
+            ),
+            BiomePortal(
+                id: "portal_to_pantanal",
+                portalName: "Portal do Pantanal",
+                sourceBiome: .pantanal,
+                targetBiome: .pantanal,
+                position: CGPoint(x: 0.0, y: -32.0),
+                targetPosition: CGPoint(x: -135.0, y: 30.0),
+                colorHex: "#5AC8FA",
+                description: "Conduz ao Bosque dos Manduvis Centenários e às várzeas alagadas do Pantanal."
+            ),
+            BiomePortal(
+                id: "portal_to_amazonia",
+                portalName: "Portal da Amazônia",
+                sourceBiome: .amazonia,
+                targetBiome: .amazonia,
+                position: CGPoint(x: 12.0, y: -30.0),
+                targetPosition: CGPoint(x: -155.0, y: -205.0),
+                colorHex: "#007AFF",
+                description: "Conduz ao Lago de Manejo Comunitário e às águas fartas da Amazônia."
+            ),
+            BiomePortal(
+                id: "portal_to_pampa",
+                portalName: "Portal do Pampa",
+                sourceBiome: .pampa,
+                targetBiome: .pampa,
+                position: CGPoint(x: 24.0, y: -26.0),
+                targetPosition: CGPoint(x: 22.0, y: 235.0),
+                colorHex: "#AF52DE",
+                description: "Conduz aos campos de dunas vivas e às galerias subterrâneas do Pampa."
+            ),
+            
+            // Inbound Return Portals located within each Biome
+            BiomePortal(
+                id: "portal_return_mata_atlantica",
+                portalName: "Portal de Retorno ao Refúgio",
+                sourceBiome: .mataAtlantica,
+                targetBiome: .mataAtlantica,
+                position: CGPoint(x: 52.0, y: 165.0),
+                targetPosition: CGPoint(x: -22.0, y: -20.0),
+                colorHex: "#E5E5EA",
+                isReturnPortal: true,
+                description: "Retorne instantaneamente à segurança do Refúgio Raízes."
+            ),
+            BiomePortal(
+                id: "portal_return_cerrado",
+                portalName: "Portal de Retorno ao Refúgio",
+                sourceBiome: .cerrado,
+                targetBiome: .cerrado,
+                position: CGPoint(x: 120.0, y: -10.0),
+                targetPosition: CGPoint(x: -10.0, y: -22.0),
+                colorHex: "#E5E5EA",
+                isReturnPortal: true,
+                description: "Retorne instantaneamente à segurança do Refúgio Raízes."
+            ),
+            BiomePortal(
+                id: "portal_return_pantanal",
+                portalName: "Portal de Retorno ao Refúgio",
+                sourceBiome: .pantanal,
+                targetBiome: .pantanal,
+                position: CGPoint(x: -128.0, y: 38.0),
+                targetPosition: CGPoint(x: 0.0, y: -24.0),
+                colorHex: "#E5E5EA",
+                isReturnPortal: true,
+                description: "Retorne instantaneamente à segurança do Refúgio Raízes."
+            ),
+            BiomePortal(
+                id: "portal_return_amazonia",
+                portalName: "Portal de Retorno ao Refúgio",
+                sourceBiome: .amazonia,
+                targetBiome: .amazonia,
+                position: CGPoint(x: -148.0, y: -200.0),
+                targetPosition: CGPoint(x: 10.0, y: -22.0),
+                colorHex: "#E5E5EA",
+                isReturnPortal: true,
+                description: "Retorne instantaneamente à segurança do Refúgio Raízes."
+            ),
+            BiomePortal(
+                id: "portal_return_pampa",
+                portalName: "Portal de Retorno ao Refúgio",
+                sourceBiome: .pampa,
+                targetBiome: .pampa,
+                position: CGPoint(x: 28.0, y: 228.0),
+                targetPosition: CGPoint(x: 22.0, y: -20.0),
+                colorHex: "#E5E5EA",
+                isReturnPortal: true,
+                description: "Retorne instantaneamente à segurança do Refúgio Raízes."
             )
         ]
     }

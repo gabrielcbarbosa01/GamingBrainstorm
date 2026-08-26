@@ -36,6 +36,9 @@ public struct WorldExploration3DView: View {
     @State private var enemiesRootNode = SCNNode()
     @State private var ambientFaunaRootNode = SCNNode()
     @State private var weatherParticlesNode = SCNNode()
+    @State private var refugioRootNode = SCNNode()
+    @State private var portalsRootNode = SCNNode()
+    @State private var biomeLandmarksRootNode = SCNNode()
     @State private var currentFrameIndex = 0
     @State private var runBouncePhase: Double = 0.0
     
@@ -247,7 +250,22 @@ public struct WorldExploration3DView: View {
         scene.rootNode.addChildNode(weatherParticlesNode)
         updateWeatherParticles(for: session.currentBiome)
         
-        // 14. Player Character Node
+        // 14. Refúgio Raízes Hub (Praça Central, Oficina, Cais de Pesca, Viveiro, Altar)
+        refugioRootNode = SCNNode()
+        scene.rootNode.addChildNode(refugioRootNode)
+        build3DRefugioRaizes()
+        
+        // 15. Portais Místicos dos Biomas e de Retorno
+        portalsRootNode = SCNNode()
+        scene.rootNode.addChildNode(portalsRootNode)
+        build3DPortals()
+        
+        // 16. Marcos e Lugares Temáticos dos Biomas
+        biomeLandmarksRootNode = SCNNode()
+        scene.rootNode.addChildNode(biomeLandmarksRootNode)
+        build3DBiomeLandmarks()
+        
+        // 17. Player Character Node
         build3DPlayerNode()
         
         // Update atmosphere & lighting for initial player location
@@ -956,6 +974,435 @@ public struct WorldExploration3DView: View {
         }
     }
     
+    // MARK: - Refúgio Raízes Hub 3D Scenery
+    private func build3DRefugioRaizes() {
+        refugioRootNode.childNodes.forEach { $0.removeFromParentNode() }
+        
+        // 1. Praça Central Empedrada (Cobblestone Circle)
+        let plazaGeo = SCNCylinder(radius: 22.0, height: 0.12)
+        let plazaMat = SCNMaterial()
+        plazaMat.diffuse.contents = NSColor(red: 0.74, green: 0.72, blue: 0.66, alpha: 1.0)
+        plazaMat.roughness.contents = 0.95
+        plazaGeo.materials = [plazaMat]
+        let plazaNode = SCNNode(geometry: plazaGeo)
+        plazaNode.position = SCNVector3(0, 0.06, 0)
+        plazaNode.castsShadow = false
+        refugioRootNode.addChildNode(plazaNode)
+        
+        // Borda de pedra polida ao redor da praça
+        let borderGeo = SCNTorus(ringRadius: 22.0, pipeRadius: 0.45)
+        let borderMat = SCNMaterial()
+        borderMat.diffuse.contents = NSColor(red: 0.52, green: 0.50, blue: 0.46, alpha: 1.0)
+        borderGeo.materials = [borderMat]
+        let borderNode = SCNNode(geometry: borderGeo)
+        borderNode.position = SCNVector3(0, 0.22, 0)
+        refugioRootNode.addChildNode(borderNode)
+        
+        // Tochas de Pedra Monumentais nos 4 pontos cardeais da praça
+        let torchPositions: [(CGFloat, CGFloat)] = [
+            (0, 18), (0, -18), (-18, 0), (18, 0)
+        ]
+        for (tx, tz) in torchPositions {
+            let torchPost = SCNCylinder(radius: 0.35, height: 2.6)
+            let torchMat = SCNMaterial()
+            torchMat.diffuse.contents = NSColor(red: 0.42, green: 0.40, blue: 0.36, alpha: 1.0)
+            torchPost.materials = [torchMat]
+            let postNode = SCNNode(geometry: torchPost)
+            postNode.position = SCNVector3(tx, 1.3, tz)
+            postNode.castsShadow = true
+            refugioRootNode.addChildNode(postNode)
+            
+            // Chama da tocha
+            let flameGeo = SCNSphere(radius: 0.3)
+            let flameMat = SCNMaterial()
+            flameMat.diffuse.contents = NSColor(red: 1.0, green: 0.72, blue: 0.22, alpha: 1.0)
+            flameMat.emission.contents = NSColor(red: 1.0, green: 0.65, blue: 0.15, alpha: 1.0)
+            flameGeo.materials = [flameMat]
+            let flameNode = SCNNode(geometry: flameGeo)
+            flameNode.position = SCNVector3(tx, 2.7, tz)
+            
+            let pulseAction = SCNAction.sequence([
+                SCNAction.scale(to: 1.25, duration: 0.35),
+                SCNAction.scale(to: 0.85, duration: 0.35)
+            ])
+            flameNode.runAction(SCNAction.repeatForever(pulseAction))
+            refugioRootNode.addChildNode(flameNode)
+        }
+        
+        // 2. Placa Central do Refúgio ("Refúgio Raízes — estação de campo. Aqui você está seguro.")
+        let signPost1 = SCNCylinder(radius: 0.14, height: 2.2)
+        let signPost2 = SCNCylinder(radius: 0.14, height: 2.2)
+        let woodMat = SCNMaterial()
+        woodMat.diffuse.contents = NSColor(red: 0.38, green: 0.24, blue: 0.14, alpha: 1.0)
+        signPost1.materials = [woodMat]
+        signPost2.materials = [woodMat]
+        
+        let p1 = SCNNode(geometry: signPost1)
+        p1.position = SCNVector3(-1.4, 1.1, -1.6)
+        let p2 = SCNNode(geometry: signPost2)
+        p2.position = SCNVector3(1.4, 1.1, -1.6)
+        refugioRootNode.addChildNode(p1)
+        refugioRootNode.addChildNode(p2)
+        
+        let signBoardGeo = SCNBox(width: 3.8, height: 1.4, length: 0.22, chamferRadius: 0.04)
+        let boardMat = SCNMaterial()
+        boardMat.diffuse.contents = NSColor(red: 0.52, green: 0.35, blue: 0.22, alpha: 1.0)
+        signBoardGeo.materials = [boardMat]
+        let signBoardNode = SCNNode(geometry: signBoardGeo)
+        signBoardNode.position = SCNVector3(0, 1.9, -1.6)
+        signBoardNode.castsShadow = true
+        refugioRootNode.addChildNode(signBoardNode)
+        
+        // 3. Oficina de Campo (Bancada, Telhado de Barro, Ferramentas e Baú) em (11.2, 3.2)
+        let ofX: CGFloat = 11.2
+        let ofZ: CGFloat = 3.2
+        let workshopContainer = SCNNode()
+        workshopContainer.position = SCNVector3(ofX, 0, ofZ)
+        
+        // 4 Pilares de Madeira
+        for px in [-2.4, 2.4] as [CGFloat] {
+            for pz in [-1.8, 1.8] as [CGFloat] {
+                let col = SCNCylinder(radius: 0.22, height: 3.6)
+                col.materials = [woodMat]
+                let cNode = SCNNode(geometry: col)
+                cNode.position = SCNVector3(px, 1.8, pz)
+                cNode.castsShadow = true
+                workshopContainer.addChildNode(cNode)
+            }
+        }
+        
+        // Telhado Cerâmico de Duas Águas
+        let roofGeo = SCNBox(width: 5.6, height: 0.3, length: 4.4, chamferRadius: 0.05)
+        let roofMat = SCNMaterial()
+        roofMat.diffuse.contents = NSColor(red: 0.65, green: 0.30, blue: 0.18, alpha: 1.0)
+        roofGeo.materials = [roofMat]
+        let roofNode = SCNNode(geometry: roofGeo)
+        roofNode.position = SCNVector3(0, 3.7, 0)
+        roofNode.eulerAngles.x = 0.08
+        roofNode.castsShadow = true
+        workshopContainer.addChildNode(roofNode)
+        
+        // Bancada de Trabalho
+        let benchGeo = SCNBox(width: 3.4, height: 1.1, length: 1.4, chamferRadius: 0.05)
+        let benchMat = SCNMaterial()
+        benchMat.diffuse.contents = NSColor(red: 0.44, green: 0.30, blue: 0.18, alpha: 1.0)
+        benchGeo.materials = [benchMat]
+        let benchNode = SCNNode(geometry: benchGeo)
+        benchNode.position = SCNVector3(0, 0.55, 0)
+        benchNode.castsShadow = true
+        workshopContainer.addChildNode(benchNode)
+        
+        // Baú de Suprimentos
+        let chestGeo = SCNBox(width: 1.4, height: 0.9, length: 0.9, chamferRadius: 0.04)
+        let chestMat = SCNMaterial()
+        chestMat.diffuse.contents = NSColor(red: 0.30, green: 0.20, blue: 0.12, alpha: 1.0)
+        chestGeo.materials = [chestMat]
+        let chestNode = SCNNode(geometry: chestGeo)
+        chestNode.position = SCNVector3(1.8, 0.45, 1.1)
+        chestNode.castsShadow = true
+        workshopContainer.addChildNode(chestNode)
+        refugioRootNode.addChildNode(workshopContainer)
+        
+        // 4. Açude e Cais de Pesca em (-12.8, -6.4)
+        let caisX: CGFloat = -12.8
+        let caisZ: CGFloat = -6.4
+        let pondGeo = SCNCylinder(radius: 9.5, height: 0.08)
+        let pondMat = SCNMaterial()
+        pondMat.diffuse.contents = NSColor(red: 0.12, green: 0.58, blue: 0.72, alpha: 0.88)
+        pondMat.roughness.contents = 0.1
+        pondGeo.materials = [pondMat]
+        let pondNode = SCNNode(geometry: pondGeo)
+        pondNode.position = SCNVector3(caisX, 0.04, caisZ)
+        refugioRootNode.addChildNode(pondNode)
+        
+        // Deck de Tábuas de Madeira Estendido sobre a Água
+        let pierGeo = SCNBox(width: 3.6, height: 0.28, length: 7.2, chamferRadius: 0.03)
+        let pierMat = SCNMaterial()
+        pierMat.diffuse.contents = NSColor(red: 0.48, green: 0.34, blue: 0.22, alpha: 1.0)
+        pierGeo.materials = [pierMat]
+        let pierNode = SCNNode(geometry: pierGeo)
+        pierNode.position = SCNVector3(caisX, 0.24, caisZ - 1.5)
+        pierNode.castsShadow = true
+        refugioRootNode.addChildNode(pierNode)
+        
+        // Cabeços de Amarração do Píer
+        for pz in [-4.5, 1.5] as [CGFloat] {
+            let postGeo = SCNCylinder(radius: 0.18, height: 1.1)
+            postGeo.materials = [woodMat]
+            let pNode = SCNNode(geometry: postGeo)
+            pNode.position = SCNVector3(caisX - 1.6, 0.55, caisZ + pz)
+            pNode.castsShadow = true
+            refugioRootNode.addChildNode(pNode)
+        }
+        
+        // 5. Viveiro de Mudas (10 Canteiros) em (8.0, -9.6)
+        let vivX: CGFloat = 8.0
+        let vivZ: CGFloat = -9.6
+        let soilMat = SCNMaterial()
+        soilMat.diffuse.contents = NSColor(red: 0.24, green: 0.15, blue: 0.08, alpha: 1.0)
+        
+        let sproutMat = SCNMaterial()
+        sproutMat.diffuse.contents = NSColor(red: 0.25, green: 0.75, blue: 0.30, alpha: 1.0)
+        
+        for i in 0..<10 {
+            let col = CGFloat(i % 5)
+            let row = CGFloat(i / 5)
+            let bx = vivX + (col * 2.8) - 5.6
+            let bz = vivZ + (row * 2.2)
+            
+            // Canteiro Lavrado
+            let bedGeo = SCNBox(width: 2.2, height: 0.4, length: 1.6, chamferRadius: 0.04)
+            bedGeo.materials = [woodMat]
+            let bedNode = SCNNode(geometry: bedGeo)
+            bedNode.position = SCNVector3(bx, 0.2, bz)
+            bedNode.castsShadow = true
+            refugioRootNode.addChildNode(bedNode)
+            
+            // Terra Adubada
+            let earthGeo = SCNBox(width: 1.9, height: 0.12, length: 1.3, chamferRadius: 0.02)
+            earthGeo.materials = [soilMat]
+            let earthNode = SCNNode(geometry: earthGeo)
+            earthNode.position = SCNVector3(bx, 0.38, bz)
+            refugioRootNode.addChildNode(earthNode)
+            
+            // Brotos crescendo
+            for s in 0..<3 {
+                let sx = bx + CGFloat(s - 1) * 0.5
+                let sproutGeo = SCNCone(topRadius: 0.03, bottomRadius: 0.15, height: 0.55)
+                sproutGeo.materials = [sproutMat]
+                let sNode = SCNNode(geometry: sproutGeo)
+                sNode.position = SCNVector3(sx, 0.65, bz)
+                refugioRootNode.addChildNode(sNode)
+            }
+        }
+        
+        // 6. Altar Sagrado da Harpia Ancestral em (0.0, -11.2)
+        let altZ: CGFloat = -11.2
+        let step1Geo = SCNCylinder(radius: 4.8, height: 0.3)
+        let stoneMat = SCNMaterial()
+        stoneMat.diffuse.contents = NSColor(red: 0.58, green: 0.56, blue: 0.52, alpha: 1.0)
+        step1Geo.materials = [stoneMat]
+        let step1Node = SCNNode(geometry: step1Geo)
+        step1Node.position = SCNVector3(0, 0.15, altZ)
+        refugioRootNode.addChildNode(step1Node)
+        
+        let step2Geo = SCNCylinder(radius: 3.4, height: 0.4)
+        step2Geo.materials = [stoneMat]
+        let step2Node = SCNNode(geometry: step2Geo)
+        step2Node.position = SCNVector3(0, 0.45, altZ)
+        refugioRootNode.addChildNode(step2Node)
+        
+        let daisGeo = SCNCylinder(radius: 1.8, height: 1.6)
+        daisGeo.materials = [stoneMat]
+        let daisNode = SCNNode(geometry: daisGeo)
+        daisNode.position = SCNVector3(0, 1.25, altZ)
+        daisNode.castsShadow = true
+        refugioRootNode.addChildNode(daisNode)
+    }
+    
+    // MARK: - 3D Mystical Portals (Arc of the 5 Biomes + 5 Return Portals)
+    private func build3DPortals() {
+        portalsRootNode.childNodes.forEach { $0.removeFromParentNode() }
+        
+        let stoneMat = SCNMaterial()
+        stoneMat.diffuse.contents = NSColor(red: 0.42, green: 0.40, blue: 0.38, alpha: 1.0)
+        stoneMat.roughness.contents = 0.9
+        
+        for portal in session.activePortals {
+            let px = CGFloat(portal.position.x * 0.8)
+            let pz = CGFloat(portal.position.y * 0.8)
+            
+            let portalContainer = SCNNode()
+            portalContainer.name = portal.id
+            portalContainer.position = SCNVector3(px, 0, pz)
+            
+            // Base de Pedra
+            let baseGeo = SCNBox(width: 4.6, height: 0.4, length: 1.8, chamferRadius: 0.08)
+            baseGeo.materials = [stoneMat]
+            let baseNode = SCNNode(geometry: baseGeo)
+            baseNode.position = SCNVector3(0, 0.2, 0)
+            baseNode.castsShadow = true
+            portalContainer.addChildNode(baseNode)
+            
+            // Dois Pilares de Pedra Talhada
+            for colX in [-1.8, 1.8] as [CGFloat] {
+                let pillarGeo = SCNBox(width: 0.85, height: 5.6, length: 0.85, chamferRadius: 0.06)
+                pillarGeo.materials = [stoneMat]
+                let pillarNode = SCNNode(geometry: pillarGeo)
+                pillarNode.position = SCNVector3(colX, 2.8, 0)
+                pillarNode.castsShadow = true
+                portalContainer.addChildNode(pillarNode)
+            }
+            
+            // Lintel Superior Arqueado
+            let lintelGeo = SCNBox(width: 4.8, height: 0.9, length: 1.1, chamferRadius: 0.08)
+            lintelGeo.materials = [stoneMat]
+            let lintelNode = SCNNode(geometry: lintelGeo)
+            lintelNode.position = SCNVector3(0, 5.6, 0)
+            lintelNode.castsShadow = true
+            portalContainer.addChildNode(lintelNode)
+            
+            // Anel Místico de Energia Emissiva
+            let energyRingGeo = SCNTorus(ringRadius: 1.55, pipeRadius: 0.18)
+            let energyMat = SCNMaterial()
+            energyMat.diffuse.contents = portal.nsColor
+            energyMat.emission.contents = portal.nsColor
+            energyRingGeo.materials = [energyMat]
+            let energyRingNode = SCNNode(geometry: energyRingGeo)
+            energyRingNode.position = SCNVector3(0, 2.9, 0)
+            energyRingNode.eulerAngles.x = CGFloat.pi / 2
+            
+            // Rotação suave do anel místico
+            let spinAction = SCNAction.rotateBy(x: 0, y: 0, z: CGFloat.pi * 2, duration: 4.5)
+            energyRingNode.runAction(SCNAction.repeatForever(spinAction))
+            portalContainer.addChildNode(energyRingNode)
+            
+            // Vórtice Translúcido Interno
+            let vortexGeo = SCNCylinder(radius: 1.35, height: 0.06)
+            let vortexMat = SCNMaterial()
+            vortexMat.diffuse.contents = portal.nsColor.withAlphaComponent(0.65)
+            vortexMat.isDoubleSided = true
+            vortexGeo.materials = [vortexMat]
+            let vortexNode = SCNNode(geometry: vortexGeo)
+            vortexNode.position = SCNVector3(0, 2.9, 0)
+            vortexNode.eulerAngles.x = CGFloat.pi / 2
+            
+            let pulseAction = SCNAction.sequence([
+                SCNAction.scale(to: 1.1, duration: 1.2),
+                SCNAction.scale(to: 0.92, duration: 1.2)
+            ])
+            vortexNode.runAction(SCNAction.repeatForever(pulseAction))
+            portalContainer.addChildNode(vortexNode)
+            
+            // Sistema de Partículas Místicas Flutuantes
+            let portalParticles = SCNParticleSystem()
+            portalParticles.birthRate = 20
+            portalParticles.particleLifeSpan = 1.5
+            portalParticles.particleColor = portal.nsColor
+            portalParticles.particleSize = 0.15
+            portalParticles.emitterShape = SCNCylinder(radius: 1.2, height: 0.2)
+            portalParticles.emissionDuration = 0
+            portalParticles.loops = true
+            portalParticles.spreadingAngle = 20
+            portalParticles.speedFactor = 0.6
+            portalParticles.acceleration = SCNVector3(0, 1.2, 0)
+            portalContainer.addParticleSystem(portalParticles)
+            
+            portalsRootNode.addChildNode(portalContainer)
+        }
+    }
+    
+    // MARK: - 3D Landmarks Across the 5 Biomes
+    private func build3DBiomeLandmarks() {
+        biomeLandmarksRootNode.childNodes.forEach { $0.removeFromParentNode() }
+        
+        let woodMat = SCNMaterial()
+        woodMat.diffuse.contents = NSColor(red: 0.36, green: 0.22, blue: 0.12, alpha: 1.0)
+        
+        // 1. Mata Atlântica: Estação das Copas (Dossel Suspenso com Passarela de Cordas)
+        let mataX: CGFloat = 55.0 * 0.8
+        let mataZ: CGFloat = 155.0 * 0.8
+        
+        let platformGeo = SCNBox(width: 4.8, height: 0.35, length: 4.8, chamferRadius: 0.04)
+        platformGeo.materials = [woodMat]
+        let platformNode = SCNNode(geometry: platformGeo)
+        platformNode.position = SCNVector3(mataX, 6.2, mataZ)
+        platformNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(platformNode)
+        
+        // Pilares altos de sustentação do dossel
+        for colX in [-2.2, 2.2] as [CGFloat] {
+            for colZ in [-2.2, 2.2] as [CGFloat] {
+                let postGeo = SCNCylinder(radius: 0.22, height: 6.2)
+                postGeo.materials = [woodMat]
+                let postNode = SCNNode(geometry: postGeo)
+                postNode.position = SCNVector3(mataX + colX, 3.1, mataZ + colZ)
+                postNode.castsShadow = true
+                biomeLandmarksRootNode.addChildNode(postNode)
+            }
+        }
+        
+        // 2. Cerrado: Posto dos Brigadistas & Faixa de Aceiro
+        let cerX: CGFloat = 125.0 * 0.8
+        let cerZ: CGFloat = -20.0 * 0.8
+        
+        // Tenda de Campanha dos Brigadistas
+        let tentGeo = SCNPyramid(width: 4.5, height: 3.2, length: 4.5)
+        let tentMat = SCNMaterial()
+        tentMat.diffuse.contents = NSColor(red: 0.58, green: 0.52, blue: 0.36, alpha: 1.0)
+        tentGeo.materials = [tentMat]
+        let tentNode = SCNNode(geometry: tentGeo)
+        tentNode.position = SCNVector3(cerX, 0, cerZ)
+        tentNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(tentNode)
+        
+        // Faixa de Solo Raspado (Aceiro de Contenção)
+        let firebreakGeo = SCNBox(width: 32.0, height: 0.08, length: 4.0, chamferRadius: 0.0)
+        let firebreakMat = SCNMaterial()
+        firebreakMat.diffuse.contents = NSColor(red: 0.44, green: 0.30, blue: 0.18, alpha: 1.0)
+        firebreakGeo.materials = [firebreakMat]
+        let firebreakNode = SCNNode(geometry: firebreakGeo)
+        firebreakNode.position = SCNVector3(cerX, 0.04, cerZ + 6.0)
+        biomeLandmarksRootNode.addChildNode(firebreakNode)
+        
+        // 3. Pantanal: Manduvi Gigante com Ninho Artificial de Arara
+        let panX: CGFloat = -135.0 * 0.8
+        let panZ: CGFloat = 30.0 * 0.8
+        
+        let manduviTrunk = SCNCylinder(radius: 1.6, height: 8.5)
+        let manduviMat = SCNMaterial()
+        manduviMat.diffuse.contents = NSColor(red: 0.30, green: 0.20, blue: 0.14, alpha: 1.0)
+        manduviTrunk.materials = [manduviMat]
+        let trunkNode = SCNNode(geometry: manduviTrunk)
+        trunkNode.position = SCNVector3(panX, 4.25, panZ)
+        trunkNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(trunkNode)
+        
+        // Copa do Manduvi
+        let canopyGeo = SCNSphere(radius: 4.5)
+        let canopyMat = SCNMaterial()
+        canopyMat.diffuse.contents = NSColor(red: 0.12, green: 0.46, blue: 0.22, alpha: 1.0)
+        canopyGeo.materials = [canopyMat]
+        let canopyNode = SCNNode(geometry: canopyGeo)
+        canopyNode.position = SCNVector3(panX, 9.5, panZ)
+        canopyNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(canopyNode)
+        
+        // Caixa de Ninho Artificial de Madeira Fixada no Tronco
+        let nestBoxGeo = SCNBox(width: 1.1, height: 1.6, length: 1.1, chamferRadius: 0.05)
+        nestBoxGeo.materials = [woodMat]
+        let nestNode = SCNNode(geometry: nestBoxGeo)
+        nestNode.position = SCNVector3(panX + 1.6, 5.8, panZ)
+        nestNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(nestNode)
+        
+        // 4. Amazônia: Lago de Manejo Comunitário (Pier de Contagem de Pirarucu)
+        let amzX: CGFloat = -155.0 * 0.8
+        let amzZ: CGFloat = -205.0 * 0.8
+        
+        let lakeDockGeo = SCNBox(width: 3.8, height: 0.3, length: 8.5, chamferRadius: 0.03)
+        lakeDockGeo.materials = [woodMat]
+        let lakeDockNode = SCNNode(geometry: lakeDockGeo)
+        lakeDockNode.position = SCNVector3(amzX, 0.25, amzZ)
+        lakeDockNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(lakeDockNode)
+        
+        // 5. Pampa: Colônia das Dunas e Galerias Subterrâneas de Tuco-Tuco
+        let pamX: CGFloat = 22.0 * 0.8
+        let pamZ: CGFloat = 235.0 * 0.8
+        
+        for mound in [(-2.5, -1.8), (2.2, 1.4), (0.0, 3.2)] as [(CGFloat, CGFloat)] {
+            let moundGeo = SCNCone(topRadius: 0.3, bottomRadius: 1.8, height: 0.8)
+            let sandMat = SCNMaterial()
+            sandMat.diffuse.contents = NSColor(red: 0.76, green: 0.70, blue: 0.52, alpha: 1.0)
+            moundGeo.materials = [sandMat]
+            let mNode = SCNNode(geometry: moundGeo)
+            mNode.position = SCNVector3(pamX + mound.0, 0.4, pamZ + mound.1)
+            mNode.castsShadow = true
+            biomeLandmarksRootNode.addChildNode(mNode)
+        }
+    }
+    
     // MARK: - Dynamic Day/Night Lighting & Sky
     private func updateLightingForTimeOfDay() {
         let tod = session.atmosphere.currentTimeOfDay
@@ -1373,6 +1820,44 @@ public struct WorldExploration3DView: View {
                 .padding()
                 .background(RoundedRectangle(cornerRadius: 20).fill(.ultraThickMaterial))
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.yellow, lineWidth: 1.5))
+                .padding(.horizontal)
+            } else if let portal = session.getNearbyPortal() {
+                HStack(spacing: 14) {
+                    Circle()
+                        .fill(Color(nsColor: portal.nsColor))
+                        .frame(width: 44, height: 44)
+                        .overlay {
+                            Image(systemName: "circle.circle.fill")
+                                .font(.title3.bold())
+                                .foregroundStyle(.white)
+                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(portal.portalName)
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                        Text(portal.description.isEmpty ? "Atravesse o portal místico para viajar instantaneamente." : portal.description)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+                    Spacer()
+                    Button {
+                        session.teleportThroughPortal(portal)
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "sparkles")
+                            Text("Entrar [Espaço]")
+                        }
+                        .font(.headline.bold())
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(Color(nsColor: portal.nsColor)))
+                        .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding()
+                .background(RoundedRectangle(cornerRadius: 20).fill(.ultraThickMaterial))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(nsColor: portal.nsColor), lineWidth: 1.5))
                 .padding(.horizontal)
             } else if let enemy = session.getNearbyEnemy(), !enemy.isNeutralized {
                 HStack(spacing: 14) {

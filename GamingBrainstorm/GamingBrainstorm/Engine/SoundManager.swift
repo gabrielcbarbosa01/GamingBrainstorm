@@ -49,6 +49,7 @@ public final class SoundManager: @unchecked Sendable {
     private var chainsawBuffer: AVAudioPCMBuffer?
     private var netCutBuffer: AVAudioPCMBuffer?
     private var timerTickBuffer: AVAudioPCMBuffer?
+    private var portalTeleportBuffer: AVAudioPCMBuffer?
     private var ambientMusicBuffers: [BiomeType: AVAudioPCMBuffer] = [:]
     
     // Volume & State Settings
@@ -164,6 +165,7 @@ public final class SoundManager: @unchecked Sendable {
         chainsawBuffer = createChainsawBuffer()
         netCutBuffer = createNetCutBuffer()
         timerTickBuffer = createTimerTickBuffer()
+        portalTeleportBuffer = createPortalTeleportBuffer()
         
         // 11. Procedural Ambient Musical Tracks for All 6 Biomes
         for biome in BiomeType.allCases {
@@ -616,6 +618,34 @@ public final class SoundManager: @unchecked Sendable {
         return buffer
     }
     
+    // MARK: - Portal Teleport Synthesis (Ascending Mystical Swell)
+    private func createPortalTeleportBuffer() -> AVAudioPCMBuffer {
+        let duration: Double = 1.4
+        let frameCount = AVAudioFrameCount(duration * sampleRate)
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: frameCount),
+              let left = buffer.floatChannelData?[0],
+              let right = buffer.floatChannelData?[1] else {
+            return AVAudioPCMBuffer()
+        }
+        buffer.frameLength = frameCount
+        
+        let chordFreqs: [Double] = [220.0, 329.63, 440.0, 554.37, 659.25, 880.0]
+        for frame in 0..<Int(frameCount) {
+            let time = Double(frame) / sampleRate
+            let env = sin(.pi * (time / duration)) * (1.0 - exp(-time * 15.0))
+            let sweepFreq = 320.0 + pow(time / duration, 1.8) * 880.0
+            var sample: Float = Float(sin(2.0 * .pi * sweepFreq * time) * 0.14)
+            for (i, f) in chordFreqs.enumerated() {
+                let shimmer = sin(2.0 * .pi * (f + sin(time * 12.0) * 4.0) * time)
+                sample += Float(shimmer * exp(-Double(i) * 0.25) * 0.07)
+            }
+            sample *= Float(env)
+            left[frame] = sample
+            right[frame] = sample
+        }
+        return buffer
+    }
+    
     // MARK: - Ambient Loops
     private func startAmbientLoops() {
         guard isEngineRunning else { return }
@@ -776,6 +806,13 @@ public final class SoundManager: @unchecked Sendable {
     public func playTimerTick() {
         guard !isMuted, let buf = timerTickBuffer else { return }
         sfxPlayerNode.volume = sfxVolume * 0.45
+        sfxPlayerNode.scheduleBuffer(buf, at: nil, options: [], completionHandler: nil)
+    }
+    
+    /// Play Mystical Portal Teleport Swell
+    public func playPortalTeleport() {
+        guard !isMuted, let buf = portalTeleportBuffer else { return }
+        sfxPlayerNode.volume = sfxVolume * 1.15
         sfxPlayerNode.scheduleBuffer(buf, at: nil, options: [], completionHandler: nil)
     }
     

@@ -273,6 +273,40 @@ public struct GameEngineTests {
             assert(session.storyEngine.currentQuest?.title.contains("Expedição") == true, "Título deve ser de expedição")
         }
         
+        // 13. Portais Místicos do Refúgio Raízes e Retorno dos Biomas
+        test("Portais Místicos do Refúgio Raízes e Retorno dos Biomas") {
+            let session = GameSession()
+            
+            // 10 Portais totais: 5 do Refúgio e 5 de retorno
+            assert(session.activePortals.count == 10, "Devem existir 10 portais ativos configurados")
+            
+            let outboundPortals = session.activePortals.filter { !$0.isReturnPortal }
+            let returnPortals = session.activePortals.filter { $0.isReturnPortal }
+            assert(outboundPortals.count == 5, "Devem existir 5 portais no arco do Refúgio")
+            assert(returnPortals.count == 5, "Devem existir 5 portais de retorno nos biomas")
+            
+            // Teste de proximidade e teletransporte pelo portal da Amazônia
+            guard let portalAmaz = session.activePortals.first(where: { $0.id == "portal_to_amazonia" }) else {
+                throw NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Portal da Amazônia não encontrado"])
+            }
+            session.playerPosition = portalAmaz.position
+            assert(session.getNearbyPortal()?.id == portalAmaz.id, "getNearbyPortal deve detectar o portal sob o jogador")
+            
+            let teleportResult = session.interactWithNearbyPoint()
+            assert(teleportResult.success, "Interagir próximo ao portal deve acionar o teletransporte")
+            assert(session.currentBiome == .amazonia, "O jogador deve estar no bioma Amazônia")
+            assert(session.playerPosition == portalAmaz.targetPosition, "As coordenadas devem corresponder ao destino do portal")
+            
+            // Teste de retorno ao Refúgio pelo portal de retorno da Amazônia
+            guard let portalReturn = session.activePortals.first(where: { $0.id == "portal_return_amazonia" }) else {
+                throw NSError(domain: "Test", code: 2, userInfo: [NSLocalizedDescriptionKey: "Portal de retorno da Amazônia não encontrado"])
+            }
+            session.playerPosition = portalReturn.position
+            let returnResult = session.interactWithNearbyPoint()
+            assert(returnResult.success, "Interagir no portal de retorno deve teletransportar de volta ao Refúgio")
+            assert(session.playerPosition == portalReturn.targetPosition, "Jogador deve estar de volta na praça do Refúgio")
+        }
+        
         print("🎯 [TESTS] Resultado: \(passedCount)/\(totalCount) testes passaram com sucesso!\n")
         return passedCount == totalCount
     }
