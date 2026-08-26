@@ -586,7 +586,13 @@ public struct WorldExploration3DView: View {
         }
     }
     
-    // MARK: - 3D Story Friendly NPCs
+    private func makeYBillboard() -> SCNBillboardConstraint {
+        let bb = SCNBillboardConstraint()
+        bb.freeAxes = .Y
+        return bb
+    }
+    
+    // MARK: - 2.5D Story Friendly NPCs (Billboard Sprites)
     private func build3DStoryNPCs() {
         storyNpcsRootNode.childNodes.forEach { $0.removeFromParentNode() }
         
@@ -594,37 +600,29 @@ public struct WorldExploration3DView: View {
             let npcNode = SCNNode()
             let nx = CGFloat(npc.position.x * 0.8)
             let nz = CGFloat(npc.position.y * 0.8)
-            npcNode.position = SCNVector3(nx, 0.2, nz)
+            npcNode.position = SCNVector3(nx, 0.1, nz)
             
-            // Glowing Sanctuary Pillar Base
-            let baseGeo = SCNCylinder(radius: 1.5, height: 2.2)
-            let baseMat = SCNMaterial()
-            baseMat.diffuse.contents = NSColor.systemTeal.withAlphaComponent(0.8)
-            baseMat.emission.contents = NSColor.systemTeal.withAlphaComponent(0.4)
-            baseGeo.materials = [baseMat]
-            let baseNode = SCNNode(geometry: baseGeo)
-            baseNode.position = SCNVector3(0, 1.1, 0)
-            npcNode.addChildNode(baseNode)
+            let planeW: CGFloat = 3.6
+            let planeH: CGFloat = 4.8
+            let npcGeo = SCNPlane(width: planeW, height: planeH)
+            let img = Sprite2DFactory.shared.npcImage(for: npc)
+            let npcMat = SCNMaterial()
+            npcMat.diffuse.contents = img
+            npcMat.transparent.contents = img
+            npcMat.isDoubleSided = true
+            npcGeo.materials = [npcMat]
             
-            // Hovering holographic orb
-            let orbGeo = SCNSphere(radius: 0.9)
-            let orbMat = SCNMaterial()
-            orbMat.diffuse.contents = NSColor.systemYellow
-            orbMat.emission.contents = NSColor.systemYellow.withAlphaComponent(0.6)
-            orbGeo.materials = [orbMat]
-            let orbNode = SCNNode(geometry: orbGeo)
-            orbNode.position = SCNVector3(0, 3.2, 0)
-            
-            let floatUp = SCNAction.moveBy(x: 0, y: 0.3, z: 0, duration: 1.4)
-            let floatDown = SCNAction.moveBy(x: 0, y: -0.3, z: 0, duration: 1.4)
-            orbNode.runAction(SCNAction.repeatForever(SCNAction.sequence([floatUp, floatDown])))
-            npcNode.addChildNode(orbNode)
+            let billboard = SCNNode(geometry: npcGeo)
+            billboard.position = SCNVector3(0, planeH / 2, 0)
+            billboard.constraints = [makeYBillboard()]
+            billboard.castsShadow = true
+            npcNode.addChildNode(billboard)
             
             storyNpcsRootNode.addChildNode(npcNode)
         }
     }
     
-    // MARK: - 3D Ancient Biome Totems
+    // MARK: - 2.5D Ancient Biome Totems (Billboard Sprites)
     private func build3DBiomeTotems() {
         totemsRootNode.childNodes.forEach { $0.removeFromParentNode() }
         
@@ -634,33 +632,30 @@ public struct WorldExploration3DView: View {
             let tz = CGFloat(totem.position.y * 0.8)
             totemNode.position = SCNVector3(tx, 0.1, tz)
             
-            // Ancient Stone Monolith
-            let stoneGeo = SCNCylinder(radius: 2.2, height: 6.5)
-            let stoneMat = SCNMaterial()
-            stoneMat.diffuse.contents = totem.isPurified ? NSColor(red: 0.2, green: 0.6, blue: 0.3, alpha: 1.0) : NSColor(red: 0.35, green: 0.30, blue: 0.28, alpha: 1.0)
-            stoneGeo.materials = [stoneMat]
-            let stoneNode = SCNNode(geometry: stoneGeo)
-            stoneNode.position = SCNVector3(0, 3.25, 0)
-            totemNode.addChildNode(stoneNode)
+            let planeW: CGFloat = 4.2
+            let planeH: CGFloat = 6.4
+            let totemGeo = SCNPlane(width: planeW, height: planeH)
+            let img = Sprite2DFactory.shared.totemImage(for: totem)
+            let mat = SCNMaterial()
+            mat.diffuse.contents = img
+            mat.transparent.contents = img
+            mat.isDoubleSided = true
+            if totem.isPurified {
+                mat.emission.contents = NSColor.systemGreen.withAlphaComponent(0.3)
+            }
+            totemGeo.materials = [mat]
             
-            // Energy Aura Torus
-            let auraGeo = SCNTorus(ringRadius: 3.2, pipeRadius: 0.25)
-            let auraMat = SCNMaterial()
-            auraMat.diffuse.contents = totem.isPurified ? NSColor.systemGreen : NSColor.systemPurple
-            auraMat.emission.contents = totem.isPurified ? NSColor.systemGreen.withAlphaComponent(0.8) : NSColor.systemPurple.withAlphaComponent(0.7)
-            auraGeo.materials = [auraMat]
-            let auraNode = SCNNode(geometry: auraGeo)
-            auraNode.position = SCNVector3(0, 4.5, 0)
-            
-            let rotateAura = SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 4.0)
-            auraNode.runAction(SCNAction.repeatForever(rotateAura))
-            totemNode.addChildNode(auraNode)
+            let billboard = SCNNode(geometry: totemGeo)
+            billboard.position = SCNVector3(0, planeH / 2, 0)
+            billboard.constraints = [makeYBillboard()]
+            billboard.castsShadow = true
+            totemNode.addChildNode(billboard)
             
             totemsRootNode.addChildNode(totemNode)
         }
     }
     
-    // MARK: - 3D Open World Enemies
+    // MARK: - 2.5D Open World Enemies (Billboard Sprites)
     private func build3DEnemies() {
         enemiesRootNode.childNodes.forEach { $0.removeFromParentNode() }
         
@@ -671,196 +666,52 @@ public struct WorldExploration3DView: View {
             let ez = CGFloat(enemy.position.y * 0.8)
             enemyNode.position = SCNVector3(ex, 0.1, ez)
             
-            switch enemy.type {
-            case .poacher:
-                // Humanoid body
-                let bodyGeo = SCNCylinder(radius: 1.2, height: 3.2)
-                let bodyMat = SCNMaterial()
-                bodyMat.diffuse.contents = NSColor.systemBrown
-                bodyGeo.materials = [bodyMat]
-                let bodyNode = SCNNode(geometry: bodyGeo)
-                bodyNode.position = SCNVector3(0, 1.6, 0)
-                enemyNode.addChildNode(bodyNode)
-                
-                // Flashlight cone on ground
-                let coneGeo = SCNCone(topRadius: 0.2, bottomRadius: 2.8, height: 6.0)
-                let coneMat = SCNMaterial()
-                coneMat.diffuse.contents = NSColor.systemYellow.withAlphaComponent(0.35)
-                coneMat.isDoubleSided = true
-                coneMat.transparency = 0.45
-                coneGeo.materials = [coneMat]
-                let coneNode = SCNNode(geometry: coneGeo)
-                coneNode.eulerAngles = SCNVector3(CGFloat.pi / 2, 0, 0)
-                coneNode.position = SCNVector3(0, 0.3, 3.5)
-                enemyNode.addChildNode(coneNode)
-                
-            case .nestPoacher:
-                // Saqueador de ninhos com caixa nas costas e círculo de alerta
-                let bodyGeo = SCNCylinder(radius: 1.2, height: 3.2)
-                let bodyMat = SCNMaterial()
-                bodyMat.diffuse.contents = NSColor.systemOrange
-                bodyGeo.materials = [bodyMat]
-                let bodyNode = SCNNode(geometry: bodyGeo)
-                bodyNode.position = SCNVector3(0, 1.6, 0)
-                enemyNode.addChildNode(bodyNode)
-                
-                // Crate on back
-                let crateGeo = SCNBox(width: 1.4, height: 1.4, length: 1.2, chamferRadius: 0.1)
-                let crateMat = SCNMaterial()
-                crateMat.diffuse.contents = NSColor.brown
-                crateGeo.materials = [crateMat]
-                let crateNode = SCNNode(geometry: crateGeo)
-                crateNode.position = SCNVector3(0, 2.0, -1.0)
-                enemyNode.addChildNode(crateNode)
-                
-                // Pulsing Warning Circle
-                let ringGeo = SCNTorus(ringRadius: 3.5, pipeRadius: 0.12)
-                let ringMat = SCNMaterial()
-                ringMat.diffuse.contents = NSColor.systemOrange.withAlphaComponent(0.7)
-                ringMat.emission.contents = NSColor.systemOrange.withAlphaComponent(0.5)
-                ringGeo.materials = [ringMat]
-                let ringNode = SCNNode(geometry: ringGeo)
-                ringNode.position = SCNVector3(0, 0.1, 0)
-                enemyNode.addChildNode(ringNode)
-                
-            case .chainsawCrew:
-                // Madeireiro com motosserra
-                let bodyGeo = SCNCylinder(radius: 1.2, height: 3.2)
-                let bodyMat = SCNMaterial()
-                bodyMat.diffuse.contents = NSColor.darkGray
-                bodyGeo.materials = [bodyMat]
-                let bodyNode = SCNNode(geometry: bodyGeo)
-                bodyNode.position = SCNVector3(0, 1.6, 0)
-                enemyNode.addChildNode(bodyNode)
-                
-                // Chainsaw blade
-                let bladeGeo = SCNBox(width: 0.35, height: 0.6, length: 2.8, chamferRadius: 0.05)
-                let bladeMat = SCNMaterial()
-                bladeMat.diffuse.contents = NSColor.lightGray
-                bladeMat.metalness.contents = 0.9
-                bladeGeo.materials = [bladeMat]
-                let bladeNode = SCNNode(geometry: bladeGeo)
-                bladeNode.position = SCNVector3(0.8, 1.4, 1.6)
-                enemyNode.addChildNode(bladeNode)
-                
-            case .wildfireEntity:
-                // Blazing Flame Pillar
-                let flameGeo = SCNCone(topRadius: 0.1, bottomRadius: 2.4, height: 4.5)
-                let flameMat = SCNMaterial()
-                flameMat.diffuse.contents = NSColor.systemOrange
-                flameMat.emission.contents = NSColor.systemRed.withAlphaComponent(0.85)
-                flameGeo.materials = [flameMat]
-                let flameNode = SCNNode(geometry: flameGeo)
-                flameNode.position = SCNVector3(0, 2.25, 0)
-                
-                let scaleUp = SCNAction.scale(to: 1.15, duration: 0.4)
-                let scaleDown = SCNAction.scale(to: 0.85, duration: 0.4)
-                flameNode.runAction(SCNAction.repeatForever(SCNAction.sequence([scaleUp, scaleDown])))
-                enemyNode.addChildNode(flameNode)
-                
-            case .malhadeiraNet:
-                // Rede predatória submersa no leito do rio
-                let netGeo = SCNBox(width: 14.0, height: 0.06, length: 18.0, chamferRadius: 0.0)
-                let netMat = SCNMaterial()
-                netMat.diffuse.contents = NSColor(red: 0.1, green: 0.35, blue: 0.4, alpha: 0.75)
-                netMat.isDoubleSided = true
-                netMat.transparency = 0.75
-                netGeo.materials = [netMat]
-                let netNode = SCNNode(geometry: netGeo)
-                netNode.position = SCNVector3(0, 0.04, 0)
-                enemyNode.addChildNode(netNode)
-                
-                // 4 Floating buoy markers
-                let buoyPositions: [(Float, Float)] = [(-6, -8), (6, -8), (-6, 8), (6, 8)]
-                for (bx, bz) in buoyPositions {
-                    let buoyGeo = SCNSphere(radius: 0.6)
-                    let buoyMat = SCNMaterial()
-                    buoyMat.diffuse.contents = NSColor.cyan
-                    buoyMat.emission.contents = NSColor.cyan.withAlphaComponent(0.6)
-                    buoyGeo.materials = [buoyMat]
-                    let buoyNode = SCNNode(geometry: buoyGeo)
-                    buoyNode.position = SCNVector3(bx, 0.4, bz)
-                    enemyNode.addChildNode(buoyNode)
-                }
-                
-            case .plowTractor:
-                // Trator agrícola com lâmina de arado pesada
-                let baseGeo = SCNBox(width: 4.8, height: 3.2, length: 5.8, chamferRadius: 0.4)
-                let baseMat = SCNMaterial()
-                baseMat.diffuse.contents = NSColor(red: 0.25, green: 0.35, blue: 0.22, alpha: 1.0)
-                baseGeo.materials = [baseMat]
-                let baseNode = SCNNode(geometry: baseGeo)
-                baseNode.position = SCNVector3(0, 1.6, 0)
-                enemyNode.addChildNode(baseNode)
-                
-                // Furrow Plow Blade in front
-                let bladeGeo = SCNBox(width: 5.6, height: 1.6, length: 0.8, chamferRadius: 0.1)
-                let bladeMat = SCNMaterial()
-                bladeMat.diffuse.contents = NSColor.darkGray
-                bladeMat.metalness.contents = 0.8
-                bladeGeo.materials = [bladeMat]
-                let bladeNode = SCNNode(geometry: bladeGeo)
-                bladeNode.position = SCNVector3(0, 0.8, 3.4)
-                enemyNode.addChildNode(bladeNode)
-                
-            case .surveillanceDrone:
-                // Hovering Sphere with Red Scanner Cone
-                let droneGeo = SCNSphere(radius: 1.2)
-                let droneMat = SCNMaterial()
-                droneMat.diffuse.contents = NSColor.systemGray
-                droneMat.emission.contents = NSColor.systemRed.withAlphaComponent(0.7)
-                droneGeo.materials = [droneMat]
-                let droneBody = SCNNode(geometry: droneGeo)
-                droneBody.position = SCNVector3(0, 4.2, 0)
-                enemyNode.addChildNode(droneBody)
-                
-                // Red Scan Circle
-                let scanGeo = SCNCylinder(radius: 3.5, height: 0.1)
-                let scanMat = SCNMaterial()
-                scanMat.diffuse.contents = NSColor.systemRed.withAlphaComponent(0.3)
-                scanMat.emission.contents = NSColor.systemRed.withAlphaComponent(0.4)
-                scanGeo.materials = [scanMat]
-                let scanNode = SCNNode(geometry: scanGeo)
-                scanNode.position = SCNVector3(0, 0.05, 0)
-                enemyNode.addChildNode(scanNode)
-            }
+            let planeW: CGFloat = 4.6
+            let planeH: CGFloat = 4.6
+            let enemyGeo = SCNPlane(width: planeW, height: planeH)
+            let img = Sprite2DFactory.shared.enemyImage(for: enemy)
+            let mat = SCNMaterial()
+            mat.diffuse.contents = img
+            mat.transparent.contents = img
+            mat.isDoubleSided = true
+            enemyGeo.materials = [mat]
+            
+            let billboard = SCNNode(geometry: enemyGeo)
+            billboard.position = SCNVector3(0, planeH / 2, 0)
+            billboard.constraints = [makeYBillboard()]
+            billboard.castsShadow = true
+            enemyNode.addChildNode(billboard)
+            
+            // Suave oscilação de perigo
+            let pulseAction = SCNAction.sequence([
+                SCNAction.scale(to: 1.06, duration: 0.5),
+                SCNAction.scale(to: 0.94, duration: 0.5)
+            ])
+            billboard.runAction(SCNAction.repeatForever(pulseAction))
             
             enemiesRootNode.addChildNode(enemyNode)
         }
         
-        // 4. Harpia Ancestral 3D Node (if summoned)
+        // Harpia Ancestral (se invocada) como colossal billboard 2.5D
         if session.storyEngine.isHarpiaSummoned {
             let harpiaNode = SCNNode()
             harpiaNode.name = "harpia_ancestral"
             harpiaNode.position = SCNVector3(0, 0.1, 0)
             
-            // Perch rock
-            let rockGeo = SCNBox(width: 6.0, height: 3.0, length: 6.0, chamferRadius: 0.8)
-            let rockMat = SCNMaterial()
-            rockMat.diffuse.contents = NSColor.gray
-            rockGeo.materials = [rockMat]
-            let rockNode = SCNNode(geometry: rockGeo)
-            rockNode.position = SCNVector3(0, 1.5, 0)
-            harpiaNode.addChildNode(rockNode)
+            let hPlane = SCNPlane(width: 8.5, height: 8.5)
+            let hMat = SCNMaterial()
+            let hImg = Sprite2DFactory.shared.harpiaAltarImage()
+            hMat.diffuse.contents = hImg
+            hMat.transparent.contents = hImg
+            hMat.isDoubleSided = true
+            hMat.emission.contents = NSColor.systemYellow.withAlphaComponent(0.4)
+            hPlane.materials = [hMat]
             
-            // Royal Eagle Body
-            let eagleGeo = SCNCylinder(radius: 1.6, height: 4.2)
-            let eagleMat = SCNMaterial()
-            eagleMat.diffuse.contents = NSColor(red: 0.28, green: 0.30, blue: 0.32, alpha: 1.0)
-            eagleGeo.materials = [eagleMat]
-            let eagleNode = SCNNode(geometry: eagleGeo)
-            eagleNode.position = SCNVector3(0, 4.8, 0)
-            harpiaNode.addChildNode(eagleNode)
-            
-            // Colossal Wings
-            let wingsGeo = SCNBox(width: 8.5, height: 0.3, length: 3.0, chamferRadius: 0.1)
-            let wingsMat = SCNMaterial()
-            wingsMat.diffuse.contents = NSColor(red: 0.9, green: 0.8, blue: 0.4, alpha: 1.0)
-            wingsMat.emission.contents = NSColor.yellow.withAlphaComponent(0.35)
-            wingsGeo.materials = [wingsMat]
-            let wingsNode = SCNNode(geometry: wingsGeo)
-            wingsNode.position = SCNVector3(0, 5.5, 0)
-            harpiaNode.addChildNode(wingsNode)
+            let billboard = SCNNode(geometry: hPlane)
+            billboard.position = SCNVector3(0, 4.25, 0)
+            billboard.constraints = [makeYBillboard()]
+            billboard.castsShadow = true
+            harpiaNode.addChildNode(billboard)
             
             enemiesRootNode.addChildNode(harpiaNode)
         }
@@ -1030,78 +881,38 @@ public struct WorldExploration3DView: View {
         }
         
         // 2. Placa Central do Refúgio ("Refúgio Raízes — estação de campo. Aqui você está seguro.")
-        let signPost1 = SCNCylinder(radius: 0.14, height: 2.2)
-        let signPost2 = SCNCylinder(radius: 0.14, height: 2.2)
-        let woodMat = SCNMaterial()
-        woodMat.diffuse.contents = NSColor(red: 0.38, green: 0.24, blue: 0.14, alpha: 1.0)
-        signPost1.materials = [woodMat]
-        signPost2.materials = [woodMat]
-        
-        let p1 = SCNNode(geometry: signPost1)
-        p1.position = SCNVector3(-1.4, 1.1, -1.6)
-        let p2 = SCNNode(geometry: signPost2)
-        p2.position = SCNVector3(1.4, 1.1, -1.6)
-        refugioRootNode.addChildNode(p1)
-        refugioRootNode.addChildNode(p2)
-        
-        let signBoardGeo = SCNBox(width: 3.8, height: 1.4, length: 0.22, chamferRadius: 0.04)
-        let boardMat = SCNMaterial()
-        boardMat.diffuse.contents = NSColor(red: 0.52, green: 0.35, blue: 0.22, alpha: 1.0)
-        signBoardGeo.materials = [boardMat]
-        let signBoardNode = SCNNode(geometry: signBoardGeo)
-        signBoardNode.position = SCNVector3(0, 1.9, -1.6)
+        let signPlaneW: CGFloat = 3.6
+        let signPlaneH: CGFloat = 3.4
+        let signGeo = SCNPlane(width: signPlaneW, height: signPlaneH)
+        let signMat = SCNMaterial()
+        let signImg = Sprite2DFactory.shared.fieldSignImage()
+        signMat.diffuse.contents = signImg
+        signMat.transparent.contents = signImg
+        signMat.isDoubleSided = true
+        signGeo.materials = [signMat]
+        let signBoardNode = SCNNode(geometry: signGeo)
+        signBoardNode.position = SCNVector3(0, signPlaneH / 2, -1.6)
+        signBoardNode.constraints = [makeYBillboard()]
         signBoardNode.castsShadow = true
         refugioRootNode.addChildNode(signBoardNode)
         
-        // 3. Oficina de Campo (Bancada, Telhado de Barro, Ferramentas e Baú) em (11.2, 3.2)
+        // 3. Oficina de Campo (2.5D Billboard) em (11.2, 3.2)
         let ofX: CGFloat = 11.2
         let ofZ: CGFloat = 3.2
-        let workshopContainer = SCNNode()
-        workshopContainer.position = SCNVector3(ofX, 0, ofZ)
-        
-        // 4 Pilares de Madeira
-        for px in [-2.4, 2.4] as [CGFloat] {
-            for pz in [-1.8, 1.8] as [CGFloat] {
-                let col = SCNCylinder(radius: 0.22, height: 3.6)
-                col.materials = [woodMat]
-                let cNode = SCNNode(geometry: col)
-                cNode.position = SCNVector3(px, 1.8, pz)
-                cNode.castsShadow = true
-                workshopContainer.addChildNode(cNode)
-            }
-        }
-        
-        // Telhado Cerâmico de Duas Águas
-        let roofGeo = SCNBox(width: 5.6, height: 0.3, length: 4.4, chamferRadius: 0.05)
-        let roofMat = SCNMaterial()
-        roofMat.diffuse.contents = NSColor(red: 0.65, green: 0.30, blue: 0.18, alpha: 1.0)
-        roofGeo.materials = [roofMat]
-        let roofNode = SCNNode(geometry: roofGeo)
-        roofNode.position = SCNVector3(0, 3.7, 0)
-        roofNode.eulerAngles.x = 0.08
-        roofNode.castsShadow = true
-        workshopContainer.addChildNode(roofNode)
-        
-        // Bancada de Trabalho
-        let benchGeo = SCNBox(width: 3.4, height: 1.1, length: 1.4, chamferRadius: 0.05)
-        let benchMat = SCNMaterial()
-        benchMat.diffuse.contents = NSColor(red: 0.44, green: 0.30, blue: 0.18, alpha: 1.0)
-        benchGeo.materials = [benchMat]
-        let benchNode = SCNNode(geometry: benchGeo)
-        benchNode.position = SCNVector3(0, 0.55, 0)
-        benchNode.castsShadow = true
-        workshopContainer.addChildNode(benchNode)
-        
-        // Baú de Suprimentos
-        let chestGeo = SCNBox(width: 1.4, height: 0.9, length: 0.9, chamferRadius: 0.04)
-        let chestMat = SCNMaterial()
-        chestMat.diffuse.contents = NSColor(red: 0.30, green: 0.20, blue: 0.12, alpha: 1.0)
-        chestGeo.materials = [chestMat]
-        let chestNode = SCNNode(geometry: chestGeo)
-        chestNode.position = SCNVector3(1.8, 0.45, 1.1)
-        chestNode.castsShadow = true
-        workshopContainer.addChildNode(chestNode)
-        refugioRootNode.addChildNode(workshopContainer)
+        let ofW: CGFloat = 6.8
+        let ofH: CGFloat = 5.8
+        let ofGeo = SCNPlane(width: ofW, height: ofH)
+        let ofMat = SCNMaterial()
+        let ofImg = Sprite2DFactory.shared.workshopImage()
+        ofMat.diffuse.contents = ofImg
+        ofMat.transparent.contents = ofImg
+        ofMat.isDoubleSided = true
+        ofGeo.materials = [ofMat]
+        let workshopNode = SCNNode(geometry: ofGeo)
+        workshopNode.position = SCNVector3(ofX, ofH / 2, ofZ)
+        workshopNode.constraints = [makeYBillboard()]
+        workshopNode.castsShadow = true
+        refugioRootNode.addChildNode(workshopNode)
         
         // 4. Açude e Cais de Pesca em (-12.8, -6.4)
         let caisX: CGFloat = -12.8
@@ -1115,98 +926,69 @@ public struct WorldExploration3DView: View {
         pondNode.position = SCNVector3(caisX, 0.04, caisZ)
         refugioRootNode.addChildNode(pondNode)
         
-        // Deck de Tábuas de Madeira Estendido sobre a Água
-        let pierGeo = SCNBox(width: 3.6, height: 0.28, length: 7.2, chamferRadius: 0.03)
-        let pierMat = SCNMaterial()
-        pierMat.diffuse.contents = NSColor(red: 0.48, green: 0.34, blue: 0.22, alpha: 1.0)
-        pierGeo.materials = [pierMat]
-        let pierNode = SCNNode(geometry: pierGeo)
-        pierNode.position = SCNVector3(caisX, 0.24, caisZ - 1.5)
+        // Cais 2.5D Billboard
+        let caisW: CGFloat = 5.6
+        let caisH: CGFloat = 4.8
+        let caisGeo = SCNPlane(width: caisW, height: caisH)
+        let caisMat = SCNMaterial()
+        let caisImg = Sprite2DFactory.shared.fishingDockImage()
+        caisMat.diffuse.contents = caisImg
+        caisMat.transparent.contents = caisImg
+        caisMat.isDoubleSided = true
+        caisGeo.materials = [caisMat]
+        let pierNode = SCNNode(geometry: caisGeo)
+        pierNode.position = SCNVector3(caisX, caisH / 2, caisZ - 0.8)
+        pierNode.constraints = [makeYBillboard()]
         pierNode.castsShadow = true
         refugioRootNode.addChildNode(pierNode)
         
-        // Cabeços de Amarração do Píer
-        for pz in [-4.5, 1.5] as [CGFloat] {
-            let postGeo = SCNCylinder(radius: 0.18, height: 1.1)
-            postGeo.materials = [woodMat]
-            let pNode = SCNNode(geometry: postGeo)
-            pNode.position = SCNVector3(caisX - 1.6, 0.55, caisZ + pz)
-            pNode.castsShadow = true
-            refugioRootNode.addChildNode(pNode)
-        }
-        
-        // 5. Viveiro de Mudas (10 Canteiros) em (8.0, -9.6)
+        // 5. Viveiro de Mudas (10 Canteiros 2.5D Billboards) em (8.0, -9.6)
         let vivX: CGFloat = 8.0
         let vivZ: CGFloat = -9.6
-        let soilMat = SCNMaterial()
-        soilMat.diffuse.contents = NSColor(red: 0.24, green: 0.15, blue: 0.08, alpha: 1.0)
-        
-        let sproutMat = SCNMaterial()
-        sproutMat.diffuse.contents = NSColor(red: 0.25, green: 0.75, blue: 0.30, alpha: 1.0)
-        
         for i in 0..<10 {
             let col = CGFloat(i % 5)
             let row = CGFloat(i / 5)
-            let bx = vivX + (col * 2.8) - 5.6
-            let bz = vivZ + (row * 2.2)
+            let bx = vivX + (col * 3.0) - 6.0
+            let bz = vivZ + (row * 2.4)
             
-            // Canteiro Lavrado
-            let bedGeo = SCNBox(width: 2.2, height: 0.4, length: 1.6, chamferRadius: 0.04)
-            bedGeo.materials = [woodMat]
+            let bedW: CGFloat = 2.8
+            let bedH: CGFloat = 2.2
+            let bedGeo = SCNPlane(width: bedW, height: bedH)
+            let bedMat = SCNMaterial()
+            let bedImg = Sprite2DFactory.shared.seedlingBedImage(index: i)
+            bedMat.diffuse.contents = bedImg
+            bedMat.transparent.contents = bedImg
+            bedMat.isDoubleSided = true
+            bedGeo.materials = [bedMat]
+            
             let bedNode = SCNNode(geometry: bedGeo)
-            bedNode.position = SCNVector3(bx, 0.2, bz)
+            bedNode.position = SCNVector3(bx, bedH / 2, bz)
+            bedNode.constraints = [makeYBillboard()]
             bedNode.castsShadow = true
             refugioRootNode.addChildNode(bedNode)
-            
-            // Terra Adubada
-            let earthGeo = SCNBox(width: 1.9, height: 0.12, length: 1.3, chamferRadius: 0.02)
-            earthGeo.materials = [soilMat]
-            let earthNode = SCNNode(geometry: earthGeo)
-            earthNode.position = SCNVector3(bx, 0.38, bz)
-            refugioRootNode.addChildNode(earthNode)
-            
-            // Brotos crescendo
-            for s in 0..<3 {
-                let sx = bx + CGFloat(s - 1) * 0.5
-                let sproutGeo = SCNCone(topRadius: 0.03, bottomRadius: 0.15, height: 0.55)
-                sproutGeo.materials = [sproutMat]
-                let sNode = SCNNode(geometry: sproutGeo)
-                sNode.position = SCNVector3(sx, 0.65, bz)
-                refugioRootNode.addChildNode(sNode)
-            }
         }
         
-        // 6. Altar Sagrado da Harpia Ancestral em (0.0, -11.2)
+        // 6. Altar Sagrado da Harpia Ancestral (2.5D Billboard) em (0.0, -11.2)
         let altZ: CGFloat = -11.2
-        let step1Geo = SCNCylinder(radius: 4.8, height: 0.3)
-        let stoneMat = SCNMaterial()
-        stoneMat.diffuse.contents = NSColor(red: 0.58, green: 0.56, blue: 0.52, alpha: 1.0)
-        step1Geo.materials = [stoneMat]
-        let step1Node = SCNNode(geometry: step1Geo)
-        step1Node.position = SCNVector3(0, 0.15, altZ)
-        refugioRootNode.addChildNode(step1Node)
-        
-        let step2Geo = SCNCylinder(radius: 3.4, height: 0.4)
-        step2Geo.materials = [stoneMat]
-        let step2Node = SCNNode(geometry: step2Geo)
-        step2Node.position = SCNVector3(0, 0.45, altZ)
-        refugioRootNode.addChildNode(step2Node)
-        
-        let daisGeo = SCNCylinder(radius: 1.8, height: 1.6)
-        daisGeo.materials = [stoneMat]
-        let daisNode = SCNNode(geometry: daisGeo)
-        daisNode.position = SCNVector3(0, 1.25, altZ)
-        daisNode.castsShadow = true
-        refugioRootNode.addChildNode(daisNode)
+        let altarW: CGFloat = 4.8
+        let altarH: CGFloat = 6.0
+        let altarGeo = SCNPlane(width: altarW, height: altarH)
+        let altarMat = SCNMaterial()
+        let altarImg = Sprite2DFactory.shared.harpiaAltarImage()
+        altarMat.diffuse.contents = altarImg
+        altarMat.transparent.contents = altarImg
+        altarMat.isDoubleSided = true
+        altarGeo.materials = [altarMat]
+        let altarNode = SCNNode(geometry: altarGeo)
+        altarNode.position = SCNVector3(0, altarH / 2, altZ)
+        altarNode.constraints = [makeYBillboard()]
+        altarNode.castsShadow = true
+        refugioRootNode.addChildNode(altarNode)
     }
     
-    // MARK: - 3D Mystical Portals (Arc of the 5 Biomes + 5 Return Portals)
+    // MARK: - 2.5D Mystical Portals (Arc of the 5 Biomes + 5 Return Portals)
     private func build3DPortals() {
         portalsRootNode.childNodes.forEach { $0.removeFromParentNode() }
-        
-        let stoneMat = SCNMaterial()
-        stoneMat.diffuse.contents = NSColor(red: 0.42, green: 0.40, blue: 0.38, alpha: 1.0)
-        stoneMat.roughness.contents = 0.9
         
         for portal in session.activePortals {
             let px = CGFloat(portal.position.x * 0.8)
@@ -1216,127 +998,68 @@ public struct WorldExploration3DView: View {
             portalContainer.name = portal.id
             portalContainer.position = SCNVector3(px, 0, pz)
             
-            // Base de Pedra
-            let baseGeo = SCNBox(width: 4.6, height: 0.4, length: 1.8, chamferRadius: 0.08)
-            baseGeo.materials = [stoneMat]
-            let baseNode = SCNNode(geometry: baseGeo)
-            baseNode.position = SCNVector3(0, 0.2, 0)
-            baseNode.castsShadow = true
-            portalContainer.addChildNode(baseNode)
+            // 2D Billboard Plane Sprite
+            let planeW: CGFloat = 5.6
+            let planeH: CGFloat = 7.2
+            let portalGeo = SCNPlane(width: planeW, height: planeH)
+            let portalMat = SCNMaterial()
+            let img = Sprite2DFactory.shared.portalImage(for: portal)
+            portalMat.diffuse.contents = img
+            portalMat.transparent.contents = img
+            portalMat.isDoubleSided = true
+            portalGeo.materials = [portalMat]
             
-            // Dois Pilares de Pedra Talhada
-            for colX in [-1.8, 1.8] as [CGFloat] {
-                let pillarGeo = SCNBox(width: 0.85, height: 5.6, length: 0.85, chamferRadius: 0.06)
-                pillarGeo.materials = [stoneMat]
-                let pillarNode = SCNNode(geometry: pillarGeo)
-                pillarNode.position = SCNVector3(colX, 2.8, 0)
-                pillarNode.castsShadow = true
-                portalContainer.addChildNode(pillarNode)
-            }
+            let billboardNode = SCNNode(geometry: portalGeo)
+            billboardNode.position = SCNVector3(0, planeH / 2, 0)
+            billboardNode.constraints = [makeYBillboard()]
+            billboardNode.castsShadow = true
+            portalContainer.addChildNode(billboardNode)
             
-            // Lintel Superior Arqueado
-            let lintelGeo = SCNBox(width: 4.8, height: 0.9, length: 1.1, chamferRadius: 0.08)
-            lintelGeo.materials = [stoneMat]
-            let lintelNode = SCNNode(geometry: lintelGeo)
-            lintelNode.position = SCNVector3(0, 5.6, 0)
-            lintelNode.castsShadow = true
-            portalContainer.addChildNode(lintelNode)
-            
-            // Anel Místico de Energia Emissiva
-            let energyRingGeo = SCNTorus(ringRadius: 1.55, pipeRadius: 0.18)
-            let energyMat = SCNMaterial()
-            energyMat.diffuse.contents = portal.nsColor
-            energyMat.emission.contents = portal.nsColor
-            energyRingGeo.materials = [energyMat]
-            let energyRingNode = SCNNode(geometry: energyRingGeo)
-            energyRingNode.position = SCNVector3(0, 2.9, 0)
-            energyRingNode.eulerAngles.x = CGFloat.pi / 2
-            
-            // Rotação suave do anel místico
-            let spinAction = SCNAction.rotateBy(x: 0, y: 0, z: CGFloat.pi * 2, duration: 4.5)
-            energyRingNode.runAction(SCNAction.repeatForever(spinAction))
-            portalContainer.addChildNode(energyRingNode)
-            
-            // Vórtice Translúcido Interno
-            let vortexGeo = SCNCylinder(radius: 1.35, height: 0.06)
-            let vortexMat = SCNMaterial()
-            vortexMat.diffuse.contents = portal.nsColor.withAlphaComponent(0.65)
-            vortexMat.isDoubleSided = true
-            vortexGeo.materials = [vortexMat]
-            let vortexNode = SCNNode(geometry: vortexGeo)
-            vortexNode.position = SCNVector3(0, 2.9, 0)
-            vortexNode.eulerAngles.x = CGFloat.pi / 2
-            
-            let pulseAction = SCNAction.sequence([
-                SCNAction.scale(to: 1.1, duration: 1.2),
-                SCNAction.scale(to: 0.92, duration: 1.2)
-            ])
-            vortexNode.runAction(SCNAction.repeatForever(pulseAction))
-            portalContainer.addChildNode(vortexNode)
-            
-            // Sistema de Partículas Místicas Flutuantes
+            // Partículas Místicas Flutuantes ao Redor da Base
             let portalParticles = SCNParticleSystem()
-            portalParticles.birthRate = 20
-            portalParticles.particleLifeSpan = 1.5
+            portalParticles.birthRate = 22
+            portalParticles.particleLifeSpan = 1.6
             portalParticles.particleColor = portal.nsColor
-            portalParticles.particleSize = 0.15
-            portalParticles.emitterShape = SCNCylinder(radius: 1.2, height: 0.2)
+            portalParticles.particleSize = 0.18
+            portalParticles.emitterShape = SCNCylinder(radius: 1.4, height: 0.2)
             portalParticles.emissionDuration = 0
             portalParticles.loops = true
-            portalParticles.spreadingAngle = 20
-            portalParticles.speedFactor = 0.6
-            portalParticles.acceleration = SCNVector3(0, 1.2, 0)
+            portalParticles.spreadingAngle = 25
+            portalParticles.speedFactor = 0.65
+            portalParticles.acceleration = SCNVector3(0, 1.4, 0)
             portalContainer.addParticleSystem(portalParticles)
             
             portalsRootNode.addChildNode(portalContainer)
         }
     }
     
-    // MARK: - 3D Landmarks Across the 5 Biomes
+    // MARK: - 2.5D Landmarks Across the 5 Biomes
     private func build3DBiomeLandmarks() {
         biomeLandmarksRootNode.childNodes.forEach { $0.removeFromParentNode() }
         
-        let woodMat = SCNMaterial()
-        woodMat.diffuse.contents = NSColor(red: 0.36, green: 0.22, blue: 0.12, alpha: 1.0)
-        
-        // 1. Mata Atlântica: Estação das Copas (Dossel Suspenso com Passarela de Cordas)
+        // 1. Mata Atlântica: Estação das Copas (Dossel Suspenso 2.5D)
         let mataX: CGFloat = 55.0 * 0.8
         let mataZ: CGFloat = 155.0 * 0.8
-        
-        let platformGeo = SCNBox(width: 4.8, height: 0.35, length: 4.8, chamferRadius: 0.04)
-        platformGeo.materials = [woodMat]
-        let platformNode = SCNNode(geometry: platformGeo)
-        platformNode.position = SCNVector3(mataX, 6.2, mataZ)
-        platformNode.castsShadow = true
-        biomeLandmarksRootNode.addChildNode(platformNode)
-        
-        // Pilares altos de sustentação do dossel
-        for colX in [-2.2, 2.2] as [CGFloat] {
-            for colZ in [-2.2, 2.2] as [CGFloat] {
-                let postGeo = SCNCylinder(radius: 0.22, height: 6.2)
-                postGeo.materials = [woodMat]
-                let postNode = SCNNode(geometry: postGeo)
-                postNode.position = SCNVector3(mataX + colX, 3.1, mataZ + colZ)
-                postNode.castsShadow = true
-                biomeLandmarksRootNode.addChildNode(postNode)
-            }
-        }
+        let mataW: CGFloat = 5.6
+        let mataH: CGFloat = 6.8
+        let mataGeo = SCNPlane(width: mataW, height: mataH)
+        let mataMat = SCNMaterial()
+        let mataImg = Sprite2DFactory.shared.landmarkImage(id: "canopyPlatform")
+        mataMat.diffuse.contents = mataImg
+        mataMat.transparent.contents = mataImg
+        mataMat.isDoubleSided = true
+        mataGeo.materials = [mataMat]
+        let mataNode = SCNNode(geometry: mataGeo)
+        mataNode.position = SCNVector3(mataX, mataH / 2, mataZ)
+        mataNode.constraints = [makeYBillboard()]
+        mataNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(mataNode)
         
         // 2. Cerrado: Posto dos Brigadistas & Faixa de Aceiro
         let cerX: CGFloat = 125.0 * 0.8
         let cerZ: CGFloat = -20.0 * 0.8
         
-        // Tenda de Campanha dos Brigadistas
-        let tentGeo = SCNPyramid(width: 4.5, height: 3.2, length: 4.5)
-        let tentMat = SCNMaterial()
-        tentMat.diffuse.contents = NSColor(red: 0.58, green: 0.52, blue: 0.36, alpha: 1.0)
-        tentGeo.materials = [tentMat]
-        let tentNode = SCNNode(geometry: tentGeo)
-        tentNode.position = SCNVector3(cerX, 0, cerZ)
-        tentNode.castsShadow = true
-        biomeLandmarksRootNode.addChildNode(tentNode)
-        
-        // Faixa de Solo Raspado (Aceiro de Contenção)
+        // Faixa de Solo Raspado (Aceiro de Contenção no solo)
         let firebreakGeo = SCNBox(width: 32.0, height: 0.08, length: 4.0, chamferRadius: 0.0)
         let firebreakMat = SCNMaterial()
         firebreakMat.diffuse.contents = NSColor(red: 0.44, green: 0.30, blue: 0.18, alpha: 1.0)
@@ -1345,52 +1068,61 @@ public struct WorldExploration3DView: View {
         firebreakNode.position = SCNVector3(cerX, 0.04, cerZ + 6.0)
         biomeLandmarksRootNode.addChildNode(firebreakNode)
         
-        // 3. Pantanal: Manduvi Gigante com Ninho Artificial de Arara
+        // Tenda de Campanha dos Brigadistas (2.5D Billboard)
+        let tentW: CGFloat = 5.2
+        let tentH: CGFloat = 4.2
+        let tentGeo = SCNPlane(width: tentW, height: tentH)
+        let tentMat = SCNMaterial()
+        let tentImg = Sprite2DFactory.shared.landmarkImage(id: "rangerTent")
+        tentMat.diffuse.contents = tentImg
+        tentMat.transparent.contents = tentImg
+        tentMat.isDoubleSided = true
+        tentGeo.materials = [tentMat]
+        let tentNode = SCNNode(geometry: tentGeo)
+        tentNode.position = SCNVector3(cerX, tentH / 2, cerZ)
+        tentNode.constraints = [makeYBillboard()]
+        tentNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(tentNode)
+        
+        // 3. Pantanal: Manduvi Gigante com Ninho Artificial de Arara (2.5D Billboard)
         let panX: CGFloat = -135.0 * 0.8
         let panZ: CGFloat = 30.0 * 0.8
+        let panW: CGFloat = 7.6
+        let panH: CGFloat = 10.5
+        let panGeo = SCNPlane(width: panW, height: panH)
+        let panMat = SCNMaterial()
+        let panImg = Sprite2DFactory.shared.landmarkImage(id: "manduviTree")
+        panMat.diffuse.contents = panImg
+        panMat.transparent.contents = panImg
+        panMat.isDoubleSided = true
+        panGeo.materials = [panMat]
+        let panNode = SCNNode(geometry: panGeo)
+        panNode.position = SCNVector3(panX, panH / 2, panZ)
+        panNode.constraints = [makeYBillboard()]
+        panNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(panNode)
         
-        let manduviTrunk = SCNCylinder(radius: 1.6, height: 8.5)
-        let manduviMat = SCNMaterial()
-        manduviMat.diffuse.contents = NSColor(red: 0.30, green: 0.20, blue: 0.14, alpha: 1.0)
-        manduviTrunk.materials = [manduviMat]
-        let trunkNode = SCNNode(geometry: manduviTrunk)
-        trunkNode.position = SCNVector3(panX, 4.25, panZ)
-        trunkNode.castsShadow = true
-        biomeLandmarksRootNode.addChildNode(trunkNode)
-        
-        // Copa do Manduvi
-        let canopyGeo = SCNSphere(radius: 4.5)
-        let canopyMat = SCNMaterial()
-        canopyMat.diffuse.contents = NSColor(red: 0.12, green: 0.46, blue: 0.22, alpha: 1.0)
-        canopyGeo.materials = [canopyMat]
-        let canopyNode = SCNNode(geometry: canopyGeo)
-        canopyNode.position = SCNVector3(panX, 9.5, panZ)
-        canopyNode.castsShadow = true
-        biomeLandmarksRootNode.addChildNode(canopyNode)
-        
-        // Caixa de Ninho Artificial de Madeira Fixada no Tronco
-        let nestBoxGeo = SCNBox(width: 1.1, height: 1.6, length: 1.1, chamferRadius: 0.05)
-        nestBoxGeo.materials = [woodMat]
-        let nestNode = SCNNode(geometry: nestBoxGeo)
-        nestNode.position = SCNVector3(panX + 1.6, 5.8, panZ)
-        nestNode.castsShadow = true
-        biomeLandmarksRootNode.addChildNode(nestNode)
-        
-        // 4. Amazônia: Lago de Manejo Comunitário (Pier de Contagem de Pirarucu)
+        // 4. Amazônia: Lago de Manejo Comunitário (Pier 2.5D Billboard)
         let amzX: CGFloat = -155.0 * 0.8
         let amzZ: CGFloat = -205.0 * 0.8
-        
-        let lakeDockGeo = SCNBox(width: 3.8, height: 0.3, length: 8.5, chamferRadius: 0.03)
-        lakeDockGeo.materials = [woodMat]
-        let lakeDockNode = SCNNode(geometry: lakeDockGeo)
-        lakeDockNode.position = SCNVector3(amzX, 0.25, amzZ)
-        lakeDockNode.castsShadow = true
-        biomeLandmarksRootNode.addChildNode(lakeDockNode)
+        let amzW: CGFloat = 5.8
+        let amzH: CGFloat = 4.8
+        let amzGeo = SCNPlane(width: amzW, height: amzH)
+        let amzMat = SCNMaterial()
+        let amzImg = Sprite2DFactory.shared.fishingDockImage()
+        amzMat.diffuse.contents = amzImg
+        amzMat.transparent.contents = amzImg
+        amzMat.isDoubleSided = true
+        amzGeo.materials = [amzMat]
+        let amzNode = SCNNode(geometry: amzGeo)
+        amzNode.position = SCNVector3(amzX, amzH / 2, amzZ)
+        amzNode.constraints = [makeYBillboard()]
+        amzNode.castsShadow = true
+        biomeLandmarksRootNode.addChildNode(amzNode)
         
         // 5. Pampa: Colônia das Dunas e Galerias Subterrâneas de Tuco-Tuco
         let pamX: CGFloat = 22.0 * 0.8
         let pamZ: CGFloat = 235.0 * 0.8
-        
         for mound in [(-2.5, -1.8), (2.2, 1.4), (0.0, 3.2)] as [(CGFloat, CGFloat)] {
             let moundGeo = SCNCone(topRadius: 0.3, bottomRadius: 1.8, height: 0.8)
             let sandMat = SCNMaterial()
