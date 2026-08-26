@@ -14,10 +14,10 @@ public struct WorldExploration3DView: View {
     @State private var showingTransformWheel = false
     @State private var isMoving = false
     @State private var isFacingLeft = false
-    // 3D Perspective Depth Camera Configuration (Visão Superior Elevada)
-    @State private var cameraDistance: CGFloat = 20.0
-    @State private var cameraHeight: CGFloat = 26.0
-    @State private var cameraPitch: Float = -0.90
+    // 3D Perspective Depth Camera Configuration (Visão Mais Embaixo e Pouco Mais Longe)
+    @State private var cameraDistance: CGFloat = 22.5
+    @State private var cameraHeight: CGFloat = 15.5
+    @State private var cameraPitch: Float = -0.52
     @State private var isElevatedView: Bool = false
     @State private var previousPlayerPos: CGPoint = .zero
     
@@ -1396,8 +1396,8 @@ public struct WorldExploration3DView: View {
             // 3D Depth Angle Mode Switcher
             Button {
                 isElevatedView.toggle()
-                cameraHeight = isElevatedView ? 36.0 : 26.0
-                cameraPitch = isElevatedView ? -1.05 : -0.90
+                cameraHeight = isElevatedView ? 28.0 : 15.5
+                cameraPitch = isElevatedView ? -0.85 : -0.52
                 let targetX = CGFloat(session.playerPosition.x * 0.8)
                 let targetZ = CGFloat(session.playerPosition.y * 0.8)
                 SCNTransaction.begin()
