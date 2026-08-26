@@ -14,7 +14,9 @@ public struct WorldExploration3DView: View {
     @State private var showingTransformWheel = false
     @State private var isMoving = false
     @State private var isFacingLeft = false
-    @State private var zoomDistance: CGFloat = 34.0
+    // 2.5D Isometric Orthographic Camera Configuration
+    @State private var orthographicScale: Double = 26.0
+    @State private var isIsometricDiagonal: Bool = false
     @State private var previousPlayerPos: CGPoint = .zero
     
     // SceneKit Scene & Nodes
@@ -159,15 +161,25 @@ public struct WorldExploration3DView: View {
     private func setup3DScene() {
         scene = SCNScene()
         
-        // 1. Camera Node (Isometric follow angle)
+        // 1. Camera Node (2.5D Isometric Orthographic Camera)
         cameraNode = SCNNode()
-        cameraNode.camera = SCNCamera()
-        cameraNode.camera?.zNear = 0.5
-        cameraNode.camera?.zFar = 600.0
+        let cam = SCNCamera()
+        cam.usesOrthographicProjection = true
+        cam.orthographicScale = orthographicScale
+        cam.zNear = 0.5
+        cam.zFar = 800.0
+        cameraNode.camera = cam
+        
         let targetX = CGFloat(session.playerPosition.x * 0.8)
         let targetZ = CGFloat(session.playerPosition.y * 0.8)
-        cameraNode.position = SCNVector3(targetX, 22, targetZ + zoomDistance)
-        cameraNode.eulerAngles = SCNVector3(-0.64, 0, 0)
+        
+        if isIsometricDiagonal {
+            cameraNode.position = SCNVector3(targetX - 28, 40, targetZ + 28)
+            cameraNode.eulerAngles = SCNVector3(-0.615, 0.785, 0)
+        } else {
+            cameraNode.position = SCNVector3(targetX, 40, targetZ + 35)
+            cameraNode.eulerAngles = SCNVector3(-0.785, 0, 0)
+        }
         scene.rootNode.addChildNode(cameraNode)
         
         // 2. Directional Sun Light with Shadows
@@ -1020,6 +1032,9 @@ public struct WorldExploration3DView: View {
         playerPlaneGeometry.materials = [playerMat]
         
         playerNode = SCNNode(geometry: playerPlaneGeometry)
+        let billboard = SCNBillboardConstraint()
+        billboard.freeAxes = .Y
+        playerNode.constraints = [billboard]
         let targetX = CGFloat(session.playerPosition.x * 0.8)
         let targetZ = CGFloat(session.playerPosition.y * 0.8)
         playerNode.position = SCNVector3(targetX, 1.5, targetZ)
@@ -1045,7 +1060,12 @@ public struct WorldExploration3DView: View {
         runBouncePhase += 0.8
         let bounceY = 1.5 + CGFloat(abs(sin(runBouncePhase)) * 0.07)
         
-        let camTargetPos = SCNVector3(targetX, 22, targetZ + zoomDistance)
+        let camTargetPos: SCNVector3
+        if isIsometricDiagonal {
+            camTargetPos = SCNVector3(targetX - 28, 40, targetZ + 28)
+        } else {
+            camTargetPos = SCNVector3(targetX, 40, targetZ + 35)
+        }
         let playerTargetPos = SCNVector3(targetX, bounceY, targetZ)
         
         SCNTransaction.begin()
@@ -1179,11 +1199,41 @@ public struct WorldExploration3DView: View {
             .padding(6)
             .background(RoundedRectangle(cornerRadius: 14).fill(.ultraThinMaterial))
             
-            // 3D Camera Zoom
+            // 2.5D Isometric Angle Switcher
+            Button {
+                isIsometricDiagonal.toggle()
+                let targetX = CGFloat(session.playerPosition.x * 0.8)
+                let targetZ = CGFloat(session.playerPosition.y * 0.8)
+                SCNTransaction.begin()
+                SCNTransaction.animationDuration = 0.35
+                if isIsometricDiagonal {
+                    cameraNode.position = SCNVector3(targetX - 28, 40, targetZ + 28)
+                    cameraNode.eulerAngles = SCNVector3(-0.615, 0.785, 0)
+                } else {
+                    cameraNode.position = SCNVector3(targetX, 40, targetZ + 35)
+                    cameraNode.eulerAngles = SCNVector3(-0.785, 0, 0)
+                }
+                SCNTransaction.commit()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: isIsometricDiagonal ? "cube.transparent" : "square.split.diagonal.2x2")
+                        .font(.caption)
+                    Text(isIsometricDiagonal ? "Isométrico 45°" : "2.5D Frontal")
+                        .font(.caption2.bold())
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(RoundedRectangle(cornerRadius: 10).fill(.ultraThinMaterial))
+            }
+            .buttonStyle(.plain)
+            .help("Alternar entre visualização 2.5D Frontal e Isométrica 45°")
+            
+            // 2.5D Orthographic Camera Zoom
             HStack(spacing: 8) {
                 Button {
-                    zoomDistance = min(55.0, zoomDistance + 4.0)
-                    cameraNode.position.z = CGFloat(session.playerPosition.y * 0.8) + zoomDistance
+                    orthographicScale = min(44.0, orthographicScale + 3.0)
+                    cameraNode.camera?.orthographicScale = orthographicScale
                 } label: {
                     Image(systemName: "minus.magnifyingglass")
                         .font(.caption)
@@ -1192,10 +1242,11 @@ public struct WorldExploration3DView: View {
                         .background(Circle().fill(.ultraThinMaterial))
                 }
                 .buttonStyle(.plain)
+                .help("Diminuir zoom (visão mais ampla)")
                 
                 Button {
-                    zoomDistance = max(18.0, zoomDistance - 4.0)
-                    cameraNode.position.z = CGFloat(session.playerPosition.y * 0.8) + zoomDistance
+                    orthographicScale = max(14.0, orthographicScale - 3.0)
+                    cameraNode.camera?.orthographicScale = orthographicScale
                 } label: {
                     Image(systemName: "plus.magnifyingglass")
                         .font(.caption)
@@ -1204,6 +1255,7 @@ public struct WorldExploration3DView: View {
                         .background(Circle().fill(.ultraThinMaterial))
                 }
                 .buttonStyle(.plain)
+                .help("Aumentar zoom (aproximar)")
             }
             
             // Audio Mute Toggle Button
