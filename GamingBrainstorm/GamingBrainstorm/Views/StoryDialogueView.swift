@@ -136,23 +136,33 @@ public struct StoryQuestTrackerCard: View {
                 }
                 
                 ForEach(quest.objectives) { obj in
-                    HStack(spacing: 6) {
-                        Image(systemName: obj.isCompleted ? "checkmark.circle.fill" : "circle.dashed")
-                            .font(.caption2)
-                            .foregroundStyle(obj.isCompleted ? .green : .orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Image(systemName: obj.isCompleted ? "checkmark.circle.fill" : "circle.dashed")
+                                .font(.caption2)
+                                .foregroundStyle(obj.isCompleted ? .green : .orange)
+                            
+                            Text(obj.title)
+                                .font(.caption2.bold())
+                                .foregroundStyle(obj.isCompleted ? .white.opacity(0.6) : .white)
+                                .strikethrough(obj.isCompleted)
+                                .lineLimit(1)
+                        }
                         
-                        Text(obj.title)
-                            .font(.caption2)
-                            .foregroundStyle(obj.isCompleted ? .white.opacity(0.6) : .white)
-                            .strikethrough(obj.isCompleted)
-                            .lineLimit(1)
+                        if !obj.isCompleted && !obj.hint.isEmpty {
+                            Text("💡 \(obj.hint)")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.yellow.opacity(0.85))
+                                .padding(.leading, 16)
+                                .lineLimit(2)
+                        }
                     }
                 }
             }
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 12).fill(.ultraThinMaterial))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.yellow.opacity(0.4), lineWidth: 1))
-            .frame(width: 260)
+            .frame(width: 280)
         }
     }
 }

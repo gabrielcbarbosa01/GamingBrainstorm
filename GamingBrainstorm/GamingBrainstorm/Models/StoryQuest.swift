@@ -48,11 +48,18 @@ public struct DialogueLine: Identifiable, Sendable {
 // MARK: - Quests & Objectives
 public enum QuestObjectiveType: String, Sendable {
     case talkToNPC = "Conversar com Aliado"
+    case rastro = "Rastrear Vestígios e Pegadas"
+    case canopyCrossing = "Travessia da Copa"
+    case fireBreak = "Aceiro contra o Fogo"
+    case nestWatch = "Vigília dos Ninhos"
+    case netCutting = "Corte de Malhadeiras Submersas"
+    case burrowEvacuation = "Evacuação sob o Arado"
+    case restoration = "Restauro & Plantio de Mudas"
+    case roadRescue = "Travessia da Rodovia"
     case rescueSpecies = "Resgatar Animal Ameaçado"
-    case extinguishFire = "Apagar Foco de Incêndio"
-    case disableDrone = "Desativar Drone de Patrulha"
-    case disarmTrap = "Desarmar Armadilha de Caçador"
+    case confrontThreat = "Contenção de Ameaça"
     case purifyTotem = "Purificar Totem Ancestral"
+    case expedition = "Expedição de Monitoramento"
 }
 
 public struct QuestObjective: Identifiable, Sendable {
@@ -64,8 +71,25 @@ public struct QuestObjective: Identifiable, Sendable {
     public let targetPosition: CGPoint
     public var isCompleted: Bool
     public let rewardCarePoints: Int
+    public var targetCount: Int
+    public var currentCount: Int
+    public let hint: String
+    public var timeLimitSeconds: Double?
     
-    public init(id: String, title: String, description: String, type: QuestObjectiveType, targetBiome: BiomeType, targetPosition: CGPoint, isCompleted: Bool = false, rewardCarePoints: Int = 50) {
+    public init(
+        id: String,
+        title: String,
+        description: String,
+        type: QuestObjectiveType,
+        targetBiome: BiomeType,
+        targetPosition: CGPoint,
+        isCompleted: Bool = false,
+        rewardCarePoints: Int = 50,
+        targetCount: Int = 1,
+        currentCount: Int = 0,
+        hint: String = "",
+        timeLimitSeconds: Double? = nil
+    ) {
         self.id = id
         self.title = title
         self.description = description
@@ -74,6 +98,10 @@ public struct QuestObjective: Identifiable, Sendable {
         self.targetPosition = targetPosition
         self.isCompleted = isCompleted
         self.rewardCarePoints = rewardCarePoints
+        self.targetCount = targetCount
+        self.currentCount = currentCount
+        self.hint = hint
+        self.timeLimitSeconds = timeLimitSeconds
     }
 }
 
@@ -106,25 +134,34 @@ public struct StoryQuest: Identifiable, Sendable {
 // MARK: - Enemies & Threats in Open World
 public enum EnemyType: String, Sendable {
     case poacher = "Caçador Clandestino"
+    case nestPoacher = "Saqueador de Ninhos"
+    case chainsawCrew = "Frente de Desmatamento"
+    case wildfireEntity = "Foco de Incêndio"
+    case malhadeiraNet = "Rede Malhadeira Predatória"
+    case plowTractor = "Arado Mecânico da Monocultura"
     case surveillanceDrone = "Drone de Queimada"
-    case wildfireEntity = "Labareda de Fogo"
-    case timberHarvester = "Escavadeira Predatória"
     
     public var iconSymbol: String {
         switch self {
         case .poacher: return "figure.walk.motion"
-        case .surveillanceDrone: return "airplane.circle.fill"
+        case .nestPoacher: return "shippingbox.fill"
+        case .chainsawCrew: return "hammer.fill"
         case .wildfireEntity: return "flame.fill"
-        case .timberHarvester: return "gearshape.2.fill"
+        case .malhadeiraNet: return "water.waves"
+        case .plowTractor: return "gearshape.2.fill"
+        case .surveillanceDrone: return "airplane.circle.fill"
         }
     }
     
     public var dangerColor: Color {
         switch self {
         case .poacher: return .red
-        case .surveillanceDrone: return .orange
+        case .nestPoacher: return .orange
+        case .chainsawCrew: return .brown
         case .wildfireEntity: return .yellow
-        case .timberHarvester: return .purple
+        case .malhadeiraNet: return .cyan
+        case .plowTractor: return .purple
+        case .surveillanceDrone: return .red
         }
     }
 }
@@ -140,7 +177,28 @@ public struct WorldEnemy: Identifiable, Sendable {
     public var isNeutralized: Bool
     public var requiredCounterPerk: String?
     
-    public init(id: String, type: EnemyType, position: CGPoint, patrolRadius: Double = 35.0, visionRadius: Double = 28.0, isAlerted: Bool = false, isNeutralized: Bool = false, requiredCounterPerk: String? = nil) {
+    // Suporte a Desafios Contra o Relógio (Gumgum Inspired)
+    public var countdownTimer: Double?
+    public var maxCountdown: Double?
+    public var targetEntityPos: CGPoint?
+    public var targetEntityName: String?
+    public var isExpired: Bool
+    
+    public init(
+        id: String,
+        type: EnemyType,
+        position: CGPoint,
+        patrolRadius: Double = 35.0,
+        visionRadius: Double = 28.0,
+        isAlerted: Bool = false,
+        isNeutralized: Bool = false,
+        requiredCounterPerk: String? = nil,
+        countdownTimer: Double? = nil,
+        maxCountdown: Double? = nil,
+        targetEntityPos: CGPoint? = nil,
+        targetEntityName: String? = nil,
+        isExpired: Bool = false
+    ) {
         self.id = id
         self.type = type
         self.position = position
@@ -150,6 +208,11 @@ public struct WorldEnemy: Identifiable, Sendable {
         self.isAlerted = isAlerted
         self.isNeutralized = isNeutralized
         self.requiredCounterPerk = requiredCounterPerk
+        self.countdownTimer = countdownTimer
+        self.maxCountdown = maxCountdown
+        self.targetEntityPos = targetEntityPos
+        self.targetEntityName = targetEntityName
+        self.isExpired = isExpired
     }
 }
 

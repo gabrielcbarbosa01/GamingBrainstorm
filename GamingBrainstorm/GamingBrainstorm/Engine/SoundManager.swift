@@ -46,6 +46,9 @@ public final class SoundManager: @unchecked Sendable {
     private var fireCrackleBuffer: AVAudioPCMBuffer?
     private var dialogueBeepBuffer: AVAudioPCMBuffer?
     private var totemPurifiedBuffer: AVAudioPCMBuffer?
+    private var chainsawBuffer: AVAudioPCMBuffer?
+    private var netCutBuffer: AVAudioPCMBuffer?
+    private var timerTickBuffer: AVAudioPCMBuffer?
     private var ambientMusicBuffers: [BiomeType: AVAudioPCMBuffer] = [:]
     
     // Volume & State Settings
@@ -158,6 +161,9 @@ public final class SoundManager: @unchecked Sendable {
         fireCrackleBuffer = createFireCrackleBuffer()
         dialogueBeepBuffer = createDialogueBeepBuffer()
         totemPurifiedBuffer = createTotemPurifiedBuffer()
+        chainsawBuffer = createChainsawBuffer()
+        netCutBuffer = createNetCutBuffer()
+        timerTickBuffer = createTimerTickBuffer()
         
         // 11. Procedural Ambient Musical Tracks for All 6 Biomes
         for biome in BiomeType.allCases {
@@ -540,6 +546,76 @@ public final class SoundManager: @unchecked Sendable {
         return buffer
     }
     
+    // MARK: - Chainsaw Synthesis (Motor Distortion & Teeth Buzz)
+    private func createChainsawBuffer() -> AVAudioPCMBuffer {
+        let duration: Double = 0.9
+        let frameCount = AVAudioFrameCount(duration * sampleRate)
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: frameCount),
+              let left = buffer.floatChannelData?[0],
+              let right = buffer.floatChannelData?[1] else {
+            return AVAudioPCMBuffer()
+        }
+        buffer.frameLength = frameCount
+        
+        for frame in 0..<Int(frameCount) {
+            let time = Double(frame) / sampleRate
+            let env = sin(.pi * min(1.0, time / duration))
+            // Modulated sawtooth waveform for 2-stroke engine buzz
+            let freq = 115.0 + 15.0 * sin(2.0 * .pi * 8.0 * time)
+            let phase = (time * freq).truncatingRemainder(dividingBy: 1.0)
+            let saw = (Float(phase) * 2.0 - 1.0)
+            let grit = Float.random(in: -0.2...0.2)
+            let sample = (saw * 0.4 + grit) * Float(env) * 0.35
+            left[frame] = sample
+            right[frame] = sample
+        }
+        return buffer
+    }
+    
+    // MARK: - Net Cut Synthesis (Swift Snip)
+    private func createNetCutBuffer() -> AVAudioPCMBuffer {
+        let duration: Double = 0.12
+        let frameCount = AVAudioFrameCount(duration * sampleRate)
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: frameCount),
+              let left = buffer.floatChannelData?[0],
+              let right = buffer.floatChannelData?[1] else {
+            return AVAudioPCMBuffer()
+        }
+        buffer.frameLength = frameCount
+        
+        for frame in 0..<Int(frameCount) {
+            let time = Double(frame) / sampleRate
+            let env = exp(-time * 45.0)
+            let click = Float(sin(2.0 * .pi * 920.0 * time)) * 0.4
+            let snapNoise = Float.random(in: -0.3...0.3) * Float(exp(-time * 80.0))
+            let sample = (click + snapNoise) * Float(env) * 0.5
+            left[frame] = sample
+            right[frame] = sample
+        }
+        return buffer
+    }
+    
+    // MARK: - Timer Tick Synthesis (Woodblock Clock)
+    private func createTimerTickBuffer() -> AVAudioPCMBuffer {
+        let duration: Double = 0.05
+        let frameCount = AVAudioFrameCount(duration * sampleRate)
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: audioFormat, frameCapacity: frameCount),
+              let left = buffer.floatChannelData?[0],
+              let right = buffer.floatChannelData?[1] else {
+            return AVAudioPCMBuffer()
+        }
+        buffer.frameLength = frameCount
+        
+        for frame in 0..<Int(frameCount) {
+            let time = Double(frame) / sampleRate
+            let env = exp(-time * 120.0)
+            let sample = Float(sin(2.0 * .pi * 1250.0 * time) * env) * 0.35
+            left[frame] = sample
+            right[frame] = sample
+        }
+        return buffer
+    }
+    
     // MARK: - Ambient Loops
     private func startAmbientLoops() {
         guard isEngineRunning else { return }
@@ -676,6 +752,30 @@ public final class SoundManager: @unchecked Sendable {
     public func playTotemPurified() {
         guard !isMuted, let buf = totemPurifiedBuffer else { return }
         sfxPlayerNode.volume = sfxVolume * 1.25
+        sfxPlayerNode.scheduleBuffer(buf, at: nil, options: [], completionHandler: nil)
+    }
+    
+    /// Play Chainsaw Buzz
+    public func playChainsaw() {
+        guard !isMuted, let buf = chainsawBuffer else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastEnemyAlarmTime >= 0.8 else { return }
+        lastEnemyAlarmTime = now
+        sfxPlayerNode.volume = sfxVolume * 0.8
+        sfxPlayerNode.scheduleBuffer(buf, at: nil, options: [], completionHandler: nil)
+    }
+    
+    /// Play Net Cutting Snip
+    public func playNetCut() {
+        guard !isMuted, let buf = netCutBuffer else { return }
+        sfxPlayerNode.volume = sfxVolume * 0.95
+        sfxPlayerNode.scheduleBuffer(buf, at: nil, options: [], completionHandler: nil)
+    }
+    
+    /// Play Timer Tick
+    public func playTimerTick() {
+        guard !isMuted, let buf = timerTickBuffer else { return }
+        sfxPlayerNode.volume = sfxVolume * 0.45
         sfxPlayerNode.scheduleBuffer(buf, at: nil, options: [], completionHandler: nil)
     }
     

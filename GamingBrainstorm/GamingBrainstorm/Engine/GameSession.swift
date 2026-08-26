@@ -119,13 +119,20 @@ public final class GameSession: @unchecked Sendable {
         let activePerk = activeSpecies?.transformationPerk
         let isNightStealth = atmosphere.currentTimeOfDay == .night && (activeSpecies?.id == "onca-pintada" || activeSpecies?.id == "lobo-guara")
         
-        if let alerted = storyEngine.updateEnemyPatrols(time: time, playerPos: playerPosition, activePerk: isNightStealth ? "Furtivo" : activePerk) {
+        if let alerted = storyEngine.updateEnemyPatrols(
+            delta: 0.1,
+            time: time,
+            playerPos: playerPosition,
+            activePerk: isNightStealth ? "Furtivo" : activePerk,
+            isHumanForm: activeSpecies == nil
+        ) {
             #if !TEST_RUNNER
             switch alerted.type {
             case .surveillanceDrone: SoundManager.shared.playDroneAlarm()
-            case .poacher: SoundManager.shared.playPoacherWhistle()
+            case .poacher, .nestPoacher: SoundManager.shared.playPoacherWhistle()
             case .wildfireEntity: SoundManager.shared.playFireCrackle()
-            case .timberHarvester: SoundManager.shared.playDroneAlarm()
+            case .chainsawCrew: SoundManager.shared.playChainsaw()
+            case .malhadeiraNet, .plowTractor: SoundManager.shared.playDroneAlarm()
             }
             #endif
             
@@ -224,14 +231,19 @@ public final class GameSession: @unchecked Sendable {
     
     @discardableResult
     public func interactWithNearbyPoint() -> (success: Bool, message: String) {
-        // 1. Check NPC Interaction
-        if let npc = getNearbyNPC() {
+        // 1. Check NPC Interaction (with proximity priority over world points)
+        let nearbyNPC = getNearbyNPC()
+        let initialPoint = getNearbyPoint()
+        let distNPC = nearbyNPC != nil ? hypot(nearbyNPC!.position.x - playerPosition.x, nearbyNPC!.position.y - playerPosition.y) : Double.infinity
+        let distPointInitial = initialPoint != nil ? hypot(initialPoint!.x - playerPosition.x, initialPoint!.y - playerPosition.y) : Double.infinity
+        
+        if let npc = nearbyNPC, distNPC <= distPointInitial {
             #if !TEST_RUNNER
             SoundManager.shared.playDialogueBeep()
             #endif
             let lines = [
-                DialogueLine(speakerName: npc.name, speakerIcon: npc.iconSymbol, text: "Olá Guardião! Fique atento às redondezas de \(npc.nativeBiome.rawValue). O Consórcio Devastador colocou patrulhas perto dos animais.", tone: "Informativo"),
-                DialogueLine(speakerName: "Muri", speakerIcon: "leaf.fill", text: "Obrigado, \(npc.name)! Vou purificar os totens e afastar os caçadores!", tone: "Confiante")
+                DialogueLine(speakerName: npc.name, speakerIcon: npc.iconSymbol, text: "Olá Guardião! Fique atento às redondezas de \(npc.nativeBiome.rawValue). As ameaças ecológicas exigem nossa união.", tone: "Informativo"),
+                DialogueLine(speakerName: "Muri", speakerIcon: "leaf.fill", text: "Obrigado, \(npc.name)! Cumprirei os objetivos e restaurarei o equilíbrio!", tone: "Confiante")
             ]
             storyEngine.startDialogue(lines: lines)
             
@@ -244,6 +256,20 @@ public final class GameSession: @unchecked Sendable {
             return (true, msg)
         }
         
+        // 1b. Check Harpia Ancestral Interaction (Climax)
+        if storyEngine.isHarpiaSummoned {
+            let distToCenter = hypot(playerPosition.x - 0.0, playerPosition.y - 0.0)
+            if distToCenter <= 30.0 {
+                let _ = storyEngine.completeObjective(withId: "obj_harpia_falar")
+                if let intro = storyEngine.currentQuest?.introDialogue, !intro.isEmpty {
+                    storyEngine.startDialogue(lines: intro)
+                }
+                let msg = "👑 Você se aproximou da Harpia Ancestral e recebeu a Bênção dos Céus!"
+                recentNotification = msg
+                return (true, msg)
+            }
+        }
+        
         // 2. Check Totem Purification
         if let totem = getNearbyTotem() {
             if let idx = storyEngine.totems.firstIndex(where: { $0.id == totem.id }) {
@@ -254,10 +280,12 @@ public final class GameSession: @unchecked Sendable {
                 sanctuary.resources.carePoints += 100
                 playerTransformation.regenerateEnergy(amount: 50.0)
                 
-                // Complete story objectives
-                let _ = storyEngine.completeObjective(withId: "obj_purify_amz_totem")
-                let _ = storyEngine.completeObjective(withId: "obj_purify_cer_totem")
-                let _ = storyEngine.completeObjective(withId: "obj_purify_all_totems")
+                // Complete story objectives for all biomes
+                let _ = storyEngine.completeObjective(withId: "obj_mat_totem")
+                let _ = storyEngine.completeObjective(withId: "obj_cer_totem")
+                let _ = storyEngine.completeObjective(withId: "obj_pan_totem")
+                let _ = storyEngine.completeObjective(withId: "obj_amz_totem")
+                let _ = storyEngine.completeObjective(withId: "obj_pam_totem")
                 
                 let msg = "✨ Você purificou o \(totem.title)! (+100 Pontos de Cuidado, +50 Energia). A floresta volta a florescer!"
                 recentNotification = msg
@@ -265,35 +293,51 @@ public final class GameSession: @unchecked Sendable {
             }
         }
         
-        // 3. Check Enemy Neutralization / Extinguish Fire
-        if let enemy = getNearbyEnemy() {
-            let activePerk = activeSpecies?.transformationPerk ?? ""
-            if let counter = enemy.requiredCounterPerk, activePerk.contains(counter) || counter.contains(activePerk) {
-                if let idx = storyEngine.enemies.firstIndex(where: { $0.id == enemy.id }) {
-                    storyEngine.enemies[idx].isNeutralized = true
-                    #if !TEST_RUNNER
+        // 3. Check Enemy vs World Point Proximity Priority
+        let nearbyEnemy = getNearbyEnemy()
+        let nearbyPoint = getNearbyPoint()
+        
+        let distEnemy = nearbyEnemy != nil ? hypot(nearbyEnemy!.position.x - playerPosition.x, nearbyEnemy!.position.y - playerPosition.y) : Double.infinity
+        let distPoint = nearbyPoint != nil ? hypot(nearbyPoint!.x - playerPosition.x, nearbyPoint!.y - playerPosition.y) : Double.infinity
+        
+        if let enemy = nearbyEnemy, distEnemy <= distPoint {
+            let result = storyEngine.disarmThreat(
+                enemyId: enemy.id,
+                isHumanForm: activeSpecies == nil,
+                activePerk: activeSpecies?.transformationPerk
+            )
+            
+            if result.success {
+                #if !TEST_RUNNER
+                if enemy.type == .malhadeiraNet {
+                    SoundManager.shared.playNetCut()
+                } else {
                     SoundManager.shared.playRescueFanfare()
-                    #endif
-                    sanctuary.resources.carePoints += 40
-                    
-                    // Complete enemy-related quest objectives
-                    let _ = storyEngine.completeObjective(withId: "obj_extinguish_amz")
-                    let _ = storyEngine.completeObjective(withId: "obj_disable_drone_cer")
-                    let _ = storyEngine.completeObjective(withId: "obj_disable_harvester")
-                    
-                    let msg = "⚡ Ameaça neutralizada: \(enemy.type.rawValue) desativado usando \(activeSpecies?.commonName ?? "forma animal")! (+40 Pontos de Cuidado)"
-                    recentNotification = msg
-                    return (true, msg)
                 }
-            } else {
-                let msg = "Ação bloqueada! Para enfrentar \(enemy.type.rawValue), você precisa da habilidade: \(enemy.requiredCounterPerk ?? "animal")."
+                #endif
+                sanctuary.resources.carePoints += 50
+                
+                // Complete Gumgum challenges
+                let _ = storyEngine.completeObjective(withId: "obj_pan_vigilia")
+                let _ = storyEngine.completeObjective(withId: "obj_amz_malhadeiras")
+                let _ = storyEngine.completeObjective(withId: "obj_pam_arado")
+                let _ = storyEngine.completeObjective(withId: "obj_cer_aceiro")
+                let _ = storyEngine.completeObjective(withId: "obj_mat_travessia")
+                if let expId = storyEngine.currentQuest?.objectives.first?.id {
+                    let _ = storyEngine.completeObjective(withId: expId)
+                }
+                
+                let msg = "⚡ \(result.feedback) (+50 Pontos de Cuidado)"
                 recentNotification = msg
-                return (false, msg)
+                return (true, msg)
+            } else {
+                recentNotification = result.feedback
+                return (false, result.feedback)
             }
         }
         
         // 4. Standard World Points (Animal Distress & Clues)
-        guard let point = getNearbyPoint() else {
+        guard let point = nearbyPoint else {
             return (false, "Nenhum ponto de interesse, NPC ou ameaça próxima.")
         }
         
@@ -332,9 +376,12 @@ public final class GameSession: @unchecked Sendable {
                 sanctuary.rescuedAnimals.append(newAnimal)
                 sanctuary.resources.carePoints += 50
                 
-                // Complete story objectives
-                let _ = storyEngine.completeObjective(withId: "obj_rescue_amz")
-                let _ = storyEngine.completeObjective(withId: "obj_rescue_tatu")
+                // Complete story objectives (Gumgum Inspired)
+                let _ = storyEngine.completeObjective(withId: "obj_cer_rodovia")
+                let _ = storyEngine.completeObjective(withId: "obj_pan_ninhos")
+                if let expId = storyEngine.currentQuest?.objectives.first?.id {
+                    let _ = storyEngine.completeObjective(withId: expId)
+                }
                 
                 let msg = "🎉 Você resgatou um \(species.commonName)! Ele foi levado ao Santuário e sua forma de metamorfose foi DESBLOQUEADA!"
                 recentNotification = msg
@@ -347,6 +394,19 @@ public final class GameSession: @unchecked Sendable {
             #endif
             sanctuary.resources.carePoints += 30
             playerTransformation.regenerateEnergy(amount: 25.0)
+            
+            // Complete clue/rastro and restoration objectives
+            let _ = storyEngine.completeObjective(withId: "obj_mat_rastro")
+            let _ = storyEngine.completeObjective(withId: "obj_mat_restauro")
+            let _ = storyEngine.completeObjective(withId: "obj_cer_rastro")
+            let _ = storyEngine.completeObjective(withId: "obj_pan_rastro")
+            let _ = storyEngine.completeObjective(withId: "obj_amz_rastro")
+            let _ = storyEngine.completeObjective(withId: "obj_amz_canais")
+            let _ = storyEngine.completeObjective(withId: "obj_pam_rastro")
+            let _ = storyEngine.completeObjective(withId: "obj_pam_dunas")
+            if let expId = storyEngine.currentQuest?.objectives.first?.id {
+                let _ = storyEngine.completeObjective(withId: expId)
+            }
             let msg = "🔍 Pista ecológica investigada: \(point.description) (+30 Pontos de Cuidado, +25 Energia)"
             recentNotification = msg
             return (true, msg)

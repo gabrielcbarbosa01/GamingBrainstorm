@@ -150,47 +150,41 @@ public struct GameEngineTests {
             }
         }
         
-        // 8. Story Quests & NPC Dialogue
+        // 8. Story Quests & NPC Dialogue (Gumgum Inspired)
         test("Sistema Narrativo, Missões e Diálogos de NPCs") {
             let session = GameSession()
             assert(session.storyEngine.currentQuest != nil, "Deve existir uma missão de história ativa")
-            assert(session.storyEngine.isDialoguePresented, "Diálogo introdutório do Capítulo 1 deve iniciar apresentado")
+            assert(session.storyEngine.currentQuest?.id == "quest_mata_atlantica", "A primeira missão deve ser a Mata Atlântica")
             
-            // Advance dialogue
-            session.storyEngine.advanceDialogue()
-            
-            // Talk to Poti Arara NPC
-            session.playerPosition = CGPoint(x: -80, y: -190)
+            // Talk to Iara NPC at (20, 30)
+            session.playerPosition = CGPoint(x: 20, y: 30)
             let result = session.interactWithNearbyPoint()
-            assert(result.success, "Deve conseguir conversar com a Arara Poti")
+            assert(result.success, "Deve conseguir conversar com Iara na Estação Raízes")
             
-            let currentQuest = session.storyEngine.currentQuest
-            let talkObj = currentQuest?.objectives.first { $0.id == "obj_talk_poti" }
-            assert(talkObj?.isCompleted == true, "Objetivo de conversar com Poti deve ser concluído")
+            // Verify chapter 1 objectives
+            let objectives = session.storyEngine.currentQuest?.objectives ?? []
+            assert(objectives.contains { $0.id == "obj_mat_travessia" }, "Deve conter o desafio da Travessia da Copa")
+            assert(objectives.contains { $0.id == "obj_mat_restauro" }, "Deve conter o Corredor da Copa")
         }
         
         // 9. Enemies, Patrols and Totem Purification
         test("Encontros com Inimigos, Patrulha e Purificação de Totens") {
             let session = GameSession()
             
-            // Unlock Ariranha with Nado Veloz perk for testing
-            session.playerTransformation.unlock(speciesId: "ariranha")
-            let morphOk = session.transform(into: "ariranha")
-            assert(morphOk, "Transformação em Ariranha deve ser realizada com sucesso")
-            assert(session.activeSpecies?.id == "ariranha", "Deve estar na forma de Ariranha")
-            
-            // Approach wildfire enemy in Amazon at (-95, -260)
-            session.playerPosition = CGPoint(x: -95, y: -260)
-            let enemyResult = session.interactWithNearbyPoint()
-            assert(enemyResult.success, "Deve conseguir neutralizar a labareda usando a forma aquática")
-            
-            // Approach and Purify Amazon Totem at (-200, -250)
-            session.playerPosition = CGPoint(x: -200, y: -250)
+            // Purify Totem da Mata Atlântica at (120, 180)
+            session.playerPosition = CGPoint(x: 120, y: 180)
             let totemResult = session.interactWithNearbyPoint()
-            assert(totemResult.success, "Deve conseguir purificar o Totem da Amazônia")
+            assert(totemResult.success, "Deve conseguir purificar o Totem da Mata Atlântica")
             
-            let totem = session.storyEngine.totems.first { $0.id == "totem_amazonia" }
-            assert(totem?.isPurified == true, "Totem da Amazônia deve estar purificado")
+            let totem = session.storyEngine.totems.first { $0.id == "totem_mata_atlantica" }
+            assert(totem?.isPurified == true, "Totem da Mata Atlântica deve estar purificado")
+            
+            // Disarm Chainsaw crew at (95, 150) using Mico form
+            session.playerTransformation.unlock(speciesId: "mico-leao-dourado")
+            let _ = session.transform(into: "mico-leao-dourado")
+            session.playerPosition = CGPoint(x: 95, y: 150)
+            let enemyResult = session.interactWithNearbyPoint()
+            assert(enemyResult.success, "Deve dispersar madeireiros com a agilidade do mico")
         }
         
         // 10. Day/Night Cycle, Weather and Quick Morph Shortcuts
@@ -234,6 +228,49 @@ public struct GameEngineTests {
             
             let reactiveCapy = session.ambientFauna.wildFauna.first(where: { $0.id == initialCapy.id })
             assert(reactiveCapy?.isScattering == true, "Capivara deve se assustar e dispersar na presença de perigo")
+        }
+        
+        // 12. Timed Challenges, Nets, Poachers & Infinite Expeditions (Gumgum Inspired)
+        test("Desafios Ativos com Relógio, Malhadeiras, Saqueadores e Expedições") {
+            let session = GameSession()
+            
+            // 1. Pantanal: Saqueador de ninhos com contagem regressiva
+            guard let poacherIdx = session.storyEngine.enemies.firstIndex(where: { $0.type == .nestPoacher }) else {
+                throw NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "Saqueador de ninhos não encontrado"])
+            }
+            
+            // Simulate countdown tick near player
+            session.playerPosition = CGPoint(x: -150, y: 50)
+            let _ = session.storyEngine.updateEnemyPatrols(delta: 2.0, time: 10.0, playerPos: session.playerPosition, activePerk: nil, isHumanForm: true)
+            assert(session.storyEngine.activeChallengeMessage != nil, "HUD deve exibir a contagem regressiva do saqueador")
+            assert((session.storyEngine.enemies[poacherIdx].countdownTimer ?? 0) < 45.0, "O relógio de 45s deve decrescer")
+            
+            // Disarming nest poacher requires human form (mãos humanas)
+            session.playerTransformation.unlock(speciesId: "lobo-guara")
+            let _ = session.transform(into: "lobo-guara")
+            session.playerPosition = session.storyEngine.enemies[poacherIdx].position
+            let failedDisarm = session.interactWithNearbyPoint()
+            assert(!failedDisarm.success, "Na forma animal não deve conseguir instalar a proteção de metal no ninho")
+            
+            // Return to human form
+            let _ = session.morphQuick(index: 0)
+            let okDisarm = session.interactWithNearbyPoint()
+            assert(okDisarm.success, "Na forma humana deve instalar a proteção com sucesso")
+            assert(session.storyEngine.enemies[poacherIdx].isNeutralized, "Saqueador deve estar neutralizado")
+            
+            // 2. Amazônia: Corte de malhadeiras submersas
+            guard let netIdx = session.storyEngine.enemies.firstIndex(where: { $0.type == .malhadeiraNet }) else {
+                throw NSError(domain: "Test", code: 2, userInfo: [NSLocalizedDescriptionKey: "Malhadeira não encontrada"])
+            }
+            session.playerTransformation.unlock(speciesId: "ariranha")
+            let _ = session.transform(into: "ariranha")
+            session.playerPosition = session.storyEngine.enemies[netIdx].position
+            let cutResult = session.interactWithNearbyPoint()
+            assert(cutResult.success, "Na forma de ariranha com nado veloz deve cortar a malhadeira")
+            
+            // 3. Infinite Expeditions Generator
+            session.storyEngine.generateNextExpedition()
+            assert(session.storyEngine.currentQuest?.title.contains("Expedição") == true, "Título deve ser de expedição")
         }
         
         print("🎯 [TESTS] Resultado: \(passedCount)/\(totalCount) testes passaram com sucesso!\n")

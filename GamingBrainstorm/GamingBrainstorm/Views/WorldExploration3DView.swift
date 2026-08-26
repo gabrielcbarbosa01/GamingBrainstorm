@@ -70,6 +70,37 @@ public struct WorldExploration3DView: View {
             VStack {
                 topUnifiedCompassBar
                 
+                // Timed Challenge Banner (Gumgum Inspired)
+                if let challengeMsg = session.storyEngine.activeChallengeMessage,
+                   let frac = session.storyEngine.activeChallengeFraction {
+                    HStack(spacing: 12) {
+                        Image(systemName: session.storyEngine.activeChallengeIcon ?? "timer")
+                            .font(.title3.bold())
+                            .foregroundStyle(session.storyEngine.isChallengeUrgent ? .red : .orange)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(challengeMsg)
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.white)
+                            
+                            GeometryReader { g in
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(Color.white.opacity(0.25))
+                                    Capsule().fill(session.storyEngine.isChallengeUrgent ? Color.red : Color.orange)
+                                        .frame(width: max(0, g.size.width * CGFloat(frac)))
+                                }
+                            }
+                            .frame(height: 6)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(RoundedRectangle(cornerRadius: 14).fill(.ultraThickMaterial))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(session.storyEngine.isChallengeUrgent ? Color.red : Color.orange, lineWidth: 1.5))
+                    .padding(.top, 4)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                
                 HStack(alignment: .top) {
                     StoryQuestTrackerCard(session: session)
                         .padding(.leading, 16)
@@ -621,6 +652,115 @@ public struct WorldExploration3DView: View {
                 coneNode.position = SCNVector3(0, 0.3, 3.5)
                 enemyNode.addChildNode(coneNode)
                 
+            case .nestPoacher:
+                // Saqueador de ninhos com caixa nas costas e círculo de alerta
+                let bodyGeo = SCNCylinder(radius: 1.2, height: 3.2)
+                let bodyMat = SCNMaterial()
+                bodyMat.diffuse.contents = NSColor.systemOrange
+                bodyGeo.materials = [bodyMat]
+                let bodyNode = SCNNode(geometry: bodyGeo)
+                bodyNode.position = SCNVector3(0, 1.6, 0)
+                enemyNode.addChildNode(bodyNode)
+                
+                // Crate on back
+                let crateGeo = SCNBox(width: 1.4, height: 1.4, length: 1.2, chamferRadius: 0.1)
+                let crateMat = SCNMaterial()
+                crateMat.diffuse.contents = NSColor.brown
+                crateGeo.materials = [crateMat]
+                let crateNode = SCNNode(geometry: crateGeo)
+                crateNode.position = SCNVector3(0, 2.0, -1.0)
+                enemyNode.addChildNode(crateNode)
+                
+                // Pulsing Warning Circle
+                let ringGeo = SCNTorus(ringRadius: 3.5, pipeRadius: 0.12)
+                let ringMat = SCNMaterial()
+                ringMat.diffuse.contents = NSColor.systemOrange.withAlphaComponent(0.7)
+                ringMat.emission.contents = NSColor.systemOrange.withAlphaComponent(0.5)
+                ringGeo.materials = [ringMat]
+                let ringNode = SCNNode(geometry: ringGeo)
+                ringNode.position = SCNVector3(0, 0.1, 0)
+                enemyNode.addChildNode(ringNode)
+                
+            case .chainsawCrew:
+                // Madeireiro com motosserra
+                let bodyGeo = SCNCylinder(radius: 1.2, height: 3.2)
+                let bodyMat = SCNMaterial()
+                bodyMat.diffuse.contents = NSColor.darkGray
+                bodyGeo.materials = [bodyMat]
+                let bodyNode = SCNNode(geometry: bodyGeo)
+                bodyNode.position = SCNVector3(0, 1.6, 0)
+                enemyNode.addChildNode(bodyNode)
+                
+                // Chainsaw blade
+                let bladeGeo = SCNBox(width: 0.35, height: 0.6, length: 2.8, chamferRadius: 0.05)
+                let bladeMat = SCNMaterial()
+                bladeMat.diffuse.contents = NSColor.lightGray
+                bladeMat.metalness.contents = 0.9
+                bladeGeo.materials = [bladeMat]
+                let bladeNode = SCNNode(geometry: bladeGeo)
+                bladeNode.position = SCNVector3(0.8, 1.4, 1.6)
+                enemyNode.addChildNode(bladeNode)
+                
+            case .wildfireEntity:
+                // Blazing Flame Pillar
+                let flameGeo = SCNCone(topRadius: 0.1, bottomRadius: 2.4, height: 4.5)
+                let flameMat = SCNMaterial()
+                flameMat.diffuse.contents = NSColor.systemOrange
+                flameMat.emission.contents = NSColor.systemRed.withAlphaComponent(0.85)
+                flameGeo.materials = [flameMat]
+                let flameNode = SCNNode(geometry: flameGeo)
+                flameNode.position = SCNVector3(0, 2.25, 0)
+                
+                let scaleUp = SCNAction.scale(to: 1.15, duration: 0.4)
+                let scaleDown = SCNAction.scale(to: 0.85, duration: 0.4)
+                flameNode.runAction(SCNAction.repeatForever(SCNAction.sequence([scaleUp, scaleDown])))
+                enemyNode.addChildNode(flameNode)
+                
+            case .malhadeiraNet:
+                // Rede predatória submersa no leito do rio
+                let netGeo = SCNBox(width: 14.0, height: 0.06, length: 18.0, chamferRadius: 0.0)
+                let netMat = SCNMaterial()
+                netMat.diffuse.contents = NSColor(red: 0.1, green: 0.35, blue: 0.4, alpha: 0.75)
+                netMat.isDoubleSided = true
+                netMat.transparency = 0.75
+                netGeo.materials = [netMat]
+                let netNode = SCNNode(geometry: netGeo)
+                netNode.position = SCNVector3(0, 0.04, 0)
+                enemyNode.addChildNode(netNode)
+                
+                // 4 Floating buoy markers
+                let buoyPositions: [(Float, Float)] = [(-6, -8), (6, -8), (-6, 8), (6, 8)]
+                for (bx, bz) in buoyPositions {
+                    let buoyGeo = SCNSphere(radius: 0.6)
+                    let buoyMat = SCNMaterial()
+                    buoyMat.diffuse.contents = NSColor.cyan
+                    buoyMat.emission.contents = NSColor.cyan.withAlphaComponent(0.6)
+                    buoyGeo.materials = [buoyMat]
+                    let buoyNode = SCNNode(geometry: buoyGeo)
+                    buoyNode.position = SCNVector3(bx, 0.4, bz)
+                    enemyNode.addChildNode(buoyNode)
+                }
+                
+            case .plowTractor:
+                // Trator agrícola com lâmina de arado pesada
+                let baseGeo = SCNBox(width: 4.8, height: 3.2, length: 5.8, chamferRadius: 0.4)
+                let baseMat = SCNMaterial()
+                baseMat.diffuse.contents = NSColor(red: 0.25, green: 0.35, blue: 0.22, alpha: 1.0)
+                baseGeo.materials = [baseMat]
+                let baseNode = SCNNode(geometry: baseGeo)
+                baseNode.position = SCNVector3(0, 1.6, 0)
+                enemyNode.addChildNode(baseNode)
+                
+                // Furrow Plow Blade in front
+                let bladeGeo = SCNBox(width: 5.6, height: 1.6, length: 0.8, chamferRadius: 0.1)
+                let bladeMat = SCNMaterial()
+                bladeMat.diffuse.contents = NSColor.darkGray
+                bladeMat.metalness.contents = 0.8
+                bladeGeo.materials = [bladeMat]
+                let bladeNode = SCNNode(geometry: bladeGeo)
+                bladeNode.position = SCNVector3(0, 0.8, 3.4)
+                enemyNode.addChildNode(bladeNode)
+                
             case .surveillanceDrone:
                 // Hovering Sphere with Red Scanner Cone
                 let droneGeo = SCNSphere(radius: 1.2)
@@ -641,33 +781,46 @@ public struct WorldExploration3DView: View {
                 let scanNode = SCNNode(geometry: scanGeo)
                 scanNode.position = SCNVector3(0, 0.05, 0)
                 enemyNode.addChildNode(scanNode)
-                
-            case .wildfireEntity:
-                // Blazing Flame Pillar
-                let flameGeo = SCNCone(topRadius: 0.1, bottomRadius: 2.4, height: 4.5)
-                let flameMat = SCNMaterial()
-                flameMat.diffuse.contents = NSColor.systemOrange
-                flameMat.emission.contents = NSColor.systemRed.withAlphaComponent(0.85)
-                flameGeo.materials = [flameMat]
-                let flameNode = SCNNode(geometry: flameGeo)
-                flameNode.position = SCNVector3(0, 2.25, 0)
-                
-                let scaleUp = SCNAction.scale(to: 1.15, duration: 0.4)
-                let scaleDown = SCNAction.scale(to: 0.85, duration: 0.4)
-                flameNode.runAction(SCNAction.repeatForever(SCNAction.sequence([scaleUp, scaleDown])))
-                enemyNode.addChildNode(flameNode)
-                
-            case .timberHarvester:
-                let baseGeo = SCNBox(width: 4.5, height: 3.5, length: 5.5, chamferRadius: 0.4)
-                let baseMat = SCNMaterial()
-                baseMat.diffuse.contents = NSColor.systemPurple
-                baseGeo.materials = [baseMat]
-                let baseNode = SCNNode(geometry: baseGeo)
-                baseNode.position = SCNVector3(0, 1.75, 0)
-                enemyNode.addChildNode(baseNode)
             }
             
             enemiesRootNode.addChildNode(enemyNode)
+        }
+        
+        // 4. Harpia Ancestral 3D Node (if summoned)
+        if session.storyEngine.isHarpiaSummoned {
+            let harpiaNode = SCNNode()
+            harpiaNode.name = "harpia_ancestral"
+            harpiaNode.position = SCNVector3(0, 0.1, 0)
+            
+            // Perch rock
+            let rockGeo = SCNBox(width: 6.0, height: 3.0, length: 6.0, chamferRadius: 0.8)
+            let rockMat = SCNMaterial()
+            rockMat.diffuse.contents = NSColor.gray
+            rockGeo.materials = [rockMat]
+            let rockNode = SCNNode(geometry: rockGeo)
+            rockNode.position = SCNVector3(0, 1.5, 0)
+            harpiaNode.addChildNode(rockNode)
+            
+            // Royal Eagle Body
+            let eagleGeo = SCNCylinder(radius: 1.6, height: 4.2)
+            let eagleMat = SCNMaterial()
+            eagleMat.diffuse.contents = NSColor(red: 0.28, green: 0.30, blue: 0.32, alpha: 1.0)
+            eagleGeo.materials = [eagleMat]
+            let eagleNode = SCNNode(geometry: eagleGeo)
+            eagleNode.position = SCNVector3(0, 4.8, 0)
+            harpiaNode.addChildNode(eagleNode)
+            
+            // Colossal Wings
+            let wingsGeo = SCNBox(width: 8.5, height: 0.3, length: 3.0, chamferRadius: 0.1)
+            let wingsMat = SCNMaterial()
+            wingsMat.diffuse.contents = NSColor(red: 0.9, green: 0.8, blue: 0.4, alpha: 1.0)
+            wingsMat.emission.contents = NSColor.yellow.withAlphaComponent(0.35)
+            wingsGeo.materials = [wingsMat]
+            let wingsNode = SCNNode(geometry: wingsGeo)
+            wingsNode.position = SCNVector3(0, 5.5, 0)
+            harpiaNode.addChildNode(wingsNode)
+            
+            enemiesRootNode.addChildNode(harpiaNode)
         }
     }
     
@@ -1111,8 +1264,130 @@ public struct WorldExploration3DView: View {
     // MARK: - Bottom Interactive HUD
     private var bottomInteractiveHUD: some View {
         VStack(spacing: 12) {
-            // Proximity Action Banner
-            if let nearby = session.getNearbyPoint() {
+            // Proximity Action Banners
+            if session.storyEngine.isHarpiaSummoned && hypot(session.playerPosition.x, session.playerPosition.y) <= 30.0 {
+                HStack(spacing: 14) {
+                    Circle()
+                        .fill(Color.yellow)
+                        .frame(width: 44, height: 44)
+                        .overlay {
+                            Image(systemName: "crown.fill")
+                                .font(.title3.bold())
+                                .foregroundStyle(.black)
+                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("A Harpia Ancestral espera por você")
+                            .font(.headline.bold())
+                            .foregroundStyle(.yellow)
+                        Text("Aproxime-se e receba o reconhecimento de Guardião Supremo dos Biomas!")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+                    Spacer()
+                    Button {
+                        session.interactWithNearbyPoint()
+                    } label: {
+                        Text("Receber Bênção [Espaço]")
+                            .font(.headline.bold())
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(Color.yellow))
+                            .foregroundStyle(.black)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding()
+                .background(RoundedRectangle(cornerRadius: 20).fill(.ultraThickMaterial))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.yellow, lineWidth: 1.5))
+                .padding(.horizontal)
+            } else if let enemy = session.getNearbyEnemy(), !enemy.isNeutralized {
+                HStack(spacing: 14) {
+                    Circle()
+                        .fill(enemy.type.dangerColor)
+                        .frame(width: 44, height: 44)
+                        .overlay {
+                            Image(systemName: enemy.type.iconSymbol)
+                                .font(.title3.bold())
+                                .foregroundStyle(.white)
+                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ameaça: \(enemy.type.rawValue)")
+                            .font(.headline.bold())
+                            .foregroundStyle(.white)
+                        if let perk = enemy.requiredCounterPerk {
+                            Text("Requer habilidade: \(perk)")
+                                .font(.caption.bold())
+                                .foregroundStyle(Color.orange)
+                        } else if enemy.type == .nestPoacher {
+                            Text("Exige mãos humanas! Volte à forma humana (0) para blindar o ninho.")
+                                .font(.caption.bold())
+                                .foregroundStyle(Color.yellow)
+                        } else {
+                            Text("Aproxime-se para conter a ameaça.")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.85))
+                        }
+                    }
+                    Spacer()
+                    Button {
+                        session.interactWithNearbyPoint()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("Conter / Desarmar")
+                                .font(.headline.bold())
+                            Text("[Espaço]")
+                                .font(.caption.bold())
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Capsule().fill(.white.opacity(0.25)))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(RoundedRectangle(cornerRadius: 14).fill(enemy.type.dangerColor))
+                        .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding()
+                .background(RoundedRectangle(cornerRadius: 20).fill(.ultraThickMaterial))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(enemy.type.dangerColor, lineWidth: 1.5))
+                .padding(.horizontal)
+            } else if let totem = session.getNearbyTotem(), !totem.isPurified {
+                HStack(spacing: 14) {
+                    Circle()
+                        .fill(Color.purple)
+                        .frame(width: 44, height: 44)
+                        .overlay {
+                            Image(systemName: "sparkles")
+                                .font(.title3.bold())
+                                .foregroundStyle(.white)
+                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(totem.title)
+                            .font(.headline.bold())
+                            .foregroundStyle(.purple)
+                        Text(totem.loreSnippet)
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
+                    Spacer()
+                    Button {
+                        session.interactWithNearbyPoint()
+                    } label: {
+                        Text("Purificar [Espaço]")
+                            .font(.headline.bold())
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(RoundedRectangle(cornerRadius: 14).fill(Color.purple))
+                            .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding()
+                .background(RoundedRectangle(cornerRadius: 20).fill(.ultraThickMaterial))
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.purple, lineWidth: 1.5))
+                .padding(.horizontal)
+            } else if let nearby = session.getNearbyPoint() {
                 HStack(spacing: 14) {
                     Circle()
                         .fill(nearby.interactionType == .animalInDistress ? Color.red : Color.orange)
