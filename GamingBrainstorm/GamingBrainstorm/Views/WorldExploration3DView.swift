@@ -14,10 +14,10 @@ public struct WorldExploration3DView: View {
     @State private var showingTransformWheel = false
     @State private var isMoving = false
     @State private var isFacingLeft = false
-    // 3D Perspective Depth Camera Configuration (Visão Mais Embaixo e Pouco Mais Longe)
-    @State private var cameraDistance: CGFloat = 22.5
-    @State private var cameraHeight: CGFloat = 15.5
-    @State private var cameraPitch: Float = -0.52
+    // 3D Perspective Depth Camera Configuration (Visão Afastada com Ângulo Baixo)
+    @State private var cameraDistance: CGFloat = 29.0
+    @State private var cameraHeight: CGFloat = 18.5
+    @State private var cameraPitch: Float = -0.53
     @State private var isElevatedView: Bool = false
     @State private var previousPlayerPos: CGPoint = .zero
     
@@ -1396,8 +1396,8 @@ public struct WorldExploration3DView: View {
             // 3D Depth Angle Mode Switcher
             Button {
                 isElevatedView.toggle()
-                cameraHeight = isElevatedView ? 28.0 : 15.5
-                cameraPitch = isElevatedView ? -0.85 : -0.52
+                cameraHeight = isElevatedView ? 32.0 : 18.5
+                cameraPitch = isElevatedView ? -0.82 : -0.53
                 let targetX = CGFloat(session.playerPosition.x * 0.8)
                 let targetZ = CGFloat(session.playerPosition.y * 0.8)
                 SCNTransaction.begin()
@@ -1423,7 +1423,7 @@ public struct WorldExploration3DView: View {
             // 3D Camera Distance Zoom (Closer / Farther)
             HStack(spacing: 8) {
                 Button {
-                    cameraDistance = min(34.0, cameraDistance + 3.0)
+                    cameraDistance = min(44.0, cameraDistance + 3.0)
                     let targetX = CGFloat(session.playerPosition.x * 0.8)
                     let targetZ = CGFloat(session.playerPosition.y * 0.8)
                     SCNTransaction.begin()
@@ -1441,7 +1441,7 @@ public struct WorldExploration3DView: View {
                 .help("Afastar câmera")
                 
                 Button {
-                    cameraDistance = max(12.0, cameraDistance - 3.0)
+                    cameraDistance = max(14.0, cameraDistance - 3.0)
                     let targetX = CGFloat(session.playerPosition.x * 0.8)
                     let targetZ = CGFloat(session.playerPosition.y * 0.8)
                     SCNTransaction.begin()
