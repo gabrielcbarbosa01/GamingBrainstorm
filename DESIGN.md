@@ -2,7 +2,7 @@
 
 ## Estado
 
-A direção visual é **2.5D**. A estética será inspirada em títulos como *Cult of the Lamb* e *Don't Starve* (personagens e elementos interativos em 2D estilizado inseridos em um ambiente com perspectiva, proporcionando profundidade sem perder o charme de ilustração).
+A direção visual é **3D** com SceneKit e interface nativa em SwiftUI. O mundo aberto apresenta terrenos tridimensionais, iluminação PBR com sombras dinâmicas, florestas volumétricas, rio horizontal e personagens estilizados com perspectiva imersiva.
 
 ## Objetivos da direção futura
 

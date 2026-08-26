@@ -14,23 +14,28 @@ public struct WorldExploration3DView: View {
     @State private var showingTransformWheel = false
     @State private var isMoving = false
     @State private var isFacingLeft = false
-    @State private var zoomDistance: CGFloat = 28.0
+    @State private var zoomDistance: CGFloat = 34.0
     @State private var previousPlayerPos: CGPoint = .zero
     
     // SceneKit Scene & Nodes
     @State private var scene = SCNScene()
     @State private var playerNode = SCNNode()
-    @State private var playerPlaneGeometry = SCNPlane(width: 2.8, height: 2.8)
+    @State private var playerPlaneGeometry = SCNPlane(width: 3.0, height: 3.0)
     @State private var cameraNode = SCNNode()
     @State private var sunLightNode = SCNNode()
     @State private var ambientLightNode = SCNNode()
     @State private var worldPointsRootNode = SCNNode()
     @State private var treesRootNode = SCNNode()
     @State private var bushesRootNode = SCNNode()
+    @State private var storyNpcsRootNode = SCNNode()
+    @State private var totemsRootNode = SCNNode()
+    @State private var enemiesRootNode = SCNNode()
+    @State private var ambientFaunaRootNode = SCNNode()
+    @State private var weatherParticlesNode = SCNNode()
     @State private var currentFrameIndex = 0
     @State private var runBouncePhase: Double = 0.0
     
-    // Monkey sprite frames from assets
+    // Monkey sprite frames from assets (Monkey_0 ... Monkey_6)
     private let monkeyFrames = [
         "Monkey_0",
         "Monkey_1",
@@ -42,11 +47,13 @@ public struct WorldExploration3DView: View {
     ]
     
     private let tickTimer = Timer.publish(every: 2.0, on: .main, in: .common).autoconnect()
-    // Subtle, smooth natural movement timer (~11 FPS)
     private let frameTimer = Timer.publish(every: 0.09, on: .main, in: .common).autoconnect()
     
-    public init(session: GameSession) {
+    var onOpenMenu: (() -> Void)?
+    
+    public init(session: GameSession, onOpenMenu: (() -> Void)? = nil) {
         self.session = session
+        self.onOpenMenu = onOpenMenu
     }
     
     public var body: some View {
@@ -61,12 +68,29 @@ public struct WorldExploration3DView: View {
             
             // 2. HUD & Overlays
             VStack {
-                topNavigationBar
+                topUnifiedCompassBar
+                
+                HStack(alignment: .top) {
+                    StoryQuestTrackerCard(session: session)
+                        .padding(.leading, 16)
+                        .padding(.top, 6)
+                    
+                    Spacer()
+                    
+                    MiniMapRadarView(session: session)
+                        .padding(.trailing, 16)
+                        .padding(.top, 6)
+                }
+                
                 Spacer()
                 bottomInteractiveHUD
             }
             
-            // 3. Transformation Wheel Modal
+            // 3. Story Dialogue Modal Overlay
+            StoryDialogueView(session: session)
+                .zIndex(9000)
+            
+            // 4. Transformation Wheel Modal
             if showingTransformWheel {
                 TransformationWheelView(session: session, isPresented: $showingTransformWheel)
                     .transition(.opacity.combined(with: .scale(0.95)))
@@ -78,6 +102,7 @@ public struct WorldExploration3DView: View {
         }
         .onChange(of: session.currentBiome) { _, newBiome in
             updateBiomeAtmosphere(for: newBiome)
+            updateWeatherParticles(for: newBiome)
         }
         .onChange(of: session.playerPosition) { _, newPos in
             updatePlayer3DPosition(newPos)
@@ -87,9 +112,15 @@ public struct WorldExploration3DView: View {
         }
         .onReceive(tickTimer) { _ in
             session.simulationTick()
+            build3DWorldPoints()
+            build3DBiomeTotems()
+            updateLightingForTimeOfDay()
+            updateWeatherParticles(for: session.currentBiome)
         }
         .onReceive(frameTimer) { _ in
             animateCharacterFrame()
+            update3DEnemies()
+            update3DAmbientFauna()
         }
     }
     
@@ -97,149 +128,221 @@ public struct WorldExploration3DView: View {
     private func setup3DScene() {
         scene = SCNScene()
         
-        // 1. Camera Node (3rd Person Isometric Angle)
+        // 1. Camera Node (Isometric follow angle)
         cameraNode = SCNNode()
         cameraNode.camera = SCNCamera()
         cameraNode.camera?.zNear = 0.5
-        cameraNode.camera?.zFar = 300.0
-        cameraNode.position = SCNVector3(0, 18, zoomDistance)
-        cameraNode.eulerAngles = SCNVector3(-0.62, 0, 0) // ~35 degree pitch down
+        cameraNode.camera?.zFar = 600.0
+        let targetX = CGFloat(session.playerPosition.x * 0.8)
+        let targetZ = CGFloat(session.playerPosition.y * 0.8)
+        cameraNode.position = SCNVector3(targetX, 22, targetZ + zoomDistance)
+        cameraNode.eulerAngles = SCNVector3(-0.64, 0, 0)
         scene.rootNode.addChildNode(cameraNode)
         
-        // 2. Directional Sun Light with Real-Time Soft Shadows
+        // 2. Directional Sun Light with Shadows
         sunLightNode = SCNNode()
         let sun = SCNLight()
         sun.type = .directional
         sun.color = NSColor(red: 1.0, green: 0.98, blue: 0.88, alpha: 1.0)
         sun.castsShadow = true
-        sun.shadowRadius = 4.0
+        sun.shadowRadius = 4.5
         sun.shadowSampleCount = 16
         sun.shadowMapSize = CGSize(width: 2048, height: 2048)
         sunLightNode.light = sun
-        sunLightNode.position = SCNVector3(30, 50, 30)
-        sunLightNode.eulerAngles = SCNVector3(-0.9, 0.6, 0)
+        sunLightNode.position = SCNVector3(80, 120, 80)
+        sunLightNode.eulerAngles = SCNVector3(-0.95, 0.55, 0)
         scene.rootNode.addChildNode(sunLightNode)
         
         // 3. Ambient Light
         ambientLightNode = SCNNode()
         let ambient = SCNLight()
         ambient.type = .ambient
-        ambient.color = NSColor(red: 0.35, green: 0.45, blue: 0.38, alpha: 1.0)
+        ambient.color = NSColor(red: 0.38, green: 0.45, blue: 0.38, alpha: 1.0)
         ambientLightNode.light = ambient
         scene.rootNode.addChildNode(ambientLightNode)
         
-        // 4. Large 3D Terrain Ground Plane
-        build3DTerrain()
+        // 4. Grand Unified 3D Open World Multi-Biome Terrain
+        buildUnified3DTerrain()
         
-        // 5. 3D Flowing River System (Translucent Water Plane, Riverbed & Currents)
-        build3DRiver()
+        // 5. Long Flowing Continental River System
+        buildContinental3DRiver()
         
-        // 6. 3D Forest with Volumetric Animated Trees
+        // 6. Trees Across All Biomes
         treesRootNode = SCNNode()
         scene.rootNode.addChildNode(treesRootNode)
         build3DForest()
         
-        // 7. 3D Bushes & Flora Layer
+        // 7. Bushes Across All Biomes
         bushesRootNode = SCNNode()
         scene.rootNode.addChildNode(bushesRootNode)
         build3DBushes()
         
-        // 8. Interactive 3D World Points & Rescues
+        // 8. Interactive World Points for All Biomes
         worldPointsRootNode = SCNNode()
         scene.rootNode.addChildNode(worldPointsRootNode)
         build3DWorldPoints()
         
-        // 9. 3D Animated Player Character Node
+        // 9. Friendly Story NPCs
+        storyNpcsRootNode = SCNNode()
+        scene.rootNode.addChildNode(storyNpcsRootNode)
+        build3DStoryNPCs()
+        
+        // 10. Ancient Biome Totems
+        totemsRootNode = SCNNode()
+        scene.rootNode.addChildNode(totemsRootNode)
+        build3DBiomeTotems()
+        
+        // 11. Open World Enemies
+        enemiesRootNode = SCNNode()
+        scene.rootNode.addChildNode(enemiesRootNode)
+        build3DEnemies()
+        
+        // 12. Free Roaming Ambient Wild Fauna
+        ambientFaunaRootNode = SCNNode()
+        scene.rootNode.addChildNode(ambientFaunaRootNode)
+        build3DAmbientFauna()
+        
+        // 13. Weather & Atmospheric Particles
+        weatherParticlesNode = SCNNode()
+        scene.rootNode.addChildNode(weatherParticlesNode)
+        updateWeatherParticles(for: session.currentBiome)
+        
+        // 14. Player Character Node
         build3DPlayerNode()
         
-        // Update atmosphere colors for starting biome
+        // Update atmosphere & lighting for initial player location
         updateBiomeAtmosphere(for: session.currentBiome)
+        updateLightingForTimeOfDay()
     }
     
-    // MARK: - 3D Terrain Construction
-    private func build3DTerrain() {
-        let terrainGeo = SCNBox(width: 220, height: 1.0, length: 220, chamferRadius: 0.2)
-        let terrainMat = SCNMaterial()
-        terrainMat.diffuse.contents = NSColor(red: 0.16, green: 0.35, blue: 0.20, alpha: 1.0)
-        terrainMat.roughness.contents = 0.9
-        terrainGeo.materials = [terrainMat]
+    // MARK: - Grand Unified Multi-Biome 3D Terrain
+    private func buildUnified3DTerrain() {
+        // Base continental floor (700 x 700 units)
+        let mainGroundGeo = SCNBox(width: 650, height: 1.5, length: 650, chamferRadius: 0.5)
+        let groundMat = SCNMaterial()
+        groundMat.diffuse.contents = NSColor(red: 0.18, green: 0.34, blue: 0.20, alpha: 1.0)
+        groundMat.roughness.contents = 0.92
+        mainGroundGeo.materials = [groundMat]
         
-        let terrainNode = SCNNode(geometry: terrainGeo)
-        terrainNode.position = SCNVector3(0, -0.5, 0)
-        terrainNode.name = "Terrain"
-        scene.rootNode.addChildNode(terrainNode)
+        let groundNode = SCNNode(geometry: mainGroundGeo)
+        groundNode.position = SCNVector3(0, -0.75, 0)
+        groundNode.name = "ContinentalGround"
+        scene.rootNode.addChildNode(groundNode)
         
-        // Add rolling 3D hills / terrain elevations
-        let hillCoords: [(CGFloat, CGFloat, CGFloat, CGFloat)] = [
-            (-35, -40, 18, 5.0),
-            (45, -35, 22, 6.5),
-            (-50, 30, 20, 5.5),
-            (55, 45, 26, 7.0),
-            (-15, -60, 16, 4.0)
+        // Biome Terrain Sectors (Distinct Geological Formations)
+        let biomeSectors: [(CGFloat, CGFloat, CGFloat, CGFloat, NSColor)] = [
+            // Amazônia (Noroeste): Floresta equatorial densa
+            (-150, -180, 200, 190, NSColor(red: 0.08, green: 0.28, blue: 0.16, alpha: 1.0)),
+            // Caatinga (Nordeste): Sertão árido avermelhado
+            (150, -180, 200, 190, NSColor(red: 0.52, green: 0.44, blue: 0.28, alpha: 1.0)),
+            // Pantanal (Centro-Oeste): Bacia alagável verde-azulada
+            (-150, 0, 200, 170, NSColor(red: 0.18, green: 0.36, blue: 0.32, alpha: 1.0)),
+            // Cerrado (Centro-Leste): Savana de solo ocre
+            (140, 0, 200, 170, NSColor(red: 0.45, green: 0.32, blue: 0.20, alpha: 1.0)),
+            // Mata Atlântica (Sudeste): Relevo montanhoso exuberante
+            (80, 140, 220, 140, NSColor(red: 0.14, green: 0.38, blue: 0.20, alpha: 1.0)),
+            // Pampa (Sul): Coxilhas de campos abertos
+            (0, 250, 320, 150, NSColor(red: 0.30, green: 0.42, blue: 0.22, alpha: 1.0))
         ]
         
-        for (hx, hz, radius, height) in hillCoords {
+        for (sx, sz, w, l, color) in biomeSectors {
+            let sectorGeo = SCNBox(width: w, height: 1.6, length: l, chamferRadius: 1.0)
+            let sectorMat = SCNMaterial()
+            sectorMat.diffuse.contents = color
+            sectorMat.roughness.contents = 0.90
+            sectorGeo.materials = [sectorMat]
+            
+            let sectorNode = SCNNode(geometry: sectorGeo)
+            sectorNode.position = SCNVector3(sx, -0.7, sz)
+            scene.rootNode.addChildNode(sectorNode)
+        }
+        
+        // Regional Elevation Hills & Mountain Formations
+        let hillFormations: [(CGFloat, CGFloat, CGFloat, CGFloat, NSColor)] = [
+            // Amazônia Hills
+            (-180, -220, 28, 7.0, NSColor(red: 0.10, green: 0.32, blue: 0.18, alpha: 1.0)),
+            (-110, -250, 32, 8.5, NSColor(red: 0.08, green: 0.30, blue: 0.16, alpha: 1.0)),
+            // Caatinga Plateaus (Serrotes)
+            (170, -220, 35, 9.0, NSColor(red: 0.58, green: 0.46, blue: 0.30, alpha: 1.0)),
+            (210, -150, 26, 6.5, NSColor(red: 0.54, green: 0.42, blue: 0.26, alpha: 1.0)),
+            // Cerrado Chapadas
+            (160, -30, 30, 6.0, NSColor(red: 0.48, green: 0.35, blue: 0.22, alpha: 1.0)),
+            (190, 40, 24, 5.5, NSColor(red: 0.44, green: 0.31, blue: 0.19, alpha: 1.0)),
+            // Mata Atlântica Serras
+            (110, 130, 36, 11.0, NSColor(red: 0.16, green: 0.42, blue: 0.22, alpha: 1.0)),
+            (160, 170, 40, 13.0, NSColor(red: 0.12, green: 0.36, blue: 0.18, alpha: 1.0)),
+            // Pampa Coxilhas (Colinas Suaves)
+            (-80, 260, 38, 4.5, NSColor(red: 0.32, green: 0.46, blue: 0.24, alpha: 1.0)),
+            (90, 290, 42, 5.0, NSColor(red: 0.28, green: 0.40, blue: 0.20, alpha: 1.0))
+        ]
+        
+        for (hx, hz, radius, height, color) in hillFormations {
             let hillGeo = SCNCylinder(radius: radius, height: height)
             let hillMat = SCNMaterial()
-            hillMat.diffuse.contents = NSColor(red: 0.20, green: 0.42, blue: 0.24, alpha: 1.0)
+            hillMat.diffuse.contents = color
             hillGeo.materials = [hillMat]
             
             let hillNode = SCNNode(geometry: hillGeo)
-            hillNode.position = SCNVector3(hx, height / 2 - 0.4, hz)
+            hillNode.position = SCNVector3(hx, height / 2 - 0.5, hz)
             scene.rootNode.addChildNode(hillNode)
         }
     }
     
-    // MARK: - 3D Flowing River System
-    private func build3DRiver() {
+    // MARK: - Continental 3D Flowing River System
+    private func buildContinental3DRiver() {
         let riverContainer = SCNNode()
-        riverContainer.name = "RiverSystem"
+        riverContainer.name = "ContinentalRiver"
         
-        // 1. Riverbed Sand / Shoreline Trench
-        let bedGeo = SCNPlane(width: 26, height: 230)
+        // Straight North-South River Running Flat on the Ground Across the Continent
+        let riverLength: CGFloat = 650.0
+        let riverWidth: CGFloat = 28.0
+        let riverX: CGFloat = -15.0
+        
+        // 1. Riverbed Sand & Shoreline Trench (Flat on ground)
+        let bedGeo = SCNPlane(width: riverWidth + 8.0, height: riverLength)
         let bedMat = SCNMaterial()
-        bedMat.diffuse.contents = NSColor(red: 0.24, green: 0.36, blue: 0.30, alpha: 1.0)
+        bedMat.diffuse.contents = NSColor(red: 0.18, green: 0.30, blue: 0.24, alpha: 1.0)
         bedGeo.materials = [bedMat]
         let bedNode = SCNNode(geometry: bedGeo)
-        bedNode.eulerAngles = SCNVector3(-CGFloat.pi / 2, 0, 0.22)
-        bedNode.position = SCNVector3(12, 0.01, 0)
+        bedNode.eulerAngles = SCNVector3(-CGFloat.pi / 2, 0, 0)
+        bedNode.position = SCNVector3(riverX, 0.02, 0)
         riverContainer.addChildNode(bedNode)
         
-        // 2. Translucent River Water Surface
-        let riverGeo = SCNPlane(width: 22, height: 220)
+        // 2. Translucent River Water Surface (Flat on ground)
+        let riverGeo = SCNPlane(width: riverWidth, height: riverLength)
         let waterMat = SCNMaterial()
-        waterMat.diffuse.contents = NSColor(red: 0.14, green: 0.65, blue: 0.82, alpha: 0.84)
+        waterMat.diffuse.contents = NSColor(red: 0.14, green: 0.65, blue: 0.82, alpha: 0.86)
         waterMat.specular.contents = NSColor.white
         waterMat.shininess = 95
         waterMat.isDoubleSided = true
-        waterMat.transparency = 0.86
+        waterMat.transparency = 0.85
         riverGeo.materials = [waterMat]
         
         let riverNode = SCNNode(geometry: riverGeo)
-        riverNode.eulerAngles = SCNVector3(-CGFloat.pi / 2, 0, 0.22)
-        riverNode.position = SCNVector3(12, 0.06, 0)
+        riverNode.eulerAngles = SCNVector3(-CGFloat.pi / 2, 0, 0)
+        riverNode.position = SCNVector3(riverX, 0.06, 0)
         riverNode.name = "RiverWater"
         riverContainer.addChildNode(riverNode)
         
-        // 3. Flowing Water Current & Foam Streaks (Flowing Downstream)
-        for i in 0..<14 {
-            let foamLength = CGFloat.random(in: 14...32)
-            let foamWidth = CGFloat.random(in: 1.2...2.8)
+        // 3. Flowing Water Current & Foam Streaks (Downstream flow)
+        for i in 0..<35 {
+            let foamLength = CGFloat.random(in: 18...40)
+            let foamWidth = CGFloat.random(in: 1.6...3.5)
             let foamGeo = SCNPlane(width: foamWidth, height: foamLength)
             let foamMat = SCNMaterial()
-            foamMat.diffuse.contents = NSColor(red: 0.90, green: 0.98, blue: 1.0, alpha: 0.40)
+            foamMat.diffuse.contents = NSColor(red: 0.92, green: 0.98, blue: 1.0, alpha: 0.45)
             foamMat.isDoubleSided = true
             foamMat.transparency = 0.50
             foamGeo.materials = [foamMat]
             
             let foamNode = SCNNode(geometry: foamGeo)
-            let offsetX = CGFloat.random(in: -7...7)
-            let startY = CGFloat(-100 + Double(i) * 16.0)
+            let offsetX = CGFloat.random(in: -10...10)
+            let startY = CGFloat(-300 + Double(i) * 18.0)
             foamNode.position = SCNVector3(offsetX, startY, 0.02)
             
-            // Continuous downstream flow motion
-            let flowDistance: CGFloat = 220.0
-            let duration: Double = Double.random(in: 4.5...6.5)
+            // Continuous downstream flow
+            let flowDistance: CGFloat = riverLength
+            let duration: Double = Double.random(in: 6.0...9.0)
             let flowAction = SCNAction.moveBy(x: 0, y: flowDistance, z: 0, duration: duration)
             let resetAction = SCNAction.moveBy(x: 0, y: -flowDistance, z: 0, duration: 0)
             let loop = SCNAction.repeatForever(SCNAction.sequence([flowAction, resetAction]))
@@ -248,149 +351,117 @@ public struct WorldExploration3DView: View {
             riverNode.addChildNode(foamNode)
         }
         
-        // 4. Stepping Stones / Natural Bridge
-        let stonePositions: [SCNVector3] = [
-            SCNVector3(4, 0.15, -12),
-            SCNVector3(8, 0.20, -10),
-            SCNVector3(12, 0.22, -8),
-            SCNVector3(16, 0.18, -6),
-            SCNVector3(20, 0.12, -4)
-        ]
+        // 4. Stepping Stones Bridges (Horizontal Crossing Points across the straight river)
+        let crossingZPositions: [CGFloat] = [-200.0, -70.0, 60.0, 190.0]
         
-        for pos in stonePositions {
-            let stoneGeo = SCNCylinder(radius: 1.6, height: 0.6)
-            let stoneMat = SCNMaterial()
-            stoneMat.diffuse.contents = NSColor(red: 0.45, green: 0.42, blue: 0.38, alpha: 1.0)
-            stoneGeo.materials = [stoneMat]
-            
-            let stoneNode = SCNNode(geometry: stoneGeo)
-            stoneNode.position = pos
-            stoneNode.castsShadow = true
-            riverContainer.addChildNode(stoneNode)
+        for cz in crossingZPositions {
+            for s in -3...3 {
+                let stoneGeo = SCNCylinder(radius: 1.9, height: 0.55)
+                let stoneMat = SCNMaterial()
+                stoneMat.diffuse.contents = NSColor(red: 0.44, green: 0.42, blue: 0.38, alpha: 1.0)
+                stoneGeo.materials = [stoneMat]
+                
+                let stoneNode = SCNNode(geometry: stoneGeo)
+                stoneNode.position = SCNVector3(riverX + CGFloat(s) * 4.2, 0.16, cz)
+                stoneNode.castsShadow = true
+                riverContainer.addChildNode(stoneNode)
+            }
         }
         
         scene.rootNode.addChildNode(riverContainer)
     }
     
-    // MARK: - 3D Forest with Volumetric & Subtle Animated Trees
+    // MARK: - 3D Forest Distributed Across All Biomes
     private func build3DForest() {
         treesRootNode.childNodes.forEach { $0.removeFromParentNode() }
         
-        // Tree coordinates spread over the expanded map
-        let treePositions: [(CGFloat, CGFloat, CGFloat)] = [
-            (-25, -20, 1.2), (-40, -15, 1.4), (-18, -35, 1.1), (-50, -45, 1.3),
-            (35, -25, 1.3), (45, -10, 1.1), (30, -50, 1.4), (60, -40, 1.5),
-            (-30, 20, 1.2), (-45, 35, 1.4), (-20, 45, 1.0), (-60, 25, 1.3),
-            (35, 25, 1.1), (50, 35, 1.3), (25, 55, 1.2), (60, 50, 1.4),
-            (-10, -55, 1.0), (0, 40, 1.2), (-65, -10, 1.3), (70, 15, 1.2),
-            (-15, 15, 1.1), (28, -5, 1.2), (-35, -55, 1.4), (45, 60, 1.3)
-        ]
+        let sharedTreeMat = SCNMaterial()
+        if let image = NSImage(named: "TreeImage") {
+            sharedTreeMat.diffuse.contents = image
+        } else {
+            sharedTreeMat.diffuse.contents = NSColor(red: 0.1, green: 0.5, blue: 0.2, alpha: 1.0)
+        }
+        sharedTreeMat.isDoubleSided = true
+        sharedTreeMat.transparent.contents = sharedTreeMat.diffuse.contents
         
-        for (index, (tx, tz, scale)) in treePositions.enumerated() {
+        for (index, tree) in UnifiedOpenWorldEnvironment.sharedTrees.enumerated() {
             let treeContainer = SCNNode()
+            let tx = CGFloat(tree.x * 0.8)
+            let tz = CGFloat(tree.y * 0.8)
             treeContainer.position = SCNVector3(tx, 0, tz)
             
-            // Cross-billboard 3D Tree (2 intersecting planes for true 3D volume)
-            let planeW: CGFloat = 5.5 * scale
-            let planeH: CGFloat = 7.5 * scale
+            let planeW: CGFloat = 5.5 * CGFloat(tree.scale)
+            let planeH: CGFloat = 7.5 * CGFloat(tree.scale)
             
             let treePlaneGeo = SCNPlane(width: planeW, height: planeH)
-            let treeMat = SCNMaterial()
-            if let image = NSImage(named: "TreeImage") {
-                treeMat.diffuse.contents = image
-            } else {
-                treeMat.diffuse.contents = NSColor(red: 0.1, green: 0.5, blue: 0.2, alpha: 1.0)
-            }
-            treeMat.isDoubleSided = true
-            treeMat.transparent.contents = treeMat.diffuse.contents
-            treePlaneGeo.materials = [treeMat]
+            treePlaneGeo.materials = [sharedTreeMat]
             
-            // Plane 1 (Facing Z)
+            // Plane 1
             let plane1 = SCNNode(geometry: treePlaneGeo)
             plane1.position = SCNVector3(0, planeH / 2, 0)
             plane1.castsShadow = true
             treeContainer.addChildNode(plane1)
             
-            // Plane 2 (Facing X - 90 deg rotated)
+            // Plane 2
             let plane2 = SCNNode(geometry: treePlaneGeo)
             plane2.position = SCNVector3(0, planeH / 2, 0)
             plane2.eulerAngles = SCNVector3(0, CGFloat.pi / 2, 0)
             plane2.castsShadow = true
             treeContainer.addChildNode(plane2)
             
-            // 🌿 Gentle & Elegant 3D Tree Wind Swaying Animation
+            // Wind Swaying
             let swayZ: CGFloat = CGFloat(0.022 + Double((index % 5)) * 0.003)
             let swayDuration: Double = 2.8 + Double((index % 7)) * 0.25
-            
             let swayRight = SCNAction.rotateTo(x: 0, y: 0, z: swayZ, duration: swayDuration)
             let swayLeft = SCNAction.rotateTo(x: 0, y: 0, z: -swayZ, duration: swayDuration)
             swayRight.timingMode = .easeInEaseOut
             swayLeft.timingMode = .easeInEaseOut
-            
             let swaySequence = SCNAction.sequence([swayRight, swayLeft])
             treeContainer.runAction(SCNAction.repeatForever(swaySequence))
-            
-            // Subtle Leaf Canopy Breathing Scale Animation
-            let breatheOut = SCNAction.scale(to: 1.015, duration: swayDuration * 0.9)
-            let breatheIn = SCNAction.scale(to: 0.99, duration: swayDuration * 0.9)
-            breatheOut.timingMode = .easeInEaseOut
-            breatheIn.timingMode = .easeInEaseOut
-            let breatheSequence = SCNAction.sequence([breatheOut, breatheIn])
-            plane1.runAction(SCNAction.repeatForever(breatheSequence))
-            plane2.runAction(SCNAction.repeatForever(breatheSequence))
             
             treesRootNode.addChildNode(treeContainer)
         }
     }
     
-    // MARK: - 3D Bushes & Native Flora Construction
+    // MARK: - 3D Bushes Distributed Across All Biomes
     private func build3DBushes() {
         bushesRootNode.childNodes.forEach { $0.removeFromParentNode() }
         
-        let bushPositions: [(CGFloat, CGFloat, CGFloat, Bool)] = [
-            (-18, -12, 1.1, true), (-32, -28, 0.9, false), (-48, -15, 1.2, true),
-            (22, -18, 1.0, true), (38, -32, 1.15, false), (52, -12, 0.95, true),
-            (-22, 12, 1.05, false), (-38, 24, 1.2, true), (-12, 32, 0.85, false),
-            (24, 18, 1.1, true), (42, 28, 1.25, false), (18, 42, 1.0, true),
-            // Along the riverbanks
-            (2, -25, 0.9, true), (22, -20, 1.1, false), (3, 5, 1.05, true),
-            (21, 10, 0.95, false), (4, 35, 1.15, true), (23, 40, 1.0, true),
-            (-55, 10, 1.2, false), (62, 30, 1.1, true), (-5, -45, 0.95, true)
-        ]
+        let sharedBushMat = SCNMaterial()
+        if let image = NSImage(named: "BushImage") {
+            sharedBushMat.diffuse.contents = image
+        } else {
+            sharedBushMat.diffuse.contents = NSColor(red: 0.16, green: 0.44, blue: 0.20, alpha: 1.0)
+        }
+        sharedBushMat.isDoubleSided = true
+        sharedBushMat.transparent.contents = sharedBushMat.diffuse.contents
         
-        for (index, (bx, bz, scale, _)) in bushPositions.enumerated() {
+        for (index, bush) in UnifiedOpenWorldEnvironment.sharedBushes.enumerated() {
             let bushContainer = SCNNode()
+            let bx = CGFloat(bush.x * 0.8)
+            let bz = CGFloat(bush.y * 0.8)
             bushContainer.position = SCNVector3(bx, 0, bz)
             
-            // Bush Textured 3D Cross-Billboard using "BushImage"
-            let planeW: CGFloat = 3.8 * scale
-            let planeH: CGFloat = 3.0 * scale
+            let planeW: CGFloat = 3.8 * CGFloat(bush.scale)
+            let planeH: CGFloat = 3.0 * CGFloat(bush.scale)
             
             let bushPlaneGeo = SCNPlane(width: planeW, height: planeH)
-            let bushMat = SCNMaterial()
-            if let image = NSImage(named: "BushImage") {
-                bushMat.diffuse.contents = image
-            } else {
-                bushMat.diffuse.contents = NSColor(red: 0.16, green: 0.44, blue: 0.20, alpha: 1.0)
-            }
-            bushMat.isDoubleSided = true
-            bushMat.transparent.contents = bushMat.diffuse.contents
-            bushPlaneGeo.materials = [bushMat]
+            bushPlaneGeo.materials = [sharedBushMat]
             
-            // Plane 1 (Facing Z)
+            // Plane 1
             let plane1 = SCNNode(geometry: bushPlaneGeo)
             plane1.position = SCNVector3(0, planeH / 2, 0)
             plane1.castsShadow = true
             bushContainer.addChildNode(plane1)
             
-            // Plane 2 (Facing X - 90 deg rotated for true 3D volume)
+            // Plane 2
             let plane2 = SCNNode(geometry: bushPlaneGeo)
             plane2.position = SCNVector3(0, planeH / 2, 0)
             plane2.eulerAngles = SCNVector3(0, CGFloat.pi / 2, 0)
             plane2.castsShadow = true
             bushContainer.addChildNode(plane2)
             
-            // Gentle wind rustle animation
+            // Rustle
             let rustleDuration = 2.5 + Double(index % 5) * 0.3
             let rustleRight = SCNAction.rotateTo(x: 0, y: 0, z: CGFloat(0.022), duration: rustleDuration)
             let rustleLeft = SCNAction.rotateTo(x: 0, y: 0, z: -CGFloat(0.022), duration: rustleDuration)
@@ -407,15 +478,14 @@ public struct WorldExploration3DView: View {
     private func build3DWorldPoints() {
         worldPointsRootNode.childNodes.forEach { $0.removeFromParentNode() }
         
-        let currentPoints = session.worldPoints.filter { $0.biome == session.currentBiome }
-        for point in currentPoints {
+        for point in session.worldPoints {
             let pointNode = SCNNode()
             let wx = CGFloat(point.x * 0.8)
             let wz = CGFloat(point.y * 0.8)
             pointNode.position = SCNVector3(wx, 0.2, wz)
             
             // Floating beacon sphere
-            let beaconGeo = SCNSphere(radius: 1.0)
+            let beaconGeo = SCNSphere(radius: 1.1)
             let beaconMat = SCNMaterial()
             let isDistress = point.interactionType == .animalInDistress
             beaconMat.diffuse.contents = point.isResolved ? NSColor.systemGray : (isDistress ? NSColor.systemRed : NSColor.systemOrange)
@@ -423,32 +493,371 @@ public struct WorldExploration3DView: View {
             beaconGeo.materials = [beaconMat]
             
             let beaconNode = SCNNode(geometry: beaconGeo)
-            beaconNode.position = SCNVector3(0, 2.2, 0)
+            beaconNode.position = SCNVector3(0, 2.4, 0)
             
-            // Glowing pulsing animation
             let moveUp = SCNAction.moveBy(x: 0, y: 0.4, z: 0, duration: 1.2)
             let moveDown = SCNAction.moveBy(x: 0, y: -0.4, z: 0, duration: 1.2)
             let sequence = SCNAction.sequence([moveUp, moveDown])
             beaconNode.runAction(SCNAction.repeatForever(sequence))
-            
             pointNode.addChildNode(beaconNode)
             
-            // Ground Indicator Ring
-            let ringGeo = SCNTorus(ringRadius: 1.8, pipeRadius: 0.08)
+            // Ground Ring
+            let ringGeo = SCNTorus(ringRadius: 2.0, pipeRadius: 0.09)
             let ringMat = SCNMaterial()
             ringMat.diffuse.contents = isDistress ? NSColor.systemRed : NSColor.systemYellow
             ringGeo.materials = [ringMat]
             let ringNode = SCNNode(geometry: ringGeo)
-            ringNode.eulerAngles = SCNVector3(0, 0, 0)
             pointNode.addChildNode(ringNode)
             
             worldPointsRootNode.addChildNode(pointNode)
         }
     }
     
-    // MARK: - 3D Player Character Node
+    // MARK: - 3D Story Friendly NPCs
+    private func build3DStoryNPCs() {
+        storyNpcsRootNode.childNodes.forEach { $0.removeFromParentNode() }
+        
+        for npc in session.storyEngine.npcs {
+            let npcNode = SCNNode()
+            let nx = CGFloat(npc.position.x * 0.8)
+            let nz = CGFloat(npc.position.y * 0.8)
+            npcNode.position = SCNVector3(nx, 0.2, nz)
+            
+            // Glowing Sanctuary Pillar Base
+            let baseGeo = SCNCylinder(radius: 1.5, height: 2.2)
+            let baseMat = SCNMaterial()
+            baseMat.diffuse.contents = NSColor.systemTeal.withAlphaComponent(0.8)
+            baseMat.emission.contents = NSColor.systemTeal.withAlphaComponent(0.4)
+            baseGeo.materials = [baseMat]
+            let baseNode = SCNNode(geometry: baseGeo)
+            baseNode.position = SCNVector3(0, 1.1, 0)
+            npcNode.addChildNode(baseNode)
+            
+            // Hovering holographic orb
+            let orbGeo = SCNSphere(radius: 0.9)
+            let orbMat = SCNMaterial()
+            orbMat.diffuse.contents = NSColor.systemYellow
+            orbMat.emission.contents = NSColor.systemYellow.withAlphaComponent(0.6)
+            orbGeo.materials = [orbMat]
+            let orbNode = SCNNode(geometry: orbGeo)
+            orbNode.position = SCNVector3(0, 3.2, 0)
+            
+            let floatUp = SCNAction.moveBy(x: 0, y: 0.3, z: 0, duration: 1.4)
+            let floatDown = SCNAction.moveBy(x: 0, y: -0.3, z: 0, duration: 1.4)
+            orbNode.runAction(SCNAction.repeatForever(SCNAction.sequence([floatUp, floatDown])))
+            npcNode.addChildNode(orbNode)
+            
+            storyNpcsRootNode.addChildNode(npcNode)
+        }
+    }
+    
+    // MARK: - 3D Ancient Biome Totems
+    private func build3DBiomeTotems() {
+        totemsRootNode.childNodes.forEach { $0.removeFromParentNode() }
+        
+        for totem in session.storyEngine.totems {
+            let totemNode = SCNNode()
+            let tx = CGFloat(totem.position.x * 0.8)
+            let tz = CGFloat(totem.position.y * 0.8)
+            totemNode.position = SCNVector3(tx, 0.1, tz)
+            
+            // Ancient Stone Monolith
+            let stoneGeo = SCNCylinder(radius: 2.2, height: 6.5)
+            let stoneMat = SCNMaterial()
+            stoneMat.diffuse.contents = totem.isPurified ? NSColor(red: 0.2, green: 0.6, blue: 0.3, alpha: 1.0) : NSColor(red: 0.35, green: 0.30, blue: 0.28, alpha: 1.0)
+            stoneGeo.materials = [stoneMat]
+            let stoneNode = SCNNode(geometry: stoneGeo)
+            stoneNode.position = SCNVector3(0, 3.25, 0)
+            totemNode.addChildNode(stoneNode)
+            
+            // Energy Aura Torus
+            let auraGeo = SCNTorus(ringRadius: 3.2, pipeRadius: 0.25)
+            let auraMat = SCNMaterial()
+            auraMat.diffuse.contents = totem.isPurified ? NSColor.systemGreen : NSColor.systemPurple
+            auraMat.emission.contents = totem.isPurified ? NSColor.systemGreen.withAlphaComponent(0.8) : NSColor.systemPurple.withAlphaComponent(0.7)
+            auraGeo.materials = [auraMat]
+            let auraNode = SCNNode(geometry: auraGeo)
+            auraNode.position = SCNVector3(0, 4.5, 0)
+            
+            let rotateAura = SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 4.0)
+            auraNode.runAction(SCNAction.repeatForever(rotateAura))
+            totemNode.addChildNode(auraNode)
+            
+            totemsRootNode.addChildNode(totemNode)
+        }
+    }
+    
+    // MARK: - 3D Open World Enemies
+    private func build3DEnemies() {
+        enemiesRootNode.childNodes.forEach { $0.removeFromParentNode() }
+        
+        for enemy in session.storyEngine.enemies {
+            let enemyNode = SCNNode()
+            enemyNode.name = enemy.id
+            let ex = CGFloat(enemy.position.x * 0.8)
+            let ez = CGFloat(enemy.position.y * 0.8)
+            enemyNode.position = SCNVector3(ex, 0.1, ez)
+            
+            switch enemy.type {
+            case .poacher:
+                // Humanoid body
+                let bodyGeo = SCNCylinder(radius: 1.2, height: 3.2)
+                let bodyMat = SCNMaterial()
+                bodyMat.diffuse.contents = NSColor.systemBrown
+                bodyGeo.materials = [bodyMat]
+                let bodyNode = SCNNode(geometry: bodyGeo)
+                bodyNode.position = SCNVector3(0, 1.6, 0)
+                enemyNode.addChildNode(bodyNode)
+                
+                // Flashlight cone on ground
+                let coneGeo = SCNCone(topRadius: 0.2, bottomRadius: 2.8, height: 6.0)
+                let coneMat = SCNMaterial()
+                coneMat.diffuse.contents = NSColor.systemYellow.withAlphaComponent(0.35)
+                coneMat.isDoubleSided = true
+                coneMat.transparency = 0.45
+                coneGeo.materials = [coneMat]
+                let coneNode = SCNNode(geometry: coneGeo)
+                coneNode.eulerAngles = SCNVector3(CGFloat.pi / 2, 0, 0)
+                coneNode.position = SCNVector3(0, 0.3, 3.5)
+                enemyNode.addChildNode(coneNode)
+                
+            case .surveillanceDrone:
+                // Hovering Sphere with Red Scanner Cone
+                let droneGeo = SCNSphere(radius: 1.2)
+                let droneMat = SCNMaterial()
+                droneMat.diffuse.contents = NSColor.systemGray
+                droneMat.emission.contents = NSColor.systemRed.withAlphaComponent(0.7)
+                droneGeo.materials = [droneMat]
+                let droneBody = SCNNode(geometry: droneGeo)
+                droneBody.position = SCNVector3(0, 4.2, 0)
+                enemyNode.addChildNode(droneBody)
+                
+                // Red Scan Circle
+                let scanGeo = SCNCylinder(radius: 3.5, height: 0.1)
+                let scanMat = SCNMaterial()
+                scanMat.diffuse.contents = NSColor.systemRed.withAlphaComponent(0.3)
+                scanMat.emission.contents = NSColor.systemRed.withAlphaComponent(0.4)
+                scanGeo.materials = [scanMat]
+                let scanNode = SCNNode(geometry: scanGeo)
+                scanNode.position = SCNVector3(0, 0.05, 0)
+                enemyNode.addChildNode(scanNode)
+                
+            case .wildfireEntity:
+                // Blazing Flame Pillar
+                let flameGeo = SCNCone(topRadius: 0.1, bottomRadius: 2.4, height: 4.5)
+                let flameMat = SCNMaterial()
+                flameMat.diffuse.contents = NSColor.systemOrange
+                flameMat.emission.contents = NSColor.systemRed.withAlphaComponent(0.85)
+                flameGeo.materials = [flameMat]
+                let flameNode = SCNNode(geometry: flameGeo)
+                flameNode.position = SCNVector3(0, 2.25, 0)
+                
+                let scaleUp = SCNAction.scale(to: 1.15, duration: 0.4)
+                let scaleDown = SCNAction.scale(to: 0.85, duration: 0.4)
+                flameNode.runAction(SCNAction.repeatForever(SCNAction.sequence([scaleUp, scaleDown])))
+                enemyNode.addChildNode(flameNode)
+                
+            case .timberHarvester:
+                let baseGeo = SCNBox(width: 4.5, height: 3.5, length: 5.5, chamferRadius: 0.4)
+                let baseMat = SCNMaterial()
+                baseMat.diffuse.contents = NSColor.systemPurple
+                baseGeo.materials = [baseMat]
+                let baseNode = SCNNode(geometry: baseGeo)
+                baseNode.position = SCNVector3(0, 1.75, 0)
+                enemyNode.addChildNode(baseNode)
+            }
+            
+            enemiesRootNode.addChildNode(enemyNode)
+        }
+    }
+    
+    private func update3DEnemies() {
+        for enemy in session.storyEngine.enemies {
+            if let node = enemiesRootNode.childNode(withName: enemy.id, recursively: false) {
+                if enemy.isNeutralized {
+                    node.isHidden = true
+                } else {
+                    node.isHidden = false
+                    node.position = SCNVector3(CGFloat(enemy.position.x * 0.8), 0.1, CGFloat(enemy.position.y * 0.8))
+                }
+            }
+        }
+    }
+    
+    // MARK: - 3D Ambient Wild Fauna
+    private func build3DAmbientFauna() {
+        ambientFaunaRootNode.childNodes.forEach { $0.removeFromParentNode() }
+        
+        for animal in session.ambientFauna.wildFauna {
+            let animalNode = SCNNode()
+            animalNode.name = animal.id
+            let ax = CGFloat(animal.position.x * 0.8)
+            let az = CGFloat(animal.position.y * 0.8)
+            let ay: CGFloat = animal.type.isAerial ? 8.5 : 0.6
+            animalNode.position = SCNVector3(ax, ay, az)
+            
+            switch animal.type {
+            case .macaw:
+                // Aerial Macaw with Flapping Wings
+                let bodyGeo = SCNCapsule(capRadius: 0.4, height: 1.4)
+                let bodyMat = SCNMaterial()
+                bodyMat.diffuse.contents = NSColor.systemBlue
+                bodyGeo.materials = [bodyMat]
+                let bodyNode = SCNNode(geometry: bodyGeo)
+                bodyNode.eulerAngles.x = CGFloat.pi / 2
+                animalNode.addChildNode(bodyNode)
+                
+                // Wings
+                let wingGeo = SCNPlane(width: 2.2, height: 0.8)
+                let wingMat = SCNMaterial()
+                wingMat.diffuse.contents = NSColor.systemYellow
+                wingMat.isDoubleSided = true
+                wingGeo.materials = [wingMat]
+                let wingNode = SCNNode(geometry: wingGeo)
+                wingNode.position = SCNVector3(0, 0.2, 0)
+                
+                let flapUp = SCNAction.rotateTo(x: 0.35, y: 0, z: 0, duration: 0.15)
+                let flapDown = SCNAction.rotateTo(x: -0.35, y: 0, z: 0, duration: 0.15)
+                wingNode.runAction(SCNAction.repeatForever(SCNAction.sequence([flapUp, flapDown])))
+                animalNode.addChildNode(wingNode)
+                
+            case .capybara:
+                // Rounded Capybara Body
+                let bodyGeo = SCNCapsule(capRadius: 0.7, height: 2.0)
+                let bodyMat = SCNMaterial()
+                bodyMat.diffuse.contents = NSColor(red: 0.48, green: 0.32, blue: 0.18, alpha: 1.0)
+                bodyGeo.materials = [bodyMat]
+                let bodyNode = SCNNode(geometry: bodyGeo)
+                bodyNode.eulerAngles.x = CGFloat.pi / 2
+                animalNode.addChildNode(bodyNode)
+                
+            case .butterfly:
+                let bflyGeo = SCNPlane(width: 0.7, height: 0.7)
+                let bflyMat = SCNMaterial()
+                bflyMat.diffuse.contents = NSColor.systemTeal
+                bflyMat.isDoubleSided = true
+                bflyGeo.materials = [bflyMat]
+                let bflyNode = SCNNode(geometry: bflyGeo)
+                
+                let flutter = SCNAction.rotateBy(x: 0, y: CGFloat.pi * 2, z: 0, duration: 1.2)
+                bflyNode.runAction(SCNAction.repeatForever(flutter))
+                animalNode.addChildNode(bflyNode)
+                
+            case .armadillo:
+                let armaGeo = SCNSphere(radius: 0.6)
+                let armaMat = SCNMaterial()
+                armaMat.diffuse.contents = NSColor(red: 0.55, green: 0.45, blue: 0.35, alpha: 1.0)
+                armaGeo.materials = [armaMat]
+                let armaNode = SCNNode(geometry: armaGeo)
+                armaNode.scale = SCNVector3(1.2, 0.7, 1.4)
+                animalNode.addChildNode(armaNode)
+                
+            case .rhea:
+                let rheaGeo = SCNCylinder(radius: 0.5, height: 2.2)
+                let rheaMat = SCNMaterial()
+                rheaMat.diffuse.contents = NSColor.systemGray
+                rheaGeo.materials = [rheaMat]
+                let rheaNode = SCNNode(geometry: rheaGeo)
+                rheaNode.position = SCNVector3(0, 1.1, 0)
+                animalNode.addChildNode(rheaNode)
+            }
+            
+            ambientFaunaRootNode.addChildNode(animalNode)
+        }
+    }
+    
+    private func update3DAmbientFauna() {
+        for animal in session.ambientFauna.wildFauna {
+            if let node = ambientFaunaRootNode.childNode(withName: animal.id, recursively: false) {
+                let ax = CGFloat(animal.position.x * 0.8)
+                let az = CGFloat(animal.position.y * 0.8)
+                let ay: CGFloat = animal.type.isAerial ? (8.5 + CGFloat(sin(Double(animal.position.x) * 0.1) * 1.5)) : 0.6
+                
+                node.position = SCNVector3(ax, ay, az)
+                node.eulerAngles.y = CGFloat(animal.wanderAngle)
+            }
+        }
+    }
+    
+    // MARK: - Dynamic Day/Night Lighting & Sky
+    private func updateLightingForTimeOfDay() {
+        let tod = session.atmosphere.currentTimeOfDay
+        
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 2.0
+        
+        sunLightNode.light?.color = tod.sunColor
+        sunLightNode.eulerAngles = SCNVector3(tod.sunPitchAngle, tod.sunYawAngle, 0)
+        ambientLightNode.light?.color = tod.ambientColor
+        
+        // Night sky background tint
+        if tod == .night {
+            scene.background.contents = NSColor(red: 0.04, green: 0.06, blue: 0.12, alpha: 1.0)
+        } else if tod == .sunset {
+            scene.background.contents = NSColor(red: 0.22, green: 0.10, blue: 0.08, alpha: 1.0)
+        } else {
+            scene.background.contents = NSColor(red: 0.45, green: 0.65, blue: 0.85, alpha: 1.0)
+        }
+        
+        SCNTransaction.commit()
+    }
+    
+    // MARK: - Weather & Atmospheric Particle Systems
+    private func updateWeatherParticles(for biome: BiomeType) {
+        weatherParticlesNode.childNodes.forEach { $0.removeFromParentNode() }
+        let weather = session.atmosphere.weatherForBiome(biome)
+        
+        let pNode = SCNNode()
+        let ps = SCNParticleSystem()
+        
+        switch weather {
+        case .tropicalRain:
+            ps.particleColor = NSColor(red: 0.65, green: 0.85, blue: 1.0, alpha: 0.55)
+            ps.particleSize = 0.12
+            ps.birthRate = 280
+            ps.emissionDuration = 0 // Continuous
+            ps.particleLifeSpan = 1.4
+            ps.spreadingAngle = 10
+            ps.emitterShape = SCNBox(width: 80, height: 1, length: 80, chamferRadius: 0)
+            ps.acceleration = SCNVector3(0, -32, 0)
+            pNode.position = SCNVector3(CGFloat(session.playerPosition.x * 0.8), 28, CGFloat(session.playerPosition.y * 0.8))
+            
+        case .mountainMist:
+            ps.particleColor = NSColor(red: 0.90, green: 0.95, blue: 0.92, alpha: 0.18)
+            ps.particleSize = 3.5
+            ps.birthRate = 35
+            ps.particleLifeSpan = 4.0
+            ps.emitterShape = SCNBox(width: 90, height: 6, length: 90, chamferRadius: 0)
+            ps.acceleration = SCNVector3(0.5, 0.1, 0)
+            pNode.position = SCNVector3(CGFloat(session.playerPosition.x * 0.8), 4, CGFloat(session.playerPosition.y * 0.8))
+            
+        case .heatHaze:
+            ps.particleColor = NSColor(red: 1.0, green: 0.80, blue: 0.40, alpha: 0.22)
+            ps.particleSize = 0.8
+            ps.birthRate = 45
+            ps.particleLifeSpan = 2.5
+            ps.acceleration = SCNVector3(0, 1.2, 0)
+            pNode.position = SCNVector3(CGFloat(session.playerPosition.x * 0.8), 1, CGFloat(session.playerPosition.y * 0.8))
+            
+        case .fireflies:
+            ps.particleColor = NSColor(red: 0.95, green: 1.0, blue: 0.35, alpha: 0.85)
+            ps.particleSize = 0.35
+            ps.birthRate = 25
+            ps.particleLifeSpan = 3.5
+            ps.acceleration = SCNVector3(0, 0.4, 0)
+            pNode.position = SCNVector3(CGFloat(session.playerPosition.x * 0.8), 2, CGFloat(session.playerPosition.y * 0.8))
+            
+        case .clear:
+            return
+        }
+        
+        pNode.addParticleSystem(ps)
+        weatherParticlesNode.addChildNode(pNode)
+    }
+    
+    // MARK: - 3D Player Node
     private func build3DPlayerNode() {
-        playerPlaneGeometry = SCNPlane(width: 2.8, height: 2.8)
+        playerPlaneGeometry = SCNPlane(width: 3.0, height: 3.0)
         let playerMat = SCNMaterial()
         if let initialImg = NSImage(named: monkeyFrames[0]) {
             playerMat.diffuse.contents = initialImg
@@ -458,17 +867,18 @@ public struct WorldExploration3DView: View {
         playerPlaneGeometry.materials = [playerMat]
         
         playerNode = SCNNode(geometry: playerPlaneGeometry)
-        playerNode.position = SCNVector3(0, 1.4, 0)
+        let targetX = CGFloat(session.playerPosition.x * 0.8)
+        let targetZ = CGFloat(session.playerPosition.y * 0.8)
+        playerNode.position = SCNVector3(targetX, 1.5, targetZ)
         playerNode.castsShadow = true
         scene.rootNode.addChildNode(playerNode)
     }
     
-    // MARK: - Position & Subtle Movement Updates
+    // MARK: - Position & Camera Follow
     private func updatePlayer3DPosition(_ pos: CGPoint) {
         let targetX = CGFloat(pos.x * 0.8)
         let targetZ = CGFloat(pos.y * 0.8)
         
-        // Detect running direction & facing orientation
         if pos.x < previousPlayerPos.x {
             isFacingLeft = true
             playerNode.scale = SCNVector3(-1, 1, 1)
@@ -478,29 +888,25 @@ public struct WorldExploration3DView: View {
         }
         previousPlayerPos = pos
         
-        // Trigger subtle movement state with gentle bounce
         isMoving = true
         runBouncePhase += 0.8
-        let bounceY = 1.4 + CGFloat(abs(sin(runBouncePhase)) * 0.07)
+        let bounceY = 1.5 + CGFloat(abs(sin(runBouncePhase)) * 0.07)
         
-        // Smooth camera follow & character position
-        let camTargetPos = SCNVector3(targetX, 18, targetZ + zoomDistance)
+        let camTargetPos = SCNVector3(targetX, 22, targetZ + zoomDistance)
         let playerTargetPos = SCNVector3(targetX, bounceY, targetZ)
         
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.18
         playerNode.position = playerTargetPos
-        // Subtle forward lean
         playerNode.eulerAngles.z = isFacingLeft ? -0.035 : 0.035
         cameraNode.position = camTargetPos
         SCNTransaction.commit()
         
-        // Settle idle state smoothly when movement pauses
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
             if !isMoving {
                 SCNTransaction.begin()
                 SCNTransaction.animationDuration = 0.20
-                playerNode.position.y = 1.4
+                playerNode.position.y = 1.5
                 playerNode.eulerAngles.z = 0
                 SCNTransaction.commit()
             }
@@ -525,13 +931,11 @@ public struct WorldExploration3DView: View {
     
     private func updatePlayerAppearance() {
         if let species = session.activeSpecies {
-            // Animal Morph Form
             let morphMat = SCNMaterial()
             morphMat.diffuse.contents = species.nativeBiome.nsColor
             morphMat.emission.contents = species.nativeBiome.nsColor.withAlphaComponent(0.4)
             playerPlaneGeometry.materials = [morphMat]
         } else {
-            // Revert to Monkey
             let playerMat = SCNMaterial()
             if let initialImg = NSImage(named: monkeyFrames[currentFrameIndex]) {
                 playerMat.diffuse.contents = initialImg
@@ -543,72 +947,90 @@ public struct WorldExploration3DView: View {
     }
     
     private func updateBiomeAtmosphere(for biome: BiomeType) {
-        // Update Fog & Ambient Light
-        scene.fogColor = biome.nsColor.withAlphaComponent(0.35)
-        scene.fogStartDistance = 45.0
-        scene.fogEndDistance = 140.0
-        scene.fogDensityExponent = 1.0
-        
-        ambientLightNode.light?.color = biome.nsColor.withAlphaComponent(0.6)
-        
-        // Refresh World Points & Bushes
-        build3DWorldPoints()
-        build3DBushes()
+        // Softly transition fog & ambient tint for current region
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 1.0
+        scene.fogColor = biome.nsColor.withAlphaComponent(0.32)
+        scene.fogStartDistance = 70.0
+        scene.fogEndDistance = 220.0
+        ambientLightNode.light?.color = biome.nsColor.withAlphaComponent(0.55)
+        SCNTransaction.commit()
     }
     
-    // MARK: - Top Navigation Bar
-    private var topNavigationBar: some View {
+    // MARK: - Top Unified Biome Compass Bar (No Menu Selector!)
+    private var topUnifiedCompassBar: some View {
         HStack(spacing: 14) {
-            // Biome Picker
-            Menu {
-                ForEach(BiomeType.allCases) { biome in
-                    Button {
-                        session.changeBiome(to: biome)
-                    } label: {
-                        Label(biome.rawValue, systemImage: biome.iconName)
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
+            // Live Dynamic Biome Radar Badge
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(session.currentBiome.primaryColor.opacity(0.3))
+                        .frame(width: 36, height: 36)
                     Image(systemName: session.currentBiome.iconName)
-                        .font(.title3)
+                        .font(.headline)
                         .foregroundStyle(session.currentBiome.primaryColor)
-                    
-                    VStack(alignment: .leading, spacing: 1) {
-                        HStack(spacing: 6) {
-                            Text(session.currentBiome.rawValue)
-                                .font(.headline.bold())
-                                .foregroundStyle(.white)
-                            Text("3D")
-                                .font(.caption2.bold())
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Capsule().fill(Color.blue.opacity(0.6)))
-                                .foregroundStyle(.white)
-                        }
-                        Text(session.currentBiome.description)
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text("Região:")
                             .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.7))
-                            .lineLimit(1)
+                            .foregroundStyle(.white.opacity(0.6))
+                        Text(session.currentBiome.rawValue)
+                            .font(.headline.bold())
+                            .foregroundStyle(.white)
+                        Text("Mundo Aberto 3D")
+                            .font(.caption2.bold())
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.green.opacity(0.6)))
+                            .foregroundStyle(.white)
                     }
                     
-                    Image(systemName: "chevron.down")
+                    Text("Coordenadas: [X: \(Int(session.playerPosition.x)), Y: \(Int(session.playerPosition.y))] • \(session.currentBiome.description)")
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.6))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .lineLimit(1)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 16).fill(.ultraThinMaterial))
             
             Spacer()
+            
+            // Time of Day & Weather Indicator Pill
+            HStack(spacing: 8) {
+                HStack(spacing: 5) {
+                    Image(systemName: session.atmosphere.currentTimeOfDay.iconSymbol)
+                        .foregroundStyle(session.atmosphere.currentTimeOfDay == .night ? .cyan : .yellow)
+                    Text(session.atmosphere.currentTimeOfDay.rawValue)
+                        .font(.caption.bold())
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Color.black.opacity(0.4)))
+                
+                HStack(spacing: 5) {
+                    Image(systemName: session.atmosphere.weatherForBiome(session.currentBiome).iconSymbol)
+                        .foregroundStyle(.mint)
+                    Text(session.atmosphere.weatherForBiome(session.currentBiome).rawValue)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Color.black.opacity(0.4)))
+            }
+            .padding(6)
+            .background(RoundedRectangle(cornerRadius: 14).fill(.ultraThinMaterial))
             
             // 3D Camera Zoom
             HStack(spacing: 8) {
                 Button {
-                    zoomDistance = min(42.0, zoomDistance + 3.0)
-                    cameraNode.position.z = zoomDistance
+                    zoomDistance = min(55.0, zoomDistance + 4.0)
+                    cameraNode.position.z = CGFloat(session.playerPosition.y * 0.8) + zoomDistance
                 } label: {
                     Image(systemName: "minus.magnifyingglass")
                         .font(.caption)
@@ -619,8 +1041,8 @@ public struct WorldExploration3DView: View {
                 .buttonStyle(.plain)
                 
                 Button {
-                    zoomDistance = max(16.0, zoomDistance - 3.0)
-                    cameraNode.position.z = zoomDistance
+                    zoomDistance = max(18.0, zoomDistance - 4.0)
+                    cameraNode.position.z = CGFloat(session.playerPosition.y * 0.8) + zoomDistance
                 } label: {
                     Image(systemName: "plus.magnifyingglass")
                         .font(.caption)
@@ -631,8 +1053,36 @@ public struct WorldExploration3DView: View {
                 .buttonStyle(.plain)
             }
             
+            // Audio Mute Toggle Button
+            Button {
+                SoundManager.shared.isMuted.toggle()
+            } label: {
+                Image(systemName: SoundManager.shared.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    .font(.caption.bold())
+                    .foregroundStyle(SoundManager.shared.isMuted ? .gray : .white)
+                    .padding(8)
+                    .background(Circle().fill(.ultraThinMaterial))
+            }
+            .buttonStyle(.plain)
+            .help("Ativar/Desativar Sons")
+            
+            // Main Menu Button
+            Button {
+                SoundManager.shared.playUIClick()
+                onOpenMenu?()
+            } label: {
+                Image(systemName: "line.3.horizontal")
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+                    .padding(8)
+                    .background(Circle().fill(.ultraThinMaterial))
+            }
+            .buttonStyle(.plain)
+            .help("Menu Principal [Esc]")
+            
             // Morph Wheel Button
             Button {
+                SoundManager.shared.playUIClick()
                 showingTransformWheel = true
             } label: {
                 HStack(spacing: 8) {
@@ -674,9 +1124,14 @@ public struct WorldExploration3DView: View {
                         }
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(nearby.title)
-                            .font(.headline.bold())
-                            .foregroundStyle(.white)
+                        HStack(spacing: 6) {
+                            Text(nearby.title)
+                                .font(.headline.bold())
+                                .foregroundStyle(.white)
+                            Text("(\(nearby.biome.rawValue))")
+                                .font(.caption2.bold())
+                                .foregroundStyle(nearby.biome.primaryColor)
+                        }
                         Text(nearby.description)
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.85))
@@ -710,21 +1165,32 @@ public struct WorldExploration3DView: View {
                 .padding(.horizontal)
             }
             
-            // Movement Controls
+            // Movement Controls & Quick Morph Shortcuts
             HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "bolt.fill")
-                        .foregroundStyle(.yellow)
-                    Text("\(Int(session.playerTransformation.energy))%")
-                        .font(.caption.bold())
-                        .foregroundStyle(.white)
-                    Text("• WASD / Setas para mover em 3D")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.8))
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "bolt.fill")
+                            .foregroundStyle(.yellow)
+                        Text("\(Int(session.playerTransformation.energy))%")
+                            .font(.caption.bold())
+                            .foregroundStyle(.white)
+                        Text("• WASD / Setas para mover")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Text("Metamorfose Rápida:")
+                            .font(.caption2.bold())
+                            .foregroundStyle(.yellow)
+                        Text("[1] Mico • [2] Lobo • [3] Tatu • [4] Onça • [5] Ariranha • [6] Tamanduá • [0] Humano")
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(Capsule().fill(.ultraThinMaterial))
+                .background(RoundedRectangle(cornerRadius: 14).fill(.ultraThinMaterial))
                 .padding(.leading)
                 
                 Spacer()

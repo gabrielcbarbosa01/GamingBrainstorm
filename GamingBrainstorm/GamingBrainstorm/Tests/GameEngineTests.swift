@@ -35,15 +35,27 @@ public struct GameEngineTests {
             assert(session.sanctuary.resources.wood >= 40, "Deve ter madeira suficiente")
         }
         
-        // 2. Movement & Biome Change
-        test("Movimentação e Mudança de Biomas") {
+        // 2. Movement & Dynamic Biome Transition
+        test("Movimentação Contínua e Detecção Automática de Biomas") {
             let session = GameSession()
+            let initialPos = session.playerPosition
             session.movePlayer(dx: 2, dy: 3)
-            assert(session.playerPosition.x != 0 || session.playerPosition.y != 0, "Jogador deve se mover no plano 2.5D")
+            assert(session.playerPosition != initialPos, "Jogador deve se mover no plano do mundo aberto")
             
-            session.changeBiome(to: .pantanal)
-            assert(session.currentBiome == .pantanal, "Bioma deve mudar para Pantanal")
-            assert(session.playerPosition == .zero, "Posição deve ser resetada ao trocar de bioma")
+            // Walking into Amazon coordinates
+            session.playerPosition = CGPoint(x: -160, y: -200)
+            session.movePlayer(dx: 0, dy: -1)
+            assert(session.currentBiome == .amazonia, "Bioma deve ser detectado automaticamente como Amazônia")
+            
+            // Walking into Caatinga coordinates
+            session.playerPosition = CGPoint(x: 160, y: -200)
+            session.movePlayer(dx: 1, dy: 0)
+            assert(session.currentBiome == .caatinga, "Bioma deve ser detectado automaticamente como Caatinga")
+            
+            // Walking into Pampa coordinates
+            session.playerPosition = CGPoint(x: 0, y: 280)
+            session.movePlayer(dx: 0, dy: 1)
+            assert(session.currentBiome == .pampa, "Bioma deve ser detectado automaticamente como Pampa")
         }
         
         // 3. Transformation Mechanics
@@ -69,12 +81,11 @@ public struct GameEngineTests {
         // 4. World Interaction & Rescue
         test("Investigação e Resgate de Animais") {
             let session = GameSession()
-            session.changeBiome(to: .cerrado)
             
-            // Find the Lobo-Guará point at (30, 15)
-            session.playerPosition = CGPoint(x: 30.0, y: 15.0)
+            // Approach Lobo-Guará point in Cerrado at (130, 0)
+            session.playerPosition = CGPoint(x: 130.0, y: 0.0)
             let nearby = session.getNearbyPoint()
-            assert(nearby != nil, "Deve detectar o ponto do Lobo-Guará por proximidade")
+            assert(nearby != nil, "Deve detectar o ponto do Lobo-Guará por proximidade no mundo aberto")
             assert(nearby?.associatedSpeciesId == "lobo-guara", "Espécie associada deve ser lobo-guará")
             
             let rescueResult = session.interactWithNearbyPoint()
@@ -137,6 +148,92 @@ public struct GameEngineTests {
                 assert(!species.transformationPerk.isEmpty, "Espécie \(species.commonName) deve ter habilidade de metamorfose")
                 assert(!species.funFact.isEmpty, "Espécie \(species.commonName) deve ter fato educativo")
             }
+        }
+        
+        // 8. Story Quests & NPC Dialogue
+        test("Sistema Narrativo, Missões e Diálogos de NPCs") {
+            let session = GameSession()
+            assert(session.storyEngine.currentQuest != nil, "Deve existir uma missão de história ativa")
+            assert(session.storyEngine.isDialoguePresented, "Diálogo introdutório do Capítulo 1 deve iniciar apresentado")
+            
+            // Advance dialogue
+            session.storyEngine.advanceDialogue()
+            
+            // Talk to Poti Arara NPC
+            session.playerPosition = CGPoint(x: -80, y: -190)
+            let result = session.interactWithNearbyPoint()
+            assert(result.success, "Deve conseguir conversar com a Arara Poti")
+            
+            let currentQuest = session.storyEngine.currentQuest
+            let talkObj = currentQuest?.objectives.first { $0.id == "obj_talk_poti" }
+            assert(talkObj?.isCompleted == true, "Objetivo de conversar com Poti deve ser concluído")
+        }
+        
+        // 9. Enemies, Patrols and Totem Purification
+        test("Encontros com Inimigos, Patrulha e Purificação de Totens") {
+            let session = GameSession()
+            
+            // Unlock Ariranha with Nado Veloz perk for testing
+            session.playerTransformation.unlock(speciesId: "ariranha")
+            let morphOk = session.transform(into: "ariranha")
+            assert(morphOk, "Transformação em Ariranha deve ser realizada com sucesso")
+            assert(session.activeSpecies?.id == "ariranha", "Deve estar na forma de Ariranha")
+            
+            // Approach wildfire enemy in Amazon at (-95, -260)
+            session.playerPosition = CGPoint(x: -95, y: -260)
+            let enemyResult = session.interactWithNearbyPoint()
+            assert(enemyResult.success, "Deve conseguir neutralizar a labareda usando a forma aquática")
+            
+            // Approach and Purify Amazon Totem at (-200, -250)
+            session.playerPosition = CGPoint(x: -200, y: -250)
+            let totemResult = session.interactWithNearbyPoint()
+            assert(totemResult.success, "Deve conseguir purificar o Totem da Amazônia")
+            
+            let totem = session.storyEngine.totems.first { $0.id == "totem_amazonia" }
+            assert(totem?.isPurified == true, "Totem da Amazônia deve estar purificado")
+        }
+        
+        // 10. Day/Night Cycle, Weather and Quick Morph Shortcuts
+        test("Ciclo Dia/Noite, Clima Dinâmico e Atalhos Numéricos de Metamorfose") {
+            let session = GameSession()
+            
+            // Advance atmosphere clock through all phases
+            assert(session.atmosphere.currentTimeOfDay == .noon, "Deve iniciar por volta do meio-dia")
+            session.atmosphere.timeOfDayProgress = 0.85
+            assert(session.atmosphere.currentTimeOfDay == .night, "Deve alternar para a Noite")
+            assert(session.atmosphere.currentTimeOfDay.stealthBonusActive, "Bônus de furtividade deve estar ativo à noite")
+            
+            // Biome weather check
+            assert(session.atmosphere.weatherForBiome(.amazonia) == .fireflies, "À noite deve ter vagalumes na Amazônia")
+            session.atmosphere.timeOfDayProgress = 0.40
+            assert(session.atmosphere.weatherForBiome(.amazonia) == .tropicalRain, "De dia deve ter chuva tropical na Amazônia")
+            assert(session.atmosphere.weatherForBiome(.caatinga) == .heatHaze, "De dia deve ter calor na Caatinga")
+            
+            // Test Quick Morph Shortcuts (Keys 1-6 & 0)
+            let morphMico = session.morphQuick(index: 1)
+            assert(morphMico, "Tecla 1 deve metamorfosear no Mico-Leão-Dourado")
+            assert(session.activeSpecies?.id == "mico-leao-dourado", "Espécie ativa deve ser mico")
+            
+            let morphHuman = session.morphQuick(index: 0)
+            assert(morphHuman, "Tecla 0 deve retornar à forma humana")
+            assert(session.playerTransformation.isHuman, "Deve estar humano")
+        }
+        
+        // 11. Free Roaming Ambient Wild Fauna
+        test("Fauna Silvestre Livre e Fuga Reativa") {
+            let session = GameSession()
+            assert(session.ambientFauna.wildFauna.count >= 10, "Devem existir animais selvagens livres no mapa")
+            
+            guard let initialCapy = session.ambientFauna.wildFauna.first(where: { $0.type == .capybara }) else {
+                throw NSError(domain: "Test", code: 2, userInfo: [NSLocalizedDescriptionKey: "Capivara não encontrada"])
+            }
+            
+            // Approach capybara with player
+            session.playerPosition = initialCapy.position
+            session.ambientFauna.update(deltaTime: 0.1, playerPos: session.playerPosition, enemies: session.storyEngine.enemies)
+            
+            let reactiveCapy = session.ambientFauna.wildFauna.first(where: { $0.id == initialCapy.id })
+            assert(reactiveCapy?.isScattering == true, "Capivara deve se assustar e dispersar na presença de perigo")
         }
         
         print("🎯 [TESTS] Resultado: \(passedCount)/\(totalCount) testes passaram com sucesso!\n")

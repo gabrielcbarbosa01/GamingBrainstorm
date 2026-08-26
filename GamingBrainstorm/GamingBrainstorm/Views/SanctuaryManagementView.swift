@@ -7,30 +7,63 @@
 
 import SwiftUI
 
+public enum SanctuaryDisplayMode: String, CaseIterable, Sendable {
+    case cards = "Painéis de Gestão"
+    case view3D = "Visualização 3D"
+}
+
 public struct SanctuaryManagementView: View {
     @Bindable var session: GameSession
     @State private var showingBuildModal = false
     @State private var newHabitatName = ""
     @State private var selectedBiome: BiomeType = .cerrado
+    @State private var displayMode: SanctuaryDisplayMode = .cards
     
     public var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Resources Overview Header
-                resourcesHeader
+        VStack(spacing: 0) {
+            // Mode Switcher Header Bar
+            HStack {
+                Text("Gestão & Preservação do Santuário")
+                    .font(.title3.bold())
                 
-                // Habitats Section
-                habitatsSection
+                Spacer()
                 
-                // Rescued Animals Section
-                rescuedAnimalsSection
-                
-                // Food Storage & Inventory Section
-                foodInventorySection
+                Picker("Modo de Visualização", selection: $displayMode) {
+                    ForEach(SanctuaryDisplayMode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 260)
             }
-            .padding()
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .background(Color(nsColor: .controlBackgroundColor))
+            
+            Divider()
+            
+            if displayMode == .view3D {
+                Sanctuary3DView(session: session)
+            } else {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Resources Overview Header
+                        resourcesHeader
+                        
+                        // Habitats Section
+                        habitatsSection
+                        
+                        // Rescued Animals Section
+                        rescuedAnimalsSection
+                        
+                        // Food Storage & Inventory Section
+                        foodInventorySection
+                    }
+                    .padding()
+                }
+                .background(Color(nsColor: .windowBackgroundColor))
+            }
         }
-        .background(Color(nsColor: .windowBackgroundColor))
         .sheet(isPresented: $showingBuildModal) {
             buildHabitatSheet
         }

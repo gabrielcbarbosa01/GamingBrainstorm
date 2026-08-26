@@ -11,23 +11,26 @@ import Observation
 
 @Observable
 public final class GameSession: @unchecked Sendable {
-    // Current Active Exploration Biome
+    // Current Active Biome Region (Dynamically calculated based on coordinates)
     public var currentBiome: BiomeType = .mataAtlantica
     
-    // Player In-World Coordinates (-80 to 80)
-    public var playerPosition: CGPoint = .zero
+    // Player In-World Coordinates (-350 to +350 across vast open world)
+    public var playerPosition: CGPoint = CGPoint(x: 50.0, y: 140.0) // Start in Mata Atlântica
     public var playerFacingAngle: Double = 0.0
     
     // Core States
     public var playerTransformation: PlayerTransformationState
     public var sanctuary: SanctuaryState
     public var worldPoints: [WorldPoint]
+    public var storyEngine: StoryEngine = StoryEngine()
+    public var atmosphere: AtmosphereState = AtmosphereState()
+    public var ambientFauna: AmbientFaunaEngine = AmbientFaunaEngine()
     
-    // UI Event Notification
+    // UI Event Notification & Biome Announcements
     public var recentNotification: String?
     
     public init() {
-        // Start with Mico-Leão-Dourado unlocked for the initial demo/prototype
+        // Start with Mico-Leão-Dourado unlocked for the initial demo
         let initialUnlocked: Set<String> = ["mico-leao-dourado"]
         self.playerTransformation = PlayerTransformationState(
             activeSpeciesId: nil,
@@ -55,27 +58,113 @@ public final class GameSession: @unchecked Sendable {
             resources: SanctuaryResources(wood: 120, stone: 80, cleanWater: 150, carePoints: 100)
         )
         
-        // Generate World Points for each biome
+        // Generate World Points for all biomes across the unified grand map
         self.worldPoints = GameSession.generateInitialWorldPoints()
+        self.currentBiome = GameSession.biomeForPosition(x: playerPosition.x, y: playerPosition.y)
+        
+        // Start Chapter 1 intro dialogue
+        if let intro = self.storyEngine.currentQuest?.introDialogue {
+            self.storyEngine.startDialogue(lines: intro)
+        }
+    }
+    
+    // MARK: - Open World Seamless Biome Detection
+    public static func biomeForPosition(x: Double, y: Double) -> BiomeType {
+        if y < -80 {
+            return x < 0 ? .amazonia : .caatinga
+        } else if y < 80 {
+            return x < -30 ? .pantanal : .cerrado
+        } else if y < 220 {
+            return x < -60 ? .pantanal : .mataAtlantica
+        } else {
+            return .pampa
+        }
     }
     
     // MARK: - Exploration & Movement
     public func changeBiome(to biome: BiomeType) {
         currentBiome = biome
-        playerPosition = .zero
+        switch biome {
+        case .amazonia: playerPosition = CGPoint(x: -160.0, y: -200.0)
+        case .caatinga: playerPosition = CGPoint(x: 160.0, y: -200.0)
+        case .pantanal: playerPosition = CGPoint(x: -160.0, y: 0.0)
+        case .cerrado: playerPosition = CGPoint(x: 130.0, y: 0.0)
+        case .mataAtlantica: playerPosition = CGPoint(x: 50.0, y: 140.0)
+        case .pampa: playerPosition = CGPoint(x: 0.0, y: 280.0)
+        }
         recentNotification = "Entrou no bioma: \(biome.rawValue)"
     }
     
     public func movePlayer(dx: Double, dy: Double) {
-        let speed = (playerTransformation.activeSpeciesId != nil) ? 5.0 : 3.5
-        let newX = min(max(playerPosition.x + dx * speed, -80), 80)
-        let newY = min(max(playerPosition.y + dy * speed, -80), 80)
+        let speed = (playerTransformation.activeSpeciesId != nil) ? 4.8 : 3.2
+        let newX = min(max(playerPosition.x + dx * speed, -350), 350)
+        let newY = min(max(playerPosition.y + dy * speed, -350), 350)
         
         if dx != 0 || dy != 0 {
             playerFacingAngle = atan2(dy, dx)
+            #if !TEST_RUNNER
+            SoundManager.shared.playFootstep(at: CGPoint(x: newX, y: newY), biome: currentBiome)
+            SoundManager.shared.updateRiverProximity(playerPos: CGPoint(x: newX, y: newY))
+            SoundManager.shared.updateBiomeMusic(for: currentBiome)
+            #endif
         }
         
         playerPosition = CGPoint(x: newX, y: newY)
+        
+        // Update Ambient Wild Fauna wandering and reaction
+        ambientFauna.update(deltaTime: 0.1, playerPos: playerPosition, enemies: storyEngine.enemies)
+        
+        // Enemy AI Patrol & Stealth Checks (with Night stealth bonus)
+        let time = ProcessInfo.processInfo.systemUptime
+        let activePerk = activeSpecies?.transformationPerk
+        let isNightStealth = atmosphere.currentTimeOfDay == .night && (activeSpecies?.id == "onca-pintada" || activeSpecies?.id == "lobo-guara")
+        
+        if let alerted = storyEngine.updateEnemyPatrols(time: time, playerPos: playerPosition, activePerk: isNightStealth ? "Furtivo" : activePerk) {
+            #if !TEST_RUNNER
+            switch alerted.type {
+            case .surveillanceDrone: SoundManager.shared.playDroneAlarm()
+            case .poacher: SoundManager.shared.playPoacherWhistle()
+            case .wildfireEntity: SoundManager.shared.playFireCrackle()
+            case .timberHarvester: SoundManager.shared.playDroneAlarm()
+            }
+            #endif
+            
+            // If player is in unprotected human form, drain energy slightly
+            if activeSpecies == nil {
+                playerTransformation.energy = max(0, playerTransformation.energy - 1.5)
+                recentNotification = "⚠️ Alerta! \(alerted.type.rawValue) detectou você! Transforme-se em um animal para se esquivar."
+            }
+        }
+        
+        // Dynamic Biome update based on open world location
+        let detectedBiome = GameSession.biomeForPosition(x: newX, y: newY)
+        if detectedBiome != currentBiome {
+            currentBiome = detectedBiome
+            recentNotification = "🌿 Explorando o bioma: \(detectedBiome.rawValue)"
+            #if !TEST_RUNNER
+            SoundManager.shared.updateBiomeMusic(for: detectedBiome)
+            #endif
+        }
+    }
+    
+    // MARK: - Quick Numeric Metamorphosis Shortcuts (Keys 1-6 & 0)
+    @discardableResult
+    public func morphQuick(index: Int) -> Bool {
+        let speciesKeys = [
+            1: "mico-leao-dourado",
+            2: "lobo-guara",
+            3: "tatu-bola",
+            4: "onca-pintada",
+            5: "ariranha",
+            6: "tamandua-bandeira"
+        ]
+        
+        if index == 0 {
+            return transform(into: nil)
+        } else if let targetSpecies = speciesKeys[index] {
+            return transform(into: targetSpecies)
+        }
+        return false
     }
     
     // MARK: - Transformation
@@ -83,6 +172,9 @@ public final class GameSession: @unchecked Sendable {
     public func transform(into speciesId: String?) -> Bool {
         let success = playerTransformation.morph(into: speciesId)
         if success {
+            #if !TEST_RUNNER
+            SoundManager.shared.playMetamorphosis()
+            #endif
             if let id = speciesId, let species = AnimalSpecies.allSpecies.first(where: { $0.id == id }) {
                 recentNotification = "Metamorfose em \(species.commonName)! Habilidade: \(species.transformationPerk)"
             } else {
@@ -99,11 +191,32 @@ public final class GameSession: @unchecked Sendable {
         return AnimalSpecies.allSpecies.first(where: { $0.id == id })
     }
     
-    // MARK: - World Interaction & Rescue
+    // MARK: - World Interaction, Story & Rescue
+    public func getNearbyNPC() -> GameNPC? {
+        let radius: Double = 28.0
+        return storyEngine.npcs.first { npc in
+            hypot(npc.position.x - playerPosition.x, npc.position.y - playerPosition.y) <= radius
+        }
+    }
+    
+    public func getNearbyTotem() -> BiomeTotem? {
+        let radius: Double = 30.0
+        return storyEngine.totems.first { totem in
+            !totem.isPurified && hypot(totem.position.x - playerPosition.x, totem.position.y - playerPosition.y) <= radius
+        }
+    }
+    
+    public func getNearbyEnemy() -> WorldEnemy? {
+        let radius: Double = 28.0
+        return storyEngine.enemies.first { enemy in
+            !enemy.isNeutralized && hypot(enemy.position.x - playerPosition.x, enemy.position.y - playerPosition.y) <= radius
+        }
+    }
+    
     public func getNearbyPoint() -> WorldPoint? {
-        let interactionRadius: Double = 18.0
+        let interactionRadius: Double = 26.0
         return worldPoints.first { point in
-            guard point.biome == currentBiome && !point.isResolved else { return false }
+            guard !point.isResolved else { return false }
             let dist = hypot(point.x - playerPosition.x, point.y - playerPosition.y)
             return dist <= interactionRadius
         }
@@ -111,8 +224,77 @@ public final class GameSession: @unchecked Sendable {
     
     @discardableResult
     public func interactWithNearbyPoint() -> (success: Bool, message: String) {
+        // 1. Check NPC Interaction
+        if let npc = getNearbyNPC() {
+            #if !TEST_RUNNER
+            SoundManager.shared.playDialogueBeep()
+            #endif
+            let lines = [
+                DialogueLine(speakerName: npc.name, speakerIcon: npc.iconSymbol, text: "Olá Guardião! Fique atento às redondezas de \(npc.nativeBiome.rawValue). O Consórcio Devastador colocou patrulhas perto dos animais.", tone: "Informativo"),
+                DialogueLine(speakerName: "Muri", speakerIcon: "leaf.fill", text: "Obrigado, \(npc.name)! Vou purificar os totens e afastar os caçadores!", tone: "Confiante")
+            ]
+            storyEngine.startDialogue(lines: lines)
+            
+            // Check quest objectives for talking to NPC
+            let _ = storyEngine.completeObjective(withId: "obj_talk_poti")
+            let _ = storyEngine.completeObjective(withId: "obj_talk_mae_mata")
+            
+            let msg = "Conversou com \(npc.name)."
+            recentNotification = msg
+            return (true, msg)
+        }
+        
+        // 2. Check Totem Purification
+        if let totem = getNearbyTotem() {
+            if let idx = storyEngine.totems.firstIndex(where: { $0.id == totem.id }) {
+                storyEngine.totems[idx].isPurified = true
+                #if !TEST_RUNNER
+                SoundManager.shared.playTotemPurified()
+                #endif
+                sanctuary.resources.carePoints += 100
+                playerTransformation.regenerateEnergy(amount: 50.0)
+                
+                // Complete story objectives
+                let _ = storyEngine.completeObjective(withId: "obj_purify_amz_totem")
+                let _ = storyEngine.completeObjective(withId: "obj_purify_cer_totem")
+                let _ = storyEngine.completeObjective(withId: "obj_purify_all_totems")
+                
+                let msg = "✨ Você purificou o \(totem.title)! (+100 Pontos de Cuidado, +50 Energia). A floresta volta a florescer!"
+                recentNotification = msg
+                return (true, msg)
+            }
+        }
+        
+        // 3. Check Enemy Neutralization / Extinguish Fire
+        if let enemy = getNearbyEnemy() {
+            let activePerk = activeSpecies?.transformationPerk ?? ""
+            if let counter = enemy.requiredCounterPerk, activePerk.contains(counter) || counter.contains(activePerk) {
+                if let idx = storyEngine.enemies.firstIndex(where: { $0.id == enemy.id }) {
+                    storyEngine.enemies[idx].isNeutralized = true
+                    #if !TEST_RUNNER
+                    SoundManager.shared.playRescueFanfare()
+                    #endif
+                    sanctuary.resources.carePoints += 40
+                    
+                    // Complete enemy-related quest objectives
+                    let _ = storyEngine.completeObjective(withId: "obj_extinguish_amz")
+                    let _ = storyEngine.completeObjective(withId: "obj_disable_drone_cer")
+                    let _ = storyEngine.completeObjective(withId: "obj_disable_harvester")
+                    
+                    let msg = "⚡ Ameaça neutralizada: \(enemy.type.rawValue) desativado usando \(activeSpecies?.commonName ?? "forma animal")! (+40 Pontos de Cuidado)"
+                    recentNotification = msg
+                    return (true, msg)
+                }
+            } else {
+                let msg = "Ação bloqueada! Para enfrentar \(enemy.type.rawValue), você precisa da habilidade: \(enemy.requiredCounterPerk ?? "animal")."
+                recentNotification = msg
+                return (false, msg)
+            }
+        }
+        
+        // 4. Standard World Points (Animal Distress & Clues)
         guard let point = getNearbyPoint() else {
-            return (false, "Nenhum ponto de interesse próximo.")
+            return (false, "Nenhum ponto de interesse, NPC ou ameaça próxima.")
         }
         
         // Check if a specific transformation perk is needed
@@ -134,6 +316,9 @@ public final class GameSession: @unchecked Sendable {
             if let speciesId = point.associatedSpeciesId, let species = AnimalSpecies.allSpecies.first(where: { $0.id == speciesId }) {
                 // Unlock transformation
                 playerTransformation.unlock(speciesId: speciesId)
+                #if !TEST_RUNNER
+                SoundManager.shared.playRescueFanfare()
+                #endif
                 
                 // Add to Sanctuary
                 let newAnimal = RescuedAnimal(
@@ -147,12 +332,19 @@ public final class GameSession: @unchecked Sendable {
                 sanctuary.rescuedAnimals.append(newAnimal)
                 sanctuary.resources.carePoints += 50
                 
+                // Complete story objectives
+                let _ = storyEngine.completeObjective(withId: "obj_rescue_amz")
+                let _ = storyEngine.completeObjective(withId: "obj_rescue_tatu")
+                
                 let msg = "🎉 Você resgatou um \(species.commonName)! Ele foi levado ao Santuário e sua forma de metamorfose foi DESBLOQUEADA!"
                 recentNotification = msg
                 return (true, msg)
             }
             
         case .ecologicalClue:
+            #if !TEST_RUNNER
+            SoundManager.shared.playUIClick()
+            #endif
             sanctuary.resources.carePoints += 30
             playerTransformation.regenerateEnergy(amount: 25.0)
             let msg = "🔍 Pista ecológica investigada: \(point.description) (+30 Pontos de Cuidado, +25 Energia)"
@@ -160,6 +352,9 @@ public final class GameSession: @unchecked Sendable {
             return (true, msg)
             
         case .terrainObstacle:
+            #if !TEST_RUNNER
+            SoundManager.shared.playUIClick()
+            #endif
             sanctuary.resources.wood += 20
             sanctuary.resources.stone += 15
             let msg = "Obstáculo superado com sua forma animal! Coletados materiais para o santuário."
@@ -167,6 +362,9 @@ public final class GameSession: @unchecked Sendable {
             return (true, msg)
             
         case .resourceCache:
+            #if !TEST_RUNNER
+            SoundManager.shared.playUIClick()
+            #endif
             sanctuary.inventory.fruits += 10
             sanctuary.inventory.nativePlants += 10
             sanctuary.inventory.freshFish += 5
@@ -272,16 +470,15 @@ public final class GameSession: @unchecked Sendable {
         return true
     }
     
-    // MARK: - Simulation Tick (Game Loop simulation)
+    // MARK: - Simulation Tick
     public func simulationTick() {
         playerTransformation.regenerateEnergy(amount: 5.0)
+        atmosphere.advanceTime(delta: 0.005)
         
         // Update Sanctuary animals & generate care points
         for i in 0..<sanctuary.rescuedAnimals.count {
-            // Hunger slowly increases
             sanctuary.rescuedAnimals[i].hunger = min(100.0, sanctuary.rescuedAnimals[i].hunger + 2.0)
             
-            // Check habitat comfort
             if let habId = sanctuary.rescuedAnimals[i].habitatId,
                let habitat = sanctuary.habitats.first(where: { $0.id == habId }) {
                 let species = AnimalSpecies.allSpecies.first(where: { $0.id == sanctuary.rescuedAnimals[i].speciesId })
@@ -292,20 +489,103 @@ public final class GameSession: @unchecked Sendable {
                     sanctuary.resources.carePoints += 2
                 }
             } else {
-                // Without a habitat, happiness drops
                 sanctuary.rescuedAnimals[i].happiness = max(0, sanctuary.rescuedAnimals[i].happiness - 3.0)
             }
         }
     }
     
-    // MARK: - World Points Generator
+    // MARK: - World Points Generator Across the Grand Continuous Map
     private static func generateInitialWorldPoints() -> [WorldPoint] {
         return [
-            // Mata Atlântica
+            // Amazônia (Noroeste: X < 0, Y < -80)
+            WorldPoint(
+                biome: .amazonia,
+                x: -180.0,
+                y: -220.0,
+                interactionType: .animalInDistress,
+                title: "Família de Ariranhas Isolada",
+                description: "Troncos caídos bloquearam o igarapé onde a ariranha caçava peixes.",
+                associatedSpeciesId: "ariranha",
+                requiredPerk: "Garras Rompedoras"
+            ),
+            WorldPoint(
+                biome: .amazonia,
+                x: -120.0,
+                y: -160.0,
+                interactionType: .resourceCache,
+                title: "Castanhal Centenário",
+                description: "Árvores gigantes com castanhas e frutos nativos para o santuário.",
+                requiredPerk: nil
+            ),
+            
+            // Caatinga (Nordeste: X >= 0, Y < -80)
+            WorldPoint(
+                biome: .caatinga,
+                x: 180.0,
+                y: -200.0,
+                interactionType: .animalInDistress,
+                title: "Tatu-Bola sob Rocha Quebradiça",
+                description: "Um tatu-bola precisa de ajuda para desobstruir uma fenda no solo pedregoso.",
+                associatedSpeciesId: "tatu-bola",
+                requiredPerk: nil
+            ),
+            WorldPoint(
+                biome: .caatinga,
+                x: 120.0,
+                y: -140.0,
+                interactionType: .ecologicalClue,
+                title: "Mandacaru Florido",
+                description: "Raras flores noturnas de mandacaru revelam rotas de fauna resiliente.",
+                requiredPerk: nil
+            ),
+            
+            // Pantanal (Centro-Oeste: X < -30, Y in -80...80)
+            WorldPoint(
+                biome: .pantanal,
+                x: -180.0,
+                y: -20.0,
+                interactionType: .animalInDistress,
+                title: "Onça-Pintada em Ilha de Seca",
+                description: "Uma onça jovem isolada após alteração no curso d'água das baías.",
+                associatedSpeciesId: "onca-pintada",
+                requiredPerk: "Nado Veloz"
+            ),
+            WorldPoint(
+                biome: .pantanal,
+                x: -120.0,
+                y: 35.0,
+                interactionType: .resourceCache,
+                title: "Lagoa dos Aguapés",
+                description: "Águas cristalinas ricas em peixes frescos e plantas aquáticas.",
+                requiredPerk: nil
+            ),
+            
+            // Cerrado (Centro-Leste: X >= -30, Y in -80...80)
+            WorldPoint(
+                biome: .cerrado,
+                x: 130.0,
+                y: 0.0,
+                interactionType: .animalInDistress,
+                title: "Lobo-Guará Encurralado",
+                description: "Um lobo-guará ferido está cercado por fendas no solo. Aproxime-se para resgatá-lo.",
+                associatedSpeciesId: "lobo-guara",
+                requiredPerk: nil
+            ),
+            WorldPoint(
+                biome: .cerrado,
+                x: 70.0,
+                y: -40.0,
+                interactionType: .ecologicalClue,
+                title: "Arbusto de Lobeira",
+                description: "Frutos maduros de lobeira caídos indicam trilhas de mamíferos do cerrado.",
+                requiredPerk: "Faro Rastreador"
+            ),
+            
+            // Mata Atlântica (Sudeste: X >= -60, Y in 80...220)
             WorldPoint(
                 biome: .mataAtlantica,
-                x: 25.0,
-                y: -30.0,
+                x: 50.0,
+                y: 140.0,
                 interactionType: .ecologicalClue,
                 title: "Pegadas de Primatas no Dossel",
                 description: "Marcas de garras e cascas de frutos roídas indicam passagem de micos.",
@@ -313,80 +593,32 @@ public final class GameSession: @unchecked Sendable {
             ),
             WorldPoint(
                 biome: .mataAtlantica,
-                x: -35.0,
-                y: 20.0,
+                x: -20.0,
+                y: 170.0,
                 interactionType: .resourceCache,
                 title: "Bosque de Bromélias Nativas",
-                description: "Bromélias ricas em néctar e água acumulada.",
+                description: "Bromélias com frutos ricos em néctar e água pura.",
                 requiredPerk: nil
             ),
             
-            // Cerrado
-            WorldPoint(
-                biome: .cerrado,
-                x: 30.0,
-                y: 15.0,
-                interactionType: .animalInDistress,
-                title: "Lobo-Guará Encurralado",
-                description: "Um lobo-guará ferido está cercado por queimadas recentes. Aproxime-se para resgatá-lo.",
-                associatedSpeciesId: "lobo-guara",
-                requiredPerk: nil
-            ),
-            WorldPoint(
-                biome: .cerrado,
-                x: -20.0,
-                y: -25.0,
-                interactionType: .ecologicalClue,
-                title: "Arbusto de Lobeira",
-                description: "Frutos maduros de lobeira caídos ao chão.",
-                requiredPerk: "Faro Rastreador"
-            ),
-            
-            // Pantanal
-            WorldPoint(
-                biome: .pantanal,
-                x: -15.0,
-                y: 35.0,
-                interactionType: .animalInDistress,
-                title: "Onça-Pintada em Ilha de Seca",
-                description: "Uma onça jovem isolada após alteração no curso d'água.",
-                associatedSpeciesId: "onca-pintada",
-                requiredPerk: "Nado Veloz"
-            ),
-            
-            // Caatinga
-            WorldPoint(
-                biome: .caatinga,
-                x: 40.0,
-                y: -10.0,
-                interactionType: .animalInDistress,
-                title: "Tatu-Bola sob Rocha Quebradiça",
-                description: "Um tatu-bola precisa de ajuda para desobstruir uma fenda no solo pedregoso.",
-                associatedSpeciesId: "tatu-bola",
-                requiredPerk: nil
-            ),
-            
-            // Amazônia
-            WorldPoint(
-                biome: .amazonia,
-                x: -30.0,
-                y: -30.0,
-                interactionType: .animalInDistress,
-                title: "Família de Ariranhas Isolada",
-                description: "Troncos caídos bloquearam o igarapé onde a ariranha caçava peixes.",
-                associatedSpeciesId: "ariranha",
-                requiredPerk: "Garras Rompedoras"
-            ),
-            
-            // Pampa
+            // Pampa (Sul: Y >= 220)
             WorldPoint(
                 biome: .pampa,
                 x: 20.0,
-                y: 40.0,
+                y: 280.0,
                 interactionType: .animalInDistress,
-                title: "Tamanduá-Bandeira Preso em Cerca",
-                description: "Tamanduá-bandeira precisa de auxílio para retornar aos campos abertos.",
+                title: "Tamanduá-Bandeira Preso em Ravina",
+                description: "Tamanduá-bandeira precisa de auxílio para retornar aos campos abertos do sul.",
                 associatedSpeciesId: "tamandua-bandeira",
+                requiredPerk: nil
+            ),
+            WorldPoint(
+                biome: .pampa,
+                x: -70.0,
+                y: 300.0,
+                interactionType: .ecologicalClue,
+                title: "Coxilha dos Ventos",
+                description: "Gramíneas ondulantes com rastros de formigueiros gigantes.",
                 requiredPerk: nil
             )
         ]

@@ -28,4 +28,4 @@ Conforme o [PROJECT.md](../../PROJECT.md), [GDD.md](../../GDD.md) e [SDD.md](../
 
 ## Status
 
-Aprovado e Implementado.
+Superado / Substituído por [ADR 0002](0002-exploracao-mundo-3d-scenekit.md) (Consolidação em Mundo 3D com SceneKit). A camada de domínio permanece intacta e desacoplada.

@@ -8,8 +8,7 @@
 import SwiftUI
 
 public enum GameNavigationTab: String, CaseIterable, Identifiable {
-    case exploration3D = "Exploração 3D"
-    case exploration2D5 = "Modo 2.5D"
+    case exploration = "Exploração"
     case sanctuary = "Santuário"
     case catalog = "Catálogo & Mapa"
     
@@ -17,8 +16,7 @@ public enum GameNavigationTab: String, CaseIterable, Identifiable {
     
     public var iconName: String {
         switch self {
-        case .exploration3D: return "cube.fill"
-        case .exploration2D5: return "map.fill"
+        case .exploration: return "cube.fill"
         case .sanctuary: return "house.lodge.fill"
         case .catalog: return "books.vertical.fill"
         }
@@ -27,12 +25,77 @@ public enum GameNavigationTab: String, CaseIterable, Identifiable {
 
 public struct MainGameView: View {
     @State private var session = GameSession()
-    @State private var selectedTab: GameNavigationTab = .exploration3D
+    @State private var selectedTab: GameNavigationTab = .exploration
+    @State private var isShowingMainMenu: Bool = true
+    @State private var isShowingPauseModal: Bool = false
     @FocusState private var isViewFocused: Bool
     
     public init() {}
     
     public var body: some View {
+        ZStack {
+            if isShowingMainMenu {
+                MainMenuView(
+                    session: session,
+                    onStartGame: {
+                        isShowingMainMenu = false
+                    },
+                    onNewGame: {
+                        session = GameSession()
+                        isShowingMainMenu = false
+                    }
+                )
+            } else {
+                gameplayView
+            }
+            
+            // In-Game Pause & Settings Modal Overlay
+            if isShowingPauseModal {
+                pauseModalOverlay
+                    .zIndex(10000)
+            }
+        }
+        .frame(minWidth: 980, minHeight: 680)
+        .focusable()
+        .focused($isViewFocused)
+        .onAppear {
+            isViewFocused = true
+        }
+        .onKeyPress { press in
+            if press.key == .escape {
+                if !isShowingMainMenu {
+                    isShowingPauseModal.toggle()
+                    return .handled
+                }
+            }
+            
+            guard selectedTab == .exploration && !isShowingMainMenu && !isShowingPauseModal else { return .ignored }
+            
+            if press.key == .space {
+                _ = session.interactWithNearbyPoint()
+                return .handled
+            } else if press.characters == "w" || press.characters == "W" || press.key == .upArrow {
+                session.movePlayer(dx: 0, dy: -1.8)
+                return .handled
+            } else if press.characters == "s" || press.characters == "S" || press.key == .downArrow {
+                session.movePlayer(dx: 0, dy: 1.8)
+                return .handled
+            } else if press.characters == "a" || press.characters == "A" || press.key == .leftArrow {
+                session.movePlayer(dx: -1.8, dy: 0)
+                return .handled
+            } else if press.characters == "d" || press.characters == "D" || press.key == .rightArrow {
+                session.movePlayer(dx: 1.8, dy: 0)
+                return .handled
+            } else if let char = press.characters.first, let digit = Int(String(char)), (0...6).contains(digit) {
+                _ = session.morphQuick(index: digit)
+                return .handled
+            }
+            return .ignored
+        }
+    }
+    
+    // MARK: - Active Gameplay View
+    private var gameplayView: some View {
         VStack(spacing: 0) {
             // Notification Toast Banner
             if let notification = session.recentNotification {
@@ -61,10 +124,10 @@ public struct MainGameView: View {
             // Main Content Area
             Group {
                 switch selectedTab {
-                case .exploration3D:
-                    WorldExploration3DView(session: session)
-                case .exploration2D5:
-                    WorldExploration2D5View(session: session)
+                case .exploration:
+                    WorldExploration3DView(session: session, onOpenMenu: {
+                        isShowingPauseModal = true
+                    })
                 case .sanctuary:
                     SanctuaryManagementView(session: session)
                 case .catalog:
@@ -103,32 +166,79 @@ public struct MainGameView: View {
             .frame(maxWidth: .infinity)
             .background(Material.ultraThick)
         }
-        .frame(minWidth: 980, minHeight: 680)
-        .focusable()
-        .focused($isViewFocused)
-        .onAppear {
-            isViewFocused = true
-        }
-        .onKeyPress { press in
-            guard selectedTab == .exploration3D || selectedTab == .exploration2D5 else { return .ignored }
+    }
+    
+    // MARK: - Pause & Settings Modal Overlay
+    private var pauseModalOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.70)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    isShowingPauseModal = false
+                }
             
-            if press.key == .space {
-                _ = session.interactWithNearbyPoint()
-                return .handled
-            } else if press.characters == "w" || press.characters == "W" || press.key == .upArrow {
-                session.movePlayer(dx: 0, dy: -1.8)
-                return .handled
-            } else if press.characters == "s" || press.characters == "S" || press.key == .downArrow {
-                session.movePlayer(dx: 0, dy: 1.8)
-                return .handled
-            } else if press.characters == "a" || press.characters == "A" || press.key == .leftArrow {
-                session.movePlayer(dx: -1.8, dy: 0)
-                return .handled
-            } else if press.characters == "d" || press.characters == "D" || press.key == .rightArrow {
-                session.movePlayer(dx: 1.8, dy: 0)
-                return .handled
+            VStack(spacing: 22) {
+                HStack {
+                    Image(systemName: "pause.circle.fill")
+                        .font(.title)
+                        .foregroundStyle(.yellow)
+                    Text("Jogo Pausado")
+                        .font(.title2.bold())
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Button {
+                        isShowingPauseModal = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                Divider()
+                
+                VStack(spacing: 12) {
+                    pauseButton(title: "Retomar Jogo", icon: "play.fill", primary: true) {
+                        isShowingPauseModal = false
+                    }
+                    
+                    pauseButton(title: "Menu Principal", icon: "house.fill", primary: false) {
+                        isShowingPauseModal = false
+                        isShowingMainMenu = true
+                    }
+                }
             }
-            return .ignored
+            .padding(24)
+            .frame(width: 380)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(red: 0.08, green: 0.12, blue: 0.10))
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.green.opacity(0.4), lineWidth: 1.5))
+            )
+            .shadow(color: .black.opacity(0.8), radius: 20)
         }
+    }
+    
+    private func pauseButton(title: String, icon: String, primary: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.headline)
+                    .foregroundStyle(primary ? .black : .white)
+                Text(title)
+                    .font(.headline.bold())
+                    .foregroundStyle(primary ? .black : .white)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(primary ? Color.green : Color.white.opacity(0.12))
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
