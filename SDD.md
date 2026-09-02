@@ -2,7 +2,7 @@
 
 ## Estado da arquitetura
 
-A arquitetura está em discovery. O repositório contém um app SwiftUI macOS mínimo, criado com Xcode 26.6 e deployment target 26.5. Esses valores descrevem o scaffold atual; não constituem plataforma, versão mínima ou arquitetura aprovadas.
+A arquitetura está em discovery, mas o conceito de produto já foi aprovado (ver [PROJECT.md](PROJECT.md) e [GDD.md](GDD.md)): jogo cooperativo de exploração/gerenciamento de nave, macOS nativo, multiplayer local. O repositório contém um app SwiftUI macOS mínimo, criado com Xcode 26.6 e deployment target 26.5. Esses valores descrevem o scaffold atual; não constituem versão mínima ou arquitetura definitiva aprovada. Renderer de gameplay e camada de rede para o protótipo 1 estão registrados como decisões de nível protótipo em `docs/adr/0002-tecnologias-prototipo-1.md` (SpriteKit + MultipeerConnectivity), sujeitas a spike antes de consolidação.
 
 ## Objetivos de engenharia
 
@@ -23,6 +23,7 @@ Estes limites orientam protótipos, mas só serão concretizados após escolha d
 - **Input:** ações semânticas originadas por teclado, controle, toque, pointer ou sensores.
 - **Audio/haptics:** feedback disparado por eventos de domínio, com fallbacks.
 - **Persistence/services:** salvamento e integrações externas atrás de protocolos pequenos.
+- **Networking:** sincronização do estado compartilhado entre os jogadores (posição, estado da vaca, estado do habitat). Candidata de protótipo: MultipeerConnectivity, isolada atrás de um protocolo pequeno para permitir troca futura (ex.: GameKit) sem afetar o domínio do jogo.
 
 ## Fluxo de dependências
 

@@ -2,7 +2,7 @@
 
 ## Estado
 
-A direção visual é `TBD`. Não assumir pixel art, ilustração, realismo, 2D, 3D, glassmorphism ou qualquer estética a partir do scaffold atual.
+O conceito de produto foi aprovado (jogo cooperativo de exploração/gerenciamento de nave com vacas alienígenas — ver [GDD](GDD.md)), mas a direção visual final ainda é `TBD`: 2D, 2.5D ou 3D não estão decididos. Palavras-chave de identidade aprovadas para orientar exploração visual: caos cósmico cooperativo, divertido, acolhedor, colorido, humor absurdo, vacas carismáticas — sem que isso vire prescrição de estilo específico (pixel art, ilustração, realismo etc.) antes de um protótipo visual.
 
 ## Objetivos da direção futura
 

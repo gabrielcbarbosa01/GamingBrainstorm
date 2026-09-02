@@ -2,7 +2,9 @@
 
 Repositório oficial de descoberta, especificação e implementação do projeto **Final Challenge**.
 
-O jogo ainda está em fase de discovery. Conceito, gênero, plataforma de lançamento, direção visual e renderer de gameplay permanecem em aberto até que sejam aprovados e registrados. O projeto Xcode atual é apenas um scaffold técnico e não representa uma decisão de produto.
+O conceito de produto foi aprovado em 02/09/2026: um jogo cooperativo de exploração espacial e gerenciamento de nave, no qual uma tripulação alienígena resgata e cuida de vacas alienígenas em planetas diferentes, com ritmo caótico cooperativo inspirado em *Overcooked*. Um conceito anterior (aventura de conservação da fauna brasileira, "Guardiões dos Biomas") foi explorado em profundidade em branches de discovery (`testeDoGumgum`, `testeGDD`, `claude/profundidade-transformacao`, entre outras) mas não foi aprovado como direção final; essas branches permanecem como histórico e não devem ser mescladas em `main` sob o conceito atual. O trabalho do novo conceito está na branch `pivot/vacas-alienigenas`.
+
+Direção visual final (2D/2.5D/3D) e renderer de gameplay definitivo ainda estão em validação — ver [DESIGN.md](DESIGN.md), [APPLE_TECHNOLOGIES.md](APPLE_TECHNOLOGIES.md) e os ADRs em `docs/adr/`.
 
 ## Fontes de verdade
 
@@ -16,18 +18,20 @@ O jogo ainda está em fase de discovery. Conceito, gênero, plataforma de lança
 | [TEST_PLAN.md](TEST_PLAN.md) | Estratégia de validação e critérios de qualidade |
 | [AGENTS.md](AGENTS.md) | Instruções compartilhadas para agentes de desenvolvimento |
 | [CLAUDE.md](CLAUDE.md) | Entrada do Claude Code para as mesmas fontes de verdade |
+| `docs/adr/` | Registro de decisões arquiteturais (ADRs) |
 
 ## Estado atual
 
-- Fase: discovery.
-- Conceito e gênero: `TBD`.
-- Emoção e fantasia centrais: `TBD`.
-- Público e duração de sessão: `TBD`.
-- Plataforma de lançamento: `TBD`.
+- Fase: protótipo 1 em desenvolvimento.
+- Conceito: cooperativo de exploração/gerenciamento de nave ("vacas alienígenas") — ver [GDD](GDD.md).
+- Público e duração de sessão exata: `TBD`.
+- Plataforma: macOS nativo.
+- Multiplayer: cooperativo local confirmado (protótipo 1 usa a mesma rede local, sem servidor).
 - Direção visual e sonora: `TBD`.
 - Interface: SwiftUI obrigatório.
-- Renderer de gameplay: `TBD`.
-- Scaffold atual: app SwiftUI para macOS com deployment target 26.5; isso **não** aprova macOS como plataforma final.
+- Renderer de gameplay: candidato SpriteKit para o protótipo (ver ADR 0002), ainda não consolidado como decisão definitiva.
+- Rede: candidato MultipeerConnectivity para o protótipo (ver ADR 0002), ainda não consolidado como decisão definitiva.
+- Scaffold atual: app SwiftUI para macOS; isso **não** aprova sozinho a versão mínima final.
 
 ## Regra de decisão
 
@@ -35,5 +39,4 @@ Uma hipótese só se torna requisito quando for validada pela equipe e registrad
 
 ## Próximo passo
 
-Responder durante o discovery: **o que queremos que a pessoa sinta enquanto joga e imediatamente depois que termina uma sessão?**
-
+Escaffoldar o protótipo 1 (1 planeta, 1 vaca, timer de exploração, captura, habitat com alimentar/limpar/medicar, co-op via MultipeerConnectivity entre 2 Macs) e rodar o primeiro playtest para validar a hipótese central descrita no [GDD](GDD.md).
