@@ -1,0 +1,1146 @@
+<title>Protocolo Bovino</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&amp;display=swap">
+<style>
+:root{
+  --bg:#EFEDF4; --surface:#FFFFFF; --surface-2:#E7E4F0; --sunken:#E2DEEC;
+  --border:#D4D0E1; --border-strong:#B7B1CD;
+  --text:#181327; --text-2:#524D6B; --text-3:#7B7694;
+  --beam:#0C7E7A; --beam-ink:#065450; --beam-soft:#D5EEEB;
+  --alerta:#B84A18; --alerta-soft:#F8E3D8;
+  --ok:#3A7429; --ok-soft:#E1EFDA;
+  --stamp:#6244B8; --stamp-soft:#E7E0FA;
+  --shadow:0 1px 2px rgba(24,19,39,.06), 0 8px 24px -12px rgba(24,19,39,.18);
+  --maxw:min(74ch,100%);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F0D19; --surface:#171330; --surface-2:#1E1938; --sunken:#131029;
+    --border:#2B2648; --border-strong:#3E3763;
+    --text:#EDEAF7; --text-2:#A7A1C1; --text-3:#7A7499;
+    --beam:#5AD9CC; --beam-ink:#8FE9DF; --beam-soft:#0F332F;
+    --alerta:#F2864D; --alerta-soft:#331A0E;
+    --ok:#83CD68; --ok-soft:#17300F;
+    --stamp:#AC90FF; --stamp-soft:#221A45;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F0D19; --surface:#171330; --surface-2:#1E1938; --sunken:#131029;
+  --border:#2B2648; --border-strong:#3E3763;
+  --text:#EDEAF7; --text-2:#A7A1C1; --text-3:#7A7499;
+  --beam:#5AD9CC; --beam-ink:#8FE9DF; --beam-soft:#0F332F;
+  --alerta:#F2864D; --alerta-soft:#331A0E;
+  --ok:#83CD68; --ok-soft:#17300F;
+  --stamp:#AC90FF; --stamp-soft:#221A45;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -16px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"Newsreader",Georgia,"Times New Roman",serif;
+  font-size:17.5px; line-height:1.62; font-optical-sizing:auto;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4,.disp{font-family:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;text-wrap:balance;font-optical-sizing:auto}
+.mono,code,kbd,th,.eyebrow,.chip,.tag,.num{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:246px minmax(0,1fr);gap:0;align-items:start}
+.rail{
+  position:sticky;top:0;height:100vh;overflow-y:auto;padding:28px 20px 40px;
+  border-right:1px solid var(--border);background:var(--sunken);
+}
+.rail-brand{display:flex;flex-direction:column;gap:2px;margin-bottom:22px}
+.rail-brand b{font-family:"Bricolage Grotesque",sans-serif;font-size:15px;font-weight:800;letter-spacing:-.01em}
+.rail-brand span{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3)}
+.rail nav{display:flex;flex-direction:column;gap:1px}
+.rail a{
+  display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:baseline;
+  padding:5px 8px;border-radius:6px;text-decoration:none;color:var(--text-2);
+  font-family:"Bricolage Grotesque",sans-serif;font-size:13.5px;line-height:1.35;
+}
+.rail a .n{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.rail a:hover{background:var(--surface);color:var(--text)}
+.rail a:focus-visible{outline:2px solid var(--beam);outline-offset:1px}
+.rail hr{border:0;border-top:1px solid var(--border);margin:14px 0 12px}
+
+.page{padding:0 clamp(20px,4vw,64px) 120px;min-width:0}
+.wrap{max-width:var(--maxw);margin-inline:auto}
+
+/* ---------- hero ---------- */
+.hero{padding:clamp(48px,8vh,96px) 0 40px;border-bottom:1px solid var(--border);margin-bottom:44px}
+.hero .kicker{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--beam);display:flex;gap:10px;align-items:center;flex-wrap:wrap
+}
+.hero .kicker i{width:22px;height:1px;background:var(--beam);display:inline-block;font-style:normal}
+h1{font-size:clamp(40px,7vw,68px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:16px 0 0}
+h1 em{font-style:normal;color:var(--beam)}
+.dek{font-size:clamp(18px,2.4vw,21px);color:var(--text-2);max-width:56ch;margin:18px 0 0;line-height:1.5}
+.meta{display:flex;gap:26px;flex-wrap:wrap;margin-top:30px;padding-top:22px;border-top:1px solid var(--border)}
+.meta div{display:flex;flex-direction:column;gap:3px}
+.meta dt{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3)}
+.meta dd{margin:0;font-family:"Bricolage Grotesque",sans-serif;font-size:15px;font-weight:600}
+
+/* ---------- sections ---------- */
+section{scroll-margin-top:24px;padding-block:8px 4px}
+.sec-head{display:flex;flex-direction:column;gap:10px;margin:56px 0 20px}
+.sec-head:first-child{margin-top:0}
+.eyebrow{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h2{font-size:clamp(27px,4vw,36px);line-height:1.06;letter-spacing:-.025em;font-weight:800;margin:0}
+h3{font-size:20px;line-height:1.2;letter-spacing:-.015em;font-weight:700;margin:38px 0 10px}
+h4{font-size:15.5px;line-height:1.3;font-weight:700;margin:26px 0 6px;color:var(--text)}
+p{margin:0 0 14px}
+.lede{font-size:19px;color:var(--text-2);line-height:1.55}
+ul,ol{margin:0 0 16px;padding-left:1.15em}
+li{margin-bottom:7px}
+li::marker{color:var(--beam)}
+strong{font-weight:600;color:var(--text)}
+em.term{font-style:italic;color:var(--text)}
+a.ref{color:var(--beam-ink);text-decoration-color:color-mix(in srgb,var(--beam) 45%,transparent)}
+code{background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:.06em .34em;font-size:.82em}
+hr.rule{border:0;border-top:1px solid var(--border);margin:44px 0}
+
+/* ---------- chips ---------- */
+.chip{
+  display:inline-flex;align-items:center;gap:5px;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  font-weight:500;padding:3px 7px;border-radius:3px;border:1px solid transparent;white-space:nowrap
+}
+.chip--lock{background:var(--stamp-soft);color:var(--stamp);border-color:color-mix(in srgb,var(--stamp) 30%,transparent)}
+.chip--new{background:var(--beam-soft);color:var(--beam-ink);border-color:color-mix(in srgb,var(--beam) 35%,transparent)}
+.chip--later{background:var(--surface-2);color:var(--text-3);border-color:var(--border)}
+.chip--risk{background:var(--alerta-soft);color:var(--alerta);border-color:color-mix(in srgb,var(--alerta) 35%,transparent)}
+.chip--mvp{background:var(--ok-soft);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
+
+/* ---------- boxes ---------- */
+.dossie{
+  background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--stamp);
+  border-radius:0 8px 8px 0;padding:16px 18px;margin:22px 0;box-shadow:var(--shadow)
+}
+.dossie .lbl{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--stamp);display:block;margin-bottom:7px}
+.dossie p{font-style:italic;color:var(--text-2);margin:0}
+.dossie p+p{margin-top:9px}
+
+.note{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin:22px 0}
+.note .lbl{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-3);display:block;margin-bottom:7px}
+.note p:last-child,.note ul:last-child{margin-bottom:0}
+.note--warn{border-left:3px solid var(--alerta);border-radius:0 8px 8px 0}
+.note--warn .lbl{color:var(--alerta)}
+.note--beam{border-left:3px solid var(--beam);border-radius:0 8px 8px 0}
+.note--beam .lbl{color:var(--beam-ink)}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:22px 0;border:1px solid var(--border);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;font-family:"Bricolage Grotesque",sans-serif}
+th{
+  font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  text-align:left;color:var(--text-3);font-weight:500;padding:10px 13px;border-bottom:1px solid var(--border);
+  white-space:nowrap;background:var(--surface-2)
+}
+td{padding:9px 13px;border-bottom:1px solid var(--border);vertical-align:top;font-variant-numeric:tabular-nums;color:var(--text-2)}
+td:first-child{color:var(--text);font-weight:600;white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td .sub{display:block;font-size:12px;color:var(--text-3);font-weight:400}
+
+/* ---------- ladder ---------- */
+.ladder{display:flex;flex-direction:column;gap:1px;margin:24px 0;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.rung{display:grid;grid-template-columns:52px 1fr;gap:14px;padding:13px 15px;background:var(--surface);align-items:start;position:relative}
+.rung::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rc,var(--border-strong))}
+.rung .lvl{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;color:var(--text-3);padding-top:3px}
+.rung h5{font-family:"Bricolage Grotesque",sans-serif;font-size:15px;font-weight:700;margin:0 0 4px;color:var(--text)}
+.rung p{font-size:14.5px;margin:0;color:var(--text-2);line-height:1.5}
+
+/* ---------- cards ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:22px 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.card h5{font-family:"Bricolage Grotesque",sans-serif;font-size:15px;font-weight:700;margin:0 0 5px;letter-spacing:-.01em}
+.card p{font-size:14.5px;line-height:1.5;color:var(--text-2);margin:0}
+.card .tag{display:block;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
+
+/* ---------- chains ---------- */
+.chain{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin:12px 0}
+.chain b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:14.5px;margin-bottom:6px}
+.chain .flow{font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.75;color:var(--text-2)}
+.chain .flow span{color:var(--beam-ink)}
+
+/* ---------- svg ---------- */
+figure{margin:26px 0}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.06em;color:var(--text-3);margin-top:10px;text-align:center}
+
+/* ---------- code ---------- */
+pre{
+  background:var(--sunken);border:1px solid var(--border);border-radius:8px;padding:15px 17px;
+  overflow-x:auto;font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.65;color:var(--text-2);margin:20px 0
+}
+pre code{background:none;border:0;padding:0;font-size:inherit}
+
+/* ---------- footer ---------- */
+footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--border);color:var(--text-3);font-size:13.5px}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border);padding:18px 20px}
+  .rail nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px}
+  .page{padding-inline:20px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="shell">
+<aside class="rail">
+  <div class="rail-brand"><b>Protocolo Bovino</b><span>Documento de design · v0.1</span></div>
+  <nav>
+    <a href="#sumario"><span class="n">—</span><span>Sumário de decisões</span></a>
+    <a href="#discordo"><span class="n">—</span><span>Onde eu discordo</span></a>
+    <a href="#conectores"><span class="n">00</span><span>Conectores universais</span></a>
+    <hr>
+    <a href="#b2"><span class="n">02</span><span>Expedição</span></a>
+    <a href="#b3"><span class="n">03</span><span>Habitats</span></a>
+    <a href="#b4"><span class="n">04</span><span>Produção</span></a>
+    <a href="#b5"><span class="n">05</span><span>Economia</span></a>
+    <a href="#b6"><span class="n">06</span><span>Cota</span></a>
+    <a href="#b7"><span class="n">07</span><span>Melhorias da nave</span></a>
+    <a href="#b8"><span class="n">08</span><span>Progressão das vacas</span></a>
+    <a href="#b9"><span class="n">09</span><span>Genética</span></a>
+    <a href="#b10"><span class="n">10</span><span>Multiplayer</span></a>
+    <a href="#b11"><span class="n">11</span><span>Situações emergentes</span></a>
+    <a href="#b12"><span class="n">12</span><span>MVP</span></a>
+    <a href="#b13"><span class="n">13</span><span>Tecnologia</span></a>
+    <hr>
+    <a href="#apendice"><span class="n">—</span><span>Apêndice &amp; riscos</span></a>
+  </nav>
+</aside>
+
+<main class="page">
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker"><i></i>Relatório de Prospecção · Setor Terra-3<i></i></div>
+  <h1>A espécie dominante <em>precisa de cuidados</em></h1>
+  <p class="dek">Design completo dos blocos 2 a 13: expedição, habitats, produção, economia, cota, melhorias, genética, multiplayer e arquitetura técnica para macOS em Swift.</p>
+  <dl class="meta">
+    <div><dt>Gênero</dt><dd>Co-op caótico, 2–4 jogadores</dd></div>
+    <div><dt>Estrutura</dt><dd>Roguelite por cota</dd></div>
+    <div><dt>Plataforma</dt><dd>macOS · Swift</dd></div>
+    <div><dt>Estado</dt><dd>Bloco 1 fechado · 2–13 propostos</dd></div>
+  </dl>
+</header>
+
+<section id="sumario">
+  <div class="sec-head">
+    <div class="eyebrow">Leia isto primeiro</div>
+    <h2>As sete decisões que sustentam tudo</h2>
+  </div>
+  <p class="lede">Cada bloco abaixo deriva destas sete escolhas. Se uma delas for rejeitada, os blocos correspondentes precisam ser redesenhados — não são preferências estéticas, são as vigas.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Decisão</th><th>Resolve</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>O <strong>Alerta não é um cronômetro, é uma escada</strong>. Ele sobe, desce e pode ser recuperado — mas cada vez que estoura, a fazenda sobe um <em class="term">Nível de Vigília</em> que nunca mais desce naquela noite.<span class="sub">Bloco 2</span></td><td>Curva segurança → ganância → tensão → caos sem relógio na tela.</td></tr>
+      <tr><td>2</td><td>As <strong>necessidades das vacas correm durante a expedição</strong>. A vaca que você abduziu no minuto 3 está com fome no minuto 18.<span class="sub">Blocos 2 + 3</span></td><td>A ganância no campo custa caro lá em cima. Liga captura e cuidado sem regra artificial.</td></tr>
+      <tr><td>3</td><td><strong>Energia é o orçamento compartilhado da nave.</strong> Um único barramento visível. Toda máquina consome. Estourar derruba o disjuntor.<span class="sub">Blocos 4 + 7</span></td><td>Transforma upgrades em escolhas, não em números. Gera caos sistêmico de graça.</td></tr>
+      <tr><td>4</td><td><strong>Tudo que importa é um objeto físico carregável.</strong> Vaca, feno, balde de leite, amigo caído, gerador, queijo. Um único verbo.<span class="sub">Todos</span></td><td>Reaproveita o verbo central decidido no Bloco 1 em cada sistema novo.</td></tr>
+      <tr><td>5</td><td><strong>O adorno que dá valor é o que dá trabalho.</strong> O sino vale dinheiro no campo e destrói o sono do rebanho na nave.<span class="sub">Blocos 3 + 5</span></td><td>Faz "vender ou cuidar" ser uma decisão real toda noite.</td></tr>
+      <tr><td>6</td><td><strong>Vaca viva rende mais que vaca entregue — mas só depois do investimento.</strong> Ciclo 1 você vende. Ciclo 4 vender é burrice.<span class="sub">Blocos 4 + 5 + 8</span></td><td>Dá arco à run inteira e cumpre "o coração" do documento original.</td></tr>
+      <tr><td>7</td><td><strong>Voltar é um ato físico e público.</strong> Alguém puxa a Alavanca de Subida, com 10 segundos de buzina.<span class="sub">Bloco 2</span></td><td>A decisão de retorno vira o melhor momento de grupo do jogo.</td></tr>
+    </tbody>
+  </table></div>
+
+  <figure>
+    <svg viewBox="0 0 780 300" role="img" aria-label="Diagrama do loop central: captura, cuidado, produção, entrega e melhorias, atravessados pelas restrições de alerta e energia.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g style="color:var(--border-strong)">
+        <rect x="10" y="12" width="760" height="34" rx="6" fill="var(--alerta-soft)" stroke="var(--alerta)" stroke-opacity=".45"/>
+        <text x="26" y="34" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.6" fill="var(--alerta)">RESTRIÇÃO DE SUPERFÍCIE — ALERTA / VIGÍLIA</text>
+        <rect x="10" y="254" width="760" height="34" rx="6" fill="var(--beam-soft)" stroke="var(--beam)" stroke-opacity=".45"/>
+        <text x="26" y="276" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="1.6" fill="var(--beam-ink)">RESTRIÇÃO DE BORDO — ENERGIA / ESPAÇO</text>
+      </g>
+      <g font-family="Bricolage Grotesque, sans-serif">
+        <g>
+          <rect x="12" y="98" width="132" height="86" rx="9" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="78" y="130" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Captura</text>
+          <text x="78" y="150" text-anchor="middle" font-size="11.5" fill="var(--text-3)">carregar · alerta</text>
+          <text x="78" y="166" text-anchor="middle" font-size="11.5" fill="var(--text-3)">porte · adorno</text>
+        </g>
+        <g>
+          <rect x="172" y="98" width="132" height="86" rx="9" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="238" y="130" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Cuidado</text>
+          <text x="238" y="150" text-anchor="middle" font-size="11.5" fill="var(--text-3)">saciedade</text>
+          <text x="238" y="166" text-anchor="middle" font-size="11.5" fill="var(--text-3)">estresse · sujeira</text>
+        </g>
+        <g>
+          <rect x="332" y="98" width="132" height="86" rx="9" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="398" y="130" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Produção</text>
+          <text x="398" y="150" text-anchor="middle" font-size="11.5" fill="var(--text-3)">leite · qualidade</text>
+          <text x="398" y="166" text-anchor="middle" font-size="11.5" fill="var(--text-3)">queijo · manteiga</text>
+        </g>
+        <g>
+          <rect x="492" y="98" width="132" height="86" rx="9" fill="var(--surface)" stroke="var(--border-strong)"/>
+          <text x="558" y="130" text-anchor="middle" font-size="15" font-weight="700" fill="var(--text)">Cota</text>
+          <text x="558" y="150" text-anchor="middle" font-size="11.5" fill="var(--text-3)">entrega · contratos</text>
+          <text x="558" y="166" text-anchor="middle" font-size="11.5" fill="var(--text-3)">prestígio</text>
+        </g>
+        <g>
+          <rect x="652" y="98" width="116" height="86" rx="9" fill="var(--surface)" stroke="var(--beam)"/>
+          <text x="710" y="130" text-anchor="middle" font-size="15" font-weight="700" fill="var(--beam-ink)">Melhorias</text>
+          <text x="710" y="150" text-anchor="middle" font-size="11.5" fill="var(--text-3)">verbos novos</text>
+          <text x="710" y="166" text-anchor="middle" font-size="11.5" fill="var(--text-3)">não só números</text>
+        </g>
+      </g>
+      <g stroke="var(--border-strong)" stroke-width="1.4" fill="none" style="color:var(--border-strong)" marker-end="url(#ar)">
+        <path d="M148 141 L166 141"/><path d="M308 141 L326 141"/><path d="M468 141 L486 141"/><path d="M628 141 L646 141"/>
+        <path d="M710 190 L710 214 L78 214 L78 190"/>
+      </g>
+      <text x="394" y="232" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" letter-spacing="1.4" fill="var(--text-3)">CICLO SEGUINTE — COTA MAIOR, MESMO REBANHO</text>
+    </svg>
+    <figcaption>O loop de cinco etapas, comprimido entre duas restrições que nunca somem.</figcaption>
+  </figure>
+</section>
+
+<section id="discordo">
+  <div class="sec-head">
+    <div class="eyebrow">Obrigação do documento <span class="chip chip--risk">Atrito</span></div>
+    <h2>Três pontos onde eu discordo</h2>
+  </div>
+  <p>O prompt pede que decisões travadas só sejam contestadas com justificativa. São três, e nenhuma delas eu implemento por conta própria.</p>
+
+  <div class="note note--warn">
+    <span class="lbl">01 — Falhar a cota = reinício do zero</span>
+    <p><strong>Mantenho a regra.</strong> Ela é o que dá peso a tudo. Mas ela só é justa se a run inteira for <em class="term">previsível</em> e <em class="term">líquida</em>: (a) a projeção do Conselho mostra desde o primeiro minuto do ciclo se você vai bater a cota no ritmo atual; (b) qualquer coisa que você comprou pode ser vendida de volta a 60% a qualquer momento, inclusive no último segundo. Assim a falha é sempre uma escolha rastreável ("a gente investiu no fermentador em vez de pagar"), nunca um dado ruim. Se ainda assim testar frustrante, a válvula é um modificador de dificuldade opcional — <em class="term">Prorrogação Constrangedora</em>: o Conselho perdoa uma vez, dobra a cota seguinte e manda um Fiscal andar pela nave estressando as vacas. Não é o padrão.</p>
+  </div>
+
+  <div class="note note--warn">
+    <span class="lbl">02 — Alimentação e água como sistemas separados</span>
+    <p><strong>Proponho colapsar em uma barra só.</strong> Duas barras por vaca × 8 vacas = 16 números para ler no meio do caos, e o jogador nunca vai distinguir "vaca com sede" de "vaca com fome" no comportamento. Fica assim: uma barra de <em class="term">Saciedade</em> por vaca, alimentada por <strong>dois insumos com logísticas diferentes</strong> — feno (carregado do campo, ocupa espaço, acaba) e água (produzida pelo condensador, custa energia, não ocupa espaço). Um número na tela, duas cadeias de suprimento, zero perda de decisão.</p>
+  </div>
+
+  <div class="note note--warn">
+    <span class="lbl">03 — O protótipo atual contradiz o verbo central</span>
+    <p>O <code>AlienRoundupGame.swift</code> que já existe tem a <strong>nave voando e abduzindo vacas com um raio a 6,5 m de distância</strong>. O Bloco 1 decidiu o oposto: o jogador é um alienígena a pé que <strong>ergue a vaca com as próprias mãos</strong>, e raio/equipamento é progressão, não ponto de partida. O protótipo precisa pivotar para: alienígena com controle de personagem, vaca como corpo pesado, nave parada no ponto de ancoragem. Isso muda câmera, input e física — é a primeira coisa a refazer, antes de qualquer sistema novo.</p>
+  </div>
+</section>
+
+<section id="conectores">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 00 <span class="chip chip--new">Regra de projeto</span></div>
+    <h2>Os oito conectores universais</h2>
+  </div>
+  <p class="lede">Antes dos sistemas, a regra que os obriga a conversar. Emergência não nasce de quantidade de mecânicas — nasce de mecânicas que compartilham as mesmas moedas de causa e efeito.</p>
+  <p>Existem oito grandezas que atravessam o jogo inteiro. <strong>Toda mecânica nova precisa consumir pelo menos duas delas e produzir pelo menos uma.</strong> Se uma ideia não se encaixa, ela é decorativa e deve ser cortada.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Conector</th><th>Quem produz</th><th>Quem consome</th></tr></thead>
+    <tbody>
+      <tr><td>Barulho</td><td>Correr, sino, porteira, feixe, rádio, disjuntor, vaca em pânico</td><td>Alerta, estresse do rebanho, sono das vizinhas</td></tr>
+      <tr><td>Luz</td><td>Lanterna, feixe, holofote da fazenda, faróis, reator</td><td>Alerta, visibilidade, estresse noturno</td></tr>
+      <tr><td>Peso</td><td>Vaca, feno, latão, gerador, jogador caído</td><td>Velocidade, mãos ocupadas, capacidade do feixe</td></tr>
+      <tr><td>Energia</td><td>Núcleo, gerador de emergência</td><td>Toda máquina, luzes, condensador, clonagem, véu</td></tr>
+      <tr><td>Espaço</td><td>Baias, convés, porão</td><td>Vacas, feno, latões, máquinas, queijo maturando</td></tr>
+      <tr><td>Sujeira</td><td>Vaca no habitat, leite derramado, biomassa</td><td>Doença, contaminação do leite, moscas, estresse</td></tr>
+      <tr><td>Estresse</td><td>Fome, sujeira, barulho, luz, vizinha errada, transporte</td><td>Produção, comportamento, contágio, quebra de equipamento</td></tr>
+      <tr><td>Líquido</td><td>Ordenha, condensador, tanque</td><td>Derramamento, contaminação, sujeira, valor</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="dossie">
+    <span class="lbl">Registro do Conselho · Anexo I</span>
+    <p>"O bípede servo, quando privado de iluminação, emite sons de angústia e localiza seus superiores bovinos por tato. Concluímos que a casta serva é cega e depende do gado para orientação espacial. Recomenda-se compaixão."</p>
+  </div>
+</section>
+
+<hr class="rule">
+<section id="b2">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 02 <span class="chip chip--new">Projetado</span> <span class="chip chip--mvp">Núcleo do MVP</span></div>
+    <h2>Expedição</h2>
+  </div>
+  <p class="lede">Uma expedição não tem relógio na tela. Ela tem uma fazenda que vai acordando, e uma nave lá em cima com bocas para alimentar. As duas coisas pioram enquanto você fica — e nenhuma delas pune por olhar o menu.</p>
+
+  <h3>Como começa: a Mesa de Alvos</h3>
+  <p>Não existe lobby com botão de "iniciar". Na ponte da nave existe uma mesa física com <strong>três dossiês</strong> gerados no início de cada ciclo. Cada dossiê é um objeto que qualquer jogador pode pegar, ler e largar em cima do projetor.</p>
+  <ul>
+    <li><strong>Rebanho</strong> — quantidade e distribuição de portes, lida como silhuetas na foto orbital.</li>
+    <li><strong>Densidade de insígnias</strong> — quantas vacas com adorno. É a leitura de "riqueza" da fazenda.</li>
+    <li><strong>Terreno</strong> — dois ou três traços: <em class="term">lamaçal</em>, <em class="term">colinas</em>, <em class="term">labirinto de cercas</em>, <em class="term">celeiro central</em>, <em class="term">estrada cortando o campo</em>.</li>
+    <li><strong>Risco residente</strong> — cães, casa perto do pasto, gerador barulhento (o único bom: mascara seu barulho).</li>
+    <li><strong>Pedido do Conselho ativo</strong>, quando houver, marcado com selo.</li>
+  </ul>
+  <p>Para lançar, <strong>metade da tripulação precisa colocar a mão no pedestal ao mesmo tempo</strong>. Isso resolve o problema de host clicando sozinho e transforma a escolha do destino numa conversa, não num menu. Contagem de 5 segundos com direito a arrependimento.</p>
+
+  <h3>Descida: o loading é jogável</h3>
+  <p>A descida dura <strong>75 segundos</strong> e é o único momento calmo do jogo. A nave está atravessando a atmosfera, tudo treme, e a tripulação circula: pegar lanterna, pegar escâner, abrir o porão, checar se sobrou feno, olhar as vacas do ciclo anterior. Ninguém pode ficar parado esperando uma barra encher, e o carregamento real do nível acontece por baixo disso.</p>
+  <p>A nave para em um <strong>ponto de ancoragem fixo</strong>, pairando a ~12 m. Ela não se move durante a expedição (mover é upgrade de fim de árvore). Dela desce a rampa e o <em class="term">feixe de extração</em>.</p>
+
+  <h3>O feixe: extrair também é risco</h3>
+  <p>Vaca no chão embaixo do feixe sobe sozinha em <strong>6 segundos</strong>, com uma coluna de luz visível de qualquer ponto do mapa e um zumbido grave. Cada extração adiciona <strong>+12 de alerta</strong>. Só uma vaca por vez; a fila é física, o que significa vacas amarradas/largadas se acumulando na base do feixe, se soltando, se atropelando.</p>
+  <p>Consequência de design: <strong>a décima captura é literalmente a que acende o campo</strong>, exatamente como pedido no Bloco 1 — e não por regra especial, mas porque o alerta acumulado das nove anteriores já estava alto.</p>
+
+  <h3>O sistema de risco: alerta é uma escada, não um relógio</h3>
+  <p>Existe <strong>um medidor global de Alerta (0–100)</strong>, como decidido. A adição é o que acontece quando ele estoura.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Fonte</th><th>Alerta</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>Correr perto de vaca acordada</td><td>+1 /s</td><td>Agachar zera. Andar é seguro.</td></tr>
+      <tr><td>Sino em movimento</td><td>+2 /s</td><td>O adorno mais valioso é o mais barulhento.</td></tr>
+      <tr><td>Lanterna apontada para vaca</td><td>+3 /s</td><td>Quem carrega não tem lanterna — dependência do Bloco 1.</td></tr>
+      <tr><td>Derrubar uma vaca</td><td>+8</td><td>Ela muge. Vizinhas acordam.</td></tr>
+      <tr><td>Porteira batendo</td><td>+5</td><td>Fechar devagar leva 3 s e é silencioso.</td></tr>
+      <tr><td>Feixe de extração</td><td>+12</td><td>Por vaca. É o maior custo fixo da noite.</td></tr>
+      <tr><td>Vaca em pânico (contágio)</td><td>+2 /s cada</td><td>Escala rápido. É o gatilho da avalanche.</td></tr>
+      <tr><td>Silêncio total ≥ 8 s</td><td>−2 /s</td><td>Deitar no chão e esperar é uma tática válida e engraçada.</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Quando o alerta chega a 100: a fazenda debanda (como decidido), o alerta <strong>volta a 40</strong>, e o <strong>Nível de Vigília sobe permanentemente</strong> naquela noite. Ele nunca desce. É isso que cria a curva sem cronômetro: você <em class="term">pode</em> se recuperar, mas o mundo em que você se recupera é pior.</p>
+
+  <div class="ladder">
+    <div class="rung" style="--rc:var(--ok)">
+      <div class="lvl">VIG 0</div>
+      <div><h5>Noite morna</h5><p>Vacas dormindo em pé. Casa apagada. É o estado em que você quer passar 80% da expedição — e é o estado em que se ganha menos.</p></div>
+    </div>
+    <div class="rung" style="--rc:color-mix(in srgb,var(--ok) 50%,var(--alerta))">
+      <div class="lvl">VIG 1</div>
+      <div><h5>Luz na cozinha</h5><p>Um holofote no celeiro varre o pasto em arco lento. Ser iluminado dobra o ganho de alerta. Os cães acordam e latem na direção de barulho — o latido em si soma alerta.</p></div>
+    </div>
+    <div class="rung" style="--rc:var(--alerta)">
+      <div class="lvl">VIG 2</div>
+      <div><h5>O Fazendeiro</h5><p>Sai de casa com lanterna e sal grosso. O tiro não mata: <strong>derruba</strong> o alienígena e faz ele soltar o que estava carregando. Ele é lento, previsível e pode ser despistado — mas persegue barulho, então quem carrega a vaca com sino é o isca involuntário.</p></div>
+    </div>
+    <div class="rung" style="--rc:color-mix(in srgb,var(--alerta) 65%,#8B1E1E)">
+      <div class="lvl">VIG 3</div>
+      <div><h5>A vizinhança</h5><p>Faróis na estrada, uma segunda lanterna do outro lado do pasto, um drone agrícola circulando. A nave passa a acumular <strong>Exposição</strong>: aos 100%, o Conselho registra contato e cobra multa no fim do ciclo. Extrair vaca acelera a exposição.</p></div>
+    </div>
+    <div class="rung" style="--rc:#8B1E1E">
+      <div class="lvl">VIG 4</div>
+      <div><h5>Protocolo de emergência</h5><p>A nave inicia subida forçada em <strong>90 segundos</strong>, anunciados por uma buzina que dá para ouvir de qualquer lugar do mapa. Quem não estiver a bordo é deixado. O que não estiver no porão fica na Terra. É o único cronômetro do jogo, e ele só existe depois de quatro erros coletivos.</p></div>
+    </div>
+  </div>
+
+  <h3>A segunda pressão: a nave não espera</h3>
+  <p>As barras de <strong>Saciedade</strong> e <strong>Estresse</strong> das vacas já capturadas <strong>continuam correndo durante a expedição</strong> — inclusive as vacas extraídas há dez minutos, que estão sozinhas num porão escuro e balançando.</p>
+  <p>Isso muda a estrutura de grupo sem inventar classes: alguém pode <strong>subir no feixe e ficar de babá</strong> enquanto os outros continuam no campo. Não é uma função atribuída, é uma decisão que emerge do fato de que as duas coisas estão piorando ao mesmo tempo. E gera a piada estrutural do jogo: o cara de cima gritando "PAREM DE TRAZER VACA" enquanto os de baixo trazem a décima.</p>
+
+  <h3>Duração e ritmo alvo</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Fase</th><th>Tempo alvo</th><th>Sensação</th></tr></thead>
+    <tbody>
+      <tr><td>Descida</td><td>75 s</td><td>Preparo, conversa, piada</td></tr>
+      <tr><td>Reconhecimento</td><td>2–3 min</td><td>Segurança. Escanear, mapear, escolher alvos</td></tr>
+      <tr><td>Colheita</td><td>5–7 min</td><td>Ganância. Vigília 0–1</td></tr>
+      <tr><td>Complicação</td><td>3–5 min</td><td>Tensão. Vigília 1–2, primeira debandada</td></tr>
+      <tr><td>Colapso ou saída</td><td>1–3 min</td><td>Caos. Vigília 2+</td></tr>
+      <tr><td colspan="3" style="color:var(--text)"><strong>Total: 12–18 minutos.</strong> Curto o bastante para "mais uma", longo o bastante para arco.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Existe um limite externo: <strong>o amanhecer, aos 22 minutos</strong>. Ele não termina a expedição — ele começa a subir a Exposição da nave de forma contínua e visível (o céu clareia, é diegético e legível sem HUD). Serve como teto para grupos que tentam jogar de forma perfeitamente silenciosa e infinita, e nada mais.</p>
+
+  <h3>Morte, queda e clonagem</h3>
+  <p>Ninguém fica sentado assistindo. Isso é inegociável em party game.</p>
+  <ol>
+    <li><strong>Derrubado</strong> — tiro de sal, atropelamento de vaca, queda de altura. O jogador cai, engatinha devagar e solta tudo. Um colega <strong>carrega ele exatamente como carrega uma vaca</strong> — mesmo verbo, mesma penalidade de velocidade, mesma dependência de lanterna. Chegando no feixe, sobe e se recupera.</li>
+    <li><strong>Perdido</strong> — se ficar 60 s derrubado, ou levar um segundo tiro, o fazendeiro arrasta o corpo para o celeiro. O jogador some do campo.</li>
+    <li><strong>Clonagem</strong> — reaparece na cabine da nave em 20 s. Custo: <strong>120 créditos</strong> e um defeito cosmético permanente naquele ciclo (o Conselho não revisa lotes). Ele pode descer de volta pelo feixe imediatamente. O que ele estava carregando continua caído no pasto.</li>
+  </ol>
+  <p><strong>Se todos caírem:</strong> o protocolo de emergência dispara sozinho. A nave sobe com o que já estava no porão, todo equipamento no chão é perdido, e a clonagem de todo mundo é cobrada de uma vez. É um desastre caro — mas não encerra a run. <strong>A run só acaba na cota.</strong></p>
+
+  <h3>Retorno: a Alavanca de Subida</h3>
+  <p>Para encerrar, alguém sobe à ponte e puxa uma alavanca grande e ridícula. Qualquer um pode. Dispara <strong>10 segundos de buzina</strong> audível no mapa inteiro e uma contagem visível. Qualquer jogador pode <strong>abortar</strong> empurrando a alavanca de volta.</p>
+  <div class="note note--beam">
+    <span class="lbl">Por que isso importa mais do que parece</span>
+    <p>Um menu de votação resolve o mesmo problema e não gera nenhuma história. Uma alavanca física gera exatamente a cena que o documento original descreve como objetivo: alguém puxa, alguém grita "ESPERA, TÔ COM A GIGANTE", alguém corre para abortar, e a gigante é derrubada no meio do caminho porque o cara da lanterna correu junto. O sistema não precisa de mais nada.</p>
+  </div>
+
+  <h3>Conexão com a cota</h3>
+  <p>Uma expedição não paga nada sozinha. Ela entrega <strong>gado, feno e sucata</strong> ao porão. A conversão em créditos acontece no fim do ciclo, na entrega. Isso é deliberado: o grupo passa três noites acumulando ativos e só descobre a conta no final. A projeção do Conselho (Bloco 6) evita que isso seja injusto — mas mantém a última noite como a mais tensa das três.</p>
+</section>
+
+<hr class="rule">
+<section id="b3">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 03 <span class="chip chip--new">Projetado</span> <span class="chip chip--mvp">Parcial no MVP</span></div>
+    <h2>Habitats</h2>
+  </div>
+  <p class="lede">Três medidores no jogo inteiro. Dois na vaca, um na baia. Tudo o mais é comportamento observável — a complexidade vem do cruzamento, nunca da quantidade de barras.</p>
+
+  <h3>Tabela de portes</h3>
+  <p>O Bloco 1 decidiu porte como atributo visual e definidor de dificuldade. Estes são os números que faltavam. Um jogador sozinho consegue erguer qualquer vaca, sempre — como decidido — mas o preço sobe rápido.</p>
+
+  <div class="tw"><table>
+    <thead><tr><th>Porte</th><th>Baia</th><th>Solo</th><th>Dupla</th><th>Valor base</th><th>Leite/ciclo</th></tr></thead>
+    <tbody>
+      <tr><td>Bezerro<span class="sub">escala 0,55×</span></td><td>1</td><td>85% vel.</td><td>—</td><td>45</td><td>2 L</td></tr>
+      <tr><td>Novilha<span class="sub">escala 0,8×</span></td><td>2</td><td>65% vel.</td><td>90%</td><td>95</td><td>6 L</td></tr>
+      <tr><td>Adulta<span class="sub">escala 1,0×</span></td><td>3</td><td>45% vel.</td><td>78%</td><td>170</td><td>10 L</td></tr>
+      <tr><td>Matrona<span class="sub">escala 1,35×</span></td><td>4</td><td>26% vel. · cambaleia</td><td>62%</td><td>320</td><td>16 L</td></tr>
+      <tr><td>Colossal<span class="sub">escala 1,9×</span></td><td>6</td><td>14% vel. · sem correr, sem girar rápido, dropa em rampa</td><td>44% <span class="sub">(trio: 70%)</span></td><td>640</td><td>24 L</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Regra de leitura visual:</strong> nenhum desses números aparece na tela. Porte se lê pela silhueta contra o céu, pelo som do passo do carregador e pelo ângulo da câmera do jogador que está carregando — quanto maior a vaca, mais ela ocupa a tela dele.</p>
+
+  <h3>Espaço: o convés inferior</h3>
+  <p>O habitat é uma grade de <strong>unidades de baia</strong> no convés inferior. A nave inicial tem <strong>6 unidades</strong> divididas em 2 baias de 3. Isso significa, no ciclo 1: duas adultas, ou uma matrona e um bezerro, ou seis bezerros espremidos.</p>
+  <ul>
+    <li><strong>Superlotação é permitida.</strong> Excedeu a capacidade da baia? Cabe. Cada unidade excedente dá <strong>+15 de estresse por minuto</strong> em todas as vacas daquela baia. "Cabe mais uma se apertar" precisa ser sempre uma opção — e sempre uma opção ruim de forma interessante.</li>
+    <li>Feno, latões de leite e máquinas ocupam o <strong>mesmo espaço</strong>. Cada fardo é 1 unidade, cada latão é 1, o fermentador é 4. A escolha "mais uma vaca ou mais uma máquina" é literalmente uma escolha de piso.</li>
+    <li>O <strong>porão de trânsito</strong> (onde as vacas caem ao serem extraídas) tem 4 unidades e não conta como baia: lá o estresse sobe o dobro e a produção é zero. Levar da porta até a baia é trabalho manual, no meio da expedição, com a nave tremendo.</li>
+  </ul>
+
+  <h3>Os três medidores</h3>
+
+  <h4>Saciedade — por vaca, 0–100</h4>
+  <p>Cai <strong>1,5 por minuto × (unidades de baia ÷ 3)</strong>. Uma colossal come quatro vezes mais rápido que um bezerro. Enche ao encher o cocho da baia, que exige <strong>feno</strong> (objeto físico, carregado, finito) e <strong>água</strong> (produzida pelo condensador, custa 2 de energia contínuos).</p>
+  <p>Feno vem de três lugares: comprado a 25 créditos o fardo, roubado da fazenda durante a expedição (fardos ficam no celeiro — e carregar fardo ocupa as mãos igual a carregar vaca), ou reprocessado. A tentação de gastar o espaço do porão com vaca em vez de feno é o principal erro de novato do jogo, e é um erro autoexplicativo.</p>
+
+  <h4>Estresse — por vaca, 0–100</h4>
+  <div class="tw"><table>
+    <thead><tr><th>Sobe com</th><th>Desce com</th></tr></thead>
+    <tbody>
+      <tr><td>Ser carregada (+8/min), ser derrubada (+20)</td><td>Baia com espaço sobrando (−2/min)</td></tr>
+      <tr><td>Saciedade abaixo de 30 (+4/min)</td><td>Escuridão e silêncio (−3/min)</td></tr>
+      <tr><td>Sujeira da baia acima de 50 (+3/min)</td><td>Coceira mecânica / escova (−6/min, 1 de energia)</td></tr>
+      <tr><td>Vizinha estressada acima de 70 (+3/min, contágio)</td><td>Presença de vaca compatível (−4/min)</td></tr>
+      <tr><td>Sino de vizinha em movimento (+2/min)</td><td>Rádio bovino tocando ruído de trator (−5/min)</td></tr>
+      <tr><td>Vibração de motor quebrado (+5/min, nave inteira)</td><td>Ordenha bem-feita (−10, uma vez)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Sujeira — por baia, 0–100</h4>
+  <p>Sobe <strong>0,8 por minuto por vaca</strong> na baia. Deliberadamente <em class="term">por baia</em>, não por vaca: menos números, mesma consequência, e transforma limpeza numa tarefa espacial ("limpa a baia 2, não a 1") em vez de uma lista de afazeres por animal. Limpar é físico: pá + mangueira, ~20 segundos, e o jogador que limpa fica com as mãos ocupadas.</p>
+  <p>Acima de 60: risco de doença. Acima de 80: <strong>todo leite ordenhado naquela baia nasce contaminado</strong>, independente da qualidade da vaca. É a punição mais rápida e mais engraçada do jogo, porque ninguém quer ser o alienígena da pá.</p>
+
+  <h3>Saúde é evento, não barra</h3>
+  <p>Não existe barra de saúde. Existem <strong>estados</strong>, que aparecem quando as condições persistem e são visíveis no corpo do animal:</p>
+  <div class="cards">
+    <div class="card"><span class="tag">Gatilho: saciedade &lt; 20 por 6 min</span><h5>Fraca</h5><p>Produção cai à metade. Anda devagar. Deita e não levanta sozinha — precisa ser erguida.</p></div>
+    <div class="card"><span class="tag">Gatilho: sujeira &gt; 60 + estresse &gt; 70</span><h5>Doente</h5><p>Manchas visíveis, tosse audível. Produção zero, leite contaminado, e contagia a baia. Cura: baia limpa + saciedade cheia por um ciclo, ou soro (150 cr).</p></div>
+    <div class="card"><span class="tag">Gatilho: estresse em 100 por 2 min</span><h5>Enlouquecida</h5><p>Se debate, derruba equipamento, quebra a baia, tenta escapar pelo corredor. É o gerador de caos número um da nave.</p></div>
+    <div class="card"><span class="tag">Gatilho: Doente por um ciclo inteiro</span><h5>Perdida</h5><p>A vaca morre. Vira biomassa, que o processador converte em ração. O Conselho não vê problema algum nisso e registra como "reciclagem cerimonial".</p></div>
+  </div>
+
+  <h3>Como o jogador percebe, sem HUD</h3>
+  <p>Nenhum medidor flutua sobre as vacas por padrão. A leitura é comportamental e sonora, o que mantém o jogo bonito e obriga as pessoas a <em class="term">olhar</em> para o rebanho:</p>
+  <ul>
+    <li><strong>Fome</strong> — a vaca fica parada de frente para o cocho vazio e muge em intervalos regulares. É irritante de propósito.</li>
+    <li><strong>Estresse</strong> — bate a pata, anda em círculo, orelhas para trás, e o passo fica audível pela nave.</li>
+    <li><strong>Sujeira</strong> — visual óbvio, moscas, e um zumbido que vaza para os corredores.</li>
+    <li><strong>Doença</strong> — manchas, tosse, e o leite sai com a cor errada no balde. O jogador descobre no momento em que já perdeu o leite.</li>
+  </ul>
+  <p>O <strong>escâner</strong> — o mesmo do campo — revela os números exatos de uma vaca por vez, ocupando as mãos. Ele é a ponte entre "sentir" e "administrar", e é a razão pela qual o upgrade de escâner é desejável sem ser obrigatório.</p>
+
+  <h3>Interação entre vacas: cinco regras, e só</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Regra</th><th>Efeito</th><th>Emerge</th></tr></thead>
+    <tbody>
+      <tr><td>Contágio</td><td>Vaca com estresse &gt; 70 dá +3/min nas vizinhas de baia</td><td>Mesma lógica do pânico no campo, reaproveitada. Uma vaca ruim envenena a baia.</td></tr>
+      <tr><td>Intimidação</td><td>Colossal/Matrona: +5/min nas menores da baia, −3/min nela mesma</td><td>Ela adora ter plateia. Separar por porte vira estratégia de layout.</td></tr>
+      <tr><td>Companhia</td><td>Bezerro adjacente a adulta: −4/min nos dois</td><td>O jogador descobre isso sozinho e nunca mais separa os dois. Motor de apego.</td></tr>
+      <tr><td>Sino</td><td>Vaca com sino: +2/min em todas as outras da nave quando ela se move</td><td>O adorno mais valioso é o mais insuportável. Tirar o sino perde valor e ganha paz.</td></tr>
+      <tr><td>Rota</td><td>Vaca solta no corredor bloqueia passagem e derruba quem carrega</td><td>Layout de baias vira problema de logística, não de planilha.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="dossie">
+    <span class="lbl">Registro do Conselho · Anexo IV</span>
+    <p>"A insígnia sonora (designação: SINO) é claramente um instrumento de comando. O dignitário que a porta emite ordens contínuas às demais unidades, que respondem com agitação e obediência. Sob nenhuma circunstância remova a insígnia de um oficial em serviço."</p>
+    <p>— Nota da tripulação, rasurada: <em>a gente tirou. Todo mundo dormiu melhor.</em></p>
+  </div>
+</section>
+
+<hr class="rule">
+<section id="b4">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 04 <span class="chip chip--new">Projetado</span></div>
+    <h2>Produção</h2>
+  </div>
+  <p class="lede">Leite é um objeto físico que você carrega, derruba e estraga. Toda etapa de processamento multiplica o valor e adiciona um ponto onde a operação inteira pode falhar de forma hilária.</p>
+
+  <h3>Ordenha</h3>
+  <p>Cada vaca acumula leite ao longo do ciclo, com uma condição dupla: <strong>saciedade acima de 50 e estresse abaixo de 60</strong>. Fora disso a produção é zero — não reduzida, zero. Vaca infeliz não dá leite, e isso precisa ser brutalmente óbvio.</p>
+  <pre><code>litros = base_do_porte
+       × (saciedade / 100)
+       × (1 − estresse / 150)
+       × modificador_de_traços
+       × (1 + 0,15 × ciclos_de_serviço)     // ver Bloco 08</code></pre>
+  <p>A ordenha manual leva 12 segundos por vaca, exige agachar ao lado dela, e enche um <strong>balde</strong> (5 L). Vaca estressada chuta o balde. O leite vai para o chão, e o chão fica sujo, e a sujeira estressa a baia. O loop se fecha sozinho.</p>
+
+  <h3>Qualidade — o número que faz cuidar valer a pena</h3>
+  <p>Cada balde carrega uma nota de <strong>Pureza</strong>, calculada no momento da ordenha a partir das condições daquele instante. Ela nunca melhora depois — só piora.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Grau</th><th>Pureza</th><th>Condição típica</th><th>Preço/L</th></tr></thead>
+    <tbody>
+      <tr><td>S — Tributo Sagrado</td><td>92+</td><td>Matriarca saudável, baia limpa, estresse &lt; 15</td><td>20</td></tr>
+      <tr><td>A — Digno</td><td>75–91</td><td>Operação bem cuidada</td><td>12</td></tr>
+      <tr><td>B — Aceitável</td><td>55–74</td><td>Normal, com atritos</td><td>7</td></tr>
+      <tr><td>C — Duvidoso</td><td>30–54</td><td>Baia suja ou vaca com fome</td><td>4</td></tr>
+      <tr><td>X — Vivo</td><td>&lt; 30</td><td>Contaminado. Se mexe. O Conselho paga 1 cr/L por curiosidade científica.</td><td>1</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Deterioração e desperdício</h3>
+  <ul>
+    <li>Balde fora do resfriador perde <strong>2 de Pureza por minuto</strong>. Perto de baia suja, o dobro.</li>
+    <li>Resfriador cheio: <strong>0 de perda</strong> e custa 2 de energia contínuos. Sem energia, ele para e a perda volta — em silêncio, que é o pior jeito de descobrir.</li>
+    <li>Balde derrubado: <strong>perde tudo</strong> e adiciona +15 de sujeira onde caiu.</li>
+    <li>Latão (20 L) só pode ser carregado por <strong>dois jogadores</strong>. Cheio, é o objeto mais frustrante e mais engraçado do jogo.</li>
+  </ul>
+
+  <h3>Cadeia de processamento</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Máquina</th><th>Espaço</th><th>Energia</th><th>Transforma</th><th>Multiplicador</th></tr></thead>
+    <tbody>
+      <tr><td>Resfriador</td><td>2</td><td>2 contínuos</td><td>Preserva Pureza</td><td>—</td></tr>
+      <tr><td>Centrífuga<span class="sub">"Gordura Cerimonial"</span></td><td>2</td><td>3 em uso</td><td>10 L → 1 bloco de manteiga</td><td>×1,8 · imediato</td></tr>
+      <tr><td>Fermentador<span class="sub">"Leite Fossilizado"</span></td><td>4</td><td>2 contínuos</td><td>10 L → 1 roda de queijo</td><td>×2,5 após 1 ciclo<br>+30% por ciclo extra, teto em 3</td></tr>
+      <tr><td>Condensador</td><td>2</td><td>2 contínuos</td><td>Produz água para os cochos</td><td>—</td></tr>
+      <tr><td>Reprocessador<span class="sub">"Reciclagem cerimonial"</span></td><td>3</td><td>4 em uso</td><td>Biomassa e leite X → fardos de feno</td><td>Humor negro puro</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Toda máquina tem porta de entrada e de saída físicas.</strong> Você carrega o balde até a centrífuga, espera, e carrega o bloco até o tubo de tributo. Automação (tubulação, Bloco 7) remove esse trabalho mais tarde — e ao remover, remove também as histórias, o que é exatamente por que ela deve ser cara e chegar tarde.</p>
+
+  <div class="note note--beam">
+    <span class="lbl">A conta que responde "vender ou cuidar"</span>
+    <p>Uma <strong>Adulta</strong> vale <strong>170 créditos</strong> vendida, uma única vez. A mesma adulta, grau B, dá <strong>10 L × 7 = 70 cr por ciclo</strong> — três ciclos e ela se paga. Se esse leite virar queijo maturado por três ciclos, são <strong>~385 cr de um único ciclo de produção</strong>. A conclusão do jogo inteiro cabe numa frase: <em>no ciclo 1 você vende porque não tem fermentador; no ciclo 5, vender uma matriarca é jogar dinheiro fora.</em> A progressão do jogador é perceber isso sozinho.</p>
+  </div>
+</section>
+
+<hr class="rule">
+<section id="b5">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 05 <span class="chip chip--new">Projetado</span></div>
+    <h2>Economia</h2>
+  </div>
+  <p class="lede">Duas moedas com funções distintas: uma paga a conta, a outra abre o catálogo. Isso mata o grind sem tirar a pressão.</p>
+
+  <h3>Moedas</h3>
+  <div class="cards">
+    <div class="card"><span class="tag">Moeda dura · fungível</span><h5>Créditos</h5><p>Paga a cota, compra insumos, repara, clona. Ganha-se vendendo. Some rápido. É o sangue da operação.</p></div>
+    <div class="card"><span class="tag">Moeda mole · não gastável</span><h5>Prestígio</h5><p>Não compra nada. <strong>Desbloqueia o catálogo</strong> de melhorias por camada. Ganha-se cumprindo pedidos do Conselho e entregando espécimes de alto porte com insígnia.</p></div>
+  </div>
+  <p>A separação resolve um problema clássico: se contratos dessem só dinheiro, ignorá-los seria matematicamente viável e o sistema morreria. Como Prestígio é a única chave para as camadas altas da árvore, <strong>ignorar os pedidos do Conselho não te mata — te congela numa tecnologia inferior</strong>. Que é exatamente o que o Bloco 1 pediu: opcional, mas mais lento.</p>
+
+  <h3>Entradas</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Fonte</th><th>Valor</th><th>Natureza</th></tr></thead>
+    <tbody>
+      <tr><td>Venda de gado</td><td>45 – 640 <span class="sub">× multiplicador de adorno e serviço</span></td><td>Único. Alto agora, zero depois.</td></tr>
+      <tr><td>Leite cru</td><td>1 – 20 /L</td><td>Recorrente. Baixo, seguro, sem investimento.</td></tr>
+      <tr><td>Manteiga</td><td>×1,8 sobre o leite</td><td>Recorrente. Precisa de energia livre.</td></tr>
+      <tr><td>Queijo maturado</td><td>×2,5 a ×5,5</td><td>Recorrente. Precisa de espaço, tempo e estabilidade.</td></tr>
+      <tr><td>Adornos avulsos</td><td>30 – 120</td><td>Vender o sino separado: dinheiro imediato, vaca vale menos, nave dorme.</td></tr>
+      <tr><td>Sucata da fazenda</td><td>15 – 200</td><td>Pneu, rádio, ferramenta, um trator inteiro se três pessoas se dedicarem a isso a noite toda.</td></tr>
+      <tr><td>Pedido do Conselho</td><td>+60% e Prestígio</td><td>Bônus sobre o espécime pedido.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Multiplicadores de valor de um espécime</h4>
+  <pre><code>valor = base_do_porte
+      × (1 + 0,25 × adornos)            // insígnia = patente aos olhos do Conselho
+      × (1 + 0,20 × ciclos_de_serviço)  // veterania, teto em 10
+      × fator_de_saúde                  // 1,0 saudável · 0,6 fraca · 0,3 doente
+      × (1,6 se atende pedido ativo)</code></pre>
+
+  <h3>Saídas</h3>
+  <ul>
+    <li><strong>A cota</strong> — o dreno principal, e o único que pode encerrar a run.</li>
+    <li><strong>Feno</strong> — 25 cr/fardo. O custo operacional recorrente que ninguém lembra de orçar.</li>
+    <li><strong>Energia</strong> — o núcleo consome células a 40 cr/ciclo, mais 15 por unidade de capacidade extra instalada. Expandir a nave aumenta o custo fixo <em class="term">todo ciclo</em>, então a expansão é uma aposta, não um upgrade grátis.</li>
+    <li><strong>Clonagem</strong> — 120 cr por incidente.</li>
+    <li><strong>Reparos</strong> — 40 a 200 cr. Equipamento quebra por estresse de vaca e por queda de disjuntor.</li>
+    <li><strong>Multa de Exposição</strong> — 250 cr se a nave foi detectada (Vigília 3+).</li>
+    <li><strong>Melhorias</strong> — o investimento real.</li>
+  </ul>
+
+  <div class="note">
+    <span class="lbl">Antigrind</span>
+    <p>Não existe recurso que se acumule linearmente por tempo gasto. Leite depende de vacas felizes, vacas felizes dependem de espaço e feno, espaço e feno dependem de decisões de compra, e a cota sobe mais rápido que qualquer estratégia puramente conservadora. <strong>Ficar parado é sempre perder.</strong> Não há como farmar o jogo com segurança — a única saída é operar melhor.</p>
+  </div>
+</section>
+
+<hr class="rule">
+<section id="b6">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 06 <span class="chip chip--lock">Regra travada</span> <span class="chip chip--new">Números propostos</span></div>
+    <h2>Cota</h2>
+  </div>
+  <p class="lede">Falhar é fim de jogo, como decidido. A engenharia toda está em garantir que a falha seja sempre uma decisão visível, nunca uma surpresa.</p>
+
+  <h3>Anatomia de um ciclo</h3>
+  <p>Um ciclo é <strong>três noites e uma prestação de contas</strong>.</p>
+  <ol>
+    <li><strong>Noite</strong> — expedição (12–18 min).</li>
+    <li><strong>Intervalo</strong> — sem cronômetro, mas as necessidades correm. Ordenhar, limpar, alimentar, processar, reorganizar baias, comprar. Termina quando a tripulação decide descer de novo. <em class="term">Esperar não é seguro:</em> feno acaba e a energia é cobrada.</li>
+    <li>Repete três vezes.</li>
+    <li><strong>Prestação de contas</strong> — o tubo de tributo abre. Vocês empurram para dentro dele o que quiserem: gado, leite, queijo, manteiga, adornos, sucata. O total é comparado com a cota.</li>
+  </ol>
+
+  <h3>Progressão da cota</h3>
+  <p><code>cota(n) = arredonda(400 × 1,42^(n−1), 25)</code></p>
+  <div class="tw"><table>
+    <thead><tr><th>Ciclo</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th></tr></thead>
+    <tbody><tr><td>Cota</td><td>400</td><td>575</td><td>800</td><td>1150</td><td>1625</td><td>2300</td><td>3275</td><td>4650</td></tr></tbody>
+  </table></div>
+  <p>O crescimento é geométrico e <strong>não é modificado por desempenho</strong>. Nada de rubber banding: se o grupo foi bem, o prêmio é folga, não uma cota maior. Punir o sucesso é a forma mais rápida de fazer um roguelite parecer desonesto.</p>
+  <p>A cada <strong>5 ciclos</strong> o Conselho "revisa o relatório": um degrau extra de +40% acompanhado de uma mudança de conteúdo (fazendas novas, ameaça nova, pedido novo). É onde o jogo respira e onde a run vira uma história com atos.</p>
+
+  <h3>Preparação e previsibilidade</h3>
+  <p>Na ponte existe a <strong>Projeção do Conselho</strong>: um painel diegético que mostra, a qualquer momento, o valor atual do que está a bordo contra a cota do ciclo, e a projeção no ritmo atual. Ela é atualizada ao vivo — inclusive durante a expedição.</p>
+  <p>É a peça que torna a regra travada aceitável. O grupo <strong>sempre sabe</strong> que está atrás, e sempre tem a opção de vender o rebanho inteiro, vender as máquinas a 60%, ou fazer uma quarta noite desesperada. A run nunca acaba porque alguém não tinha informação; ela acaba porque o grupo escolheu o fermentador e perdeu duas vacas.</p>
+
+  <h3>Bater e não bater</h3>
+  <div class="cards">
+    <div class="card"><span class="tag">Sucesso</span><h5>O excedente permanece</h5><p>Créditos sobrando ficam. Prestígio acumula. O rebanho, as máquinas, o queijo maturando e os dossiês individuais das vacas seguem intactos. A nave é o save.</p></div>
+    <div class="card"><span class="tag">Falha</span><h5>Fim de jogo</h5><p>O Conselho encerra a operação. Run zerada. A tripulação recomeça com a nave inicial e 6 unidades de baia.</p></div>
+  </div>
+
+  <h4>O que atravessa a morte</h4>
+  <p>Como decidido, o reinício é do zero <strong>em poder</strong>. O que persiste é apenas <strong>conhecimento e memória</strong>, sem vantagem mecânica:</p>
+  <ul>
+    <li><strong>Arquivo do Conselho</strong> — o codex de traços, adornos e espécimes já descobertos fica preenchido. Você sabe o que "Escapista" faz; o jogo não te dá nada por isso.</li>
+    <li><strong>Placa de honra</strong> — o nome da vaca que mais rendeu na run perdida fica gravado numa parede da nave nova. Puramente cosmético e absolutamente eficaz.</li>
+    <li><strong>Cosméticos da tripulação</strong> desbloqueados.</li>
+  </ul>
+
+  <h4>Evitar que a run fique impossível cedo demais</h4>
+  <ul>
+    <li><strong>Ciclo 1 é generoso de propósito.</strong> 400 créditos = duas adultas e um pouco de leite. É praticamente impossível falhar aprendendo.</li>
+    <li><strong>Cotas 1–3 são fixas e sem pedidos.</strong> Nenhuma aleatoriedade nos primeiros dois ciclos: sem cães, sem fazendeiro no Vigília 2, sem eventos.</li>
+    <li><strong>Liquidez total.</strong> Tudo é vendável a 60% a qualquer momento, sem confirmação em duas etapas.</li>
+    <li><strong>Nada de dano permanente ao rebanho por azar.</strong> Vaca só morre por negligência prolongada e sinalizada, nunca por evento aleatório.</li>
+  </ul>
+</section>
+
+<hr class="rule">
+<section id="b7">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 07 <span class="chip chip--new">Projetado</span></div>
+    <h2>Melhorias da nave</h2>
+  </div>
+  <p class="lede">Critério de aceitação para qualquer melhoria: se ela pode ser descrita como "+X% de alguma coisa", ela está errada. Uma melhoria boa dá ao grupo <strong>um verbo novo</strong> ou <strong>uma forma nova de errar</strong>.</p>
+
+  <h3>Energia é a árvore de verdade</h3>
+  <p>O núcleo começa com <strong>10 unidades de energia</strong>. Cada máquina puxa do mesmo barramento, visível numa parede da ponte como um mostrador analógico enorme. Somar consumo acima da capacidade <strong>derruba o disjuntor</strong>: luzes apagam, resfriador para, condensador para, e a nave inteira mergulha no escuro com oito vacas nervosas.</p>
+  <p>Isso faz com que expandir o núcleo não seja "ficar mais forte" — é <strong>escolher quantos sistemas podem existir ao mesmo tempo</strong>. E torna a decisão "ligo a centrífuga agora ou espero o queijo terminar?" uma conversa real entre jogadores.</p>
+
+  <h3>Quatro ramos</h3>
+
+  <h4>Casco — espaço e layout</h4>
+  <div class="cards">
+    <div class="card"><span class="tag">Camada 1</span><h5>Convés expandido</h5><p>+4 unidades de baia. Aumenta o custo fixo de energia em 15/ciclo. Expandir é assumir uma despesa.</p></div>
+    <div class="card"><span class="tag">Camada 2</span><h5>Baia acolchoada</h5><p>Metade do ganho de estresse, ocupa o dobro do espaço. Você troca quantidade por qualidade — a decisão econômica central do Bloco 4 virando arquitetura.</p></div>
+    <div class="card"><span class="tag">Camada 2</span><h5>Guindaste de convés</h5><p>Trilho no teto. Move vacas entre baias sem carregar. Libera as mãos, mas quem opera fica preso ao painel: a tarefa vira cooperativa em vez de sumir.</p></div>
+    <div class="card"><span class="tag">Camada 3</span><h5>Porão pressurizado</h5><p>O porão de trânsito para de dobrar o estresse. Permite ficar mais tempo na superfície sem punir as vacas já capturadas — o contra-veneno direto da decisão nº 2.</p></div>
+  </div>
+
+  <h4>Campo — captura e transporte</h4>
+  <div class="cards">
+    <div class="card"><span class="tag">Camada 1 · verbo novo</span><h5>Manta gravitacional</h5><p>Envolve a vaca. Dupla carrega uma Colossal a 70%. <strong>E a vaca embrulhada rola.</strong> Empurrar ladeira abaixo é rápido, silencioso e completamente incontrolável.</p></div>
+    <div class="card"><span class="tag">Camada 2 · verbo novo</span><h5>Poste de ancoragem portátil</h5><p>Um segundo ponto de extração que você carrega e planta onde quiser. Reescreve a rota inteira da expedição. Plantar custa +20 de alerta e acende uma coluna de luz no meio do pasto.</p></div>
+    <div class="card"><span class="tag">Camada 2 · verbo novo</span><h5>Rádio bovino</h5><p>Toca o chamado de acasalamento. As vacas <strong>vêm até você</strong> — não precisa carregar. Custa +25 de alerta por segundo. É a melhoria mais poderosa e mais suicida do jogo.</p></div>
+    <div class="card"><span class="tag">Camada 1</span><h5>Pés magnéticos</h5><p>Não escorrega na lama e não cai de rampa. Em troca, <strong>não corre</strong>. Um trade honesto, não um bônus.</p></div>
+    <div class="card"><span class="tag">Camada 3 · verbo novo</span><h5>Cabo de reboque</h5><p>Liga dois alienígenas. Quem está atrás é arrastado e pode carregar coisas enquanto isso. Também significa que quando um cai, o outro cai junto.</p></div>
+    <div class="card"><span class="tag">Camada 2</span><h5>Lanterna de casco</h5><p>Luz montada no corpo. Libera as mãos, mas é fixa na direção do olhar e <strong>não pode ser desligada rápido</strong> — você vira um farol ambulante para o fazendeiro.</p></div>
+  </div>
+
+  <h4>Núcleo — energia e sobrevivência</h4>
+  <div class="cards">
+    <div class="card"><span class="tag">Camada 1</span><h5>Célula secundária</h5><p>+4 de energia. O upgrade mais entediante e o mais comprado. Está aqui porque tudo depende dele.</p></div>
+    <div class="card"><span class="tag">Camada 2</span><h5>Disjuntor seletivo</h5><p>Sobrecarga desliga só um sistema à sua escolha, em vez de tudo. Transforma uma catástrofe em uma decisão sob pressão.</p></div>
+    <div class="card"><span class="tag">Camada 3</span><h5>Véu de dispersão</h5><p>3 de energia contínuos. Exposição da nave sobe pela metade no Vigília 3+. Deixa o grupo ficar mais tempo em campo hostil — pagando com metade da capacidade de processamento.</p></div>
+    <div class="card"><span class="tag">Camada 3</span><h5>Cabine de clonagem Mk II</h5><p>Clonagem em 8 s e por 60 cr, sem defeito cosmético. Reduz a punição de morrer sem tirar o susto.</p></div>
+  </div>
+
+  <h4>Laboratório — informação e valor</h4>
+  <div class="cards">
+    <div class="card"><span class="tag">Camada 1</span><h5>Escâner Mk II</h5><p>Revela traços ocultos e <strong>marca a vaca para toda a tripulação através de paredes</strong>. É um upgrade de comunicação disfarçado de upgrade de informação — o melhor tipo em co-op.</p></div>
+    <div class="card"><span class="tag">Camada 2</span><h5>Fermentador e centrífuga</h5><p>Ver Bloco 4. É onde "cuidar" passa a render mais que "vender".</p></div>
+    <div class="card"><span class="tag">Camada 3</span><h5>Tubulação de leite</h5><p>Conecta baias às máquinas. Fim do carregamento de baldes. Ocupa 1 unidade por trecho e é a primeira automação real — deve chegar tarde, porque ela remove histórias.</p></div>
+    <div class="card"><span class="tag">Camada 4 · pós-MVP</span><h5>Criadouro</h5><p>Abre o Bloco 9. Exige 6 unidades livres e estresse médio do rebanho abaixo de 30 — ou seja, só uma operação já bem administrada consegue ligar a genética.</p></div>
+  </div>
+
+  <p><strong>Desbloqueio por camada:</strong> Camada 1 é livre. Camada 2 exige 3 de Prestígio, Camada 3 exige 8, Camada 4 exige 15. Dentro da camada, tudo é comprável em qualquer ordem — o grupo constrói a nave que combina com o jeito de jogar dele, e duas runs diferentes ficam mecanicamente diferentes.</p>
+</section>
+
+<hr class="rule">
+<section id="b8">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 08 <span class="chip chip--new">Projetado</span></div>
+    <h2>Progressão das vacas</h2>
+  </div>
+  <p class="lede">Apego não se projeta com sistemas complexos. Projeta-se com três coisas: um nome, uma personalidade que atrapalha, e um histórico que o jogo lembra melhor do que você.</p>
+
+  <h3>Nome</h3>
+  <p>Toda vaca chega com uma plaqueta do Conselho: <code>ESPÉCIME-7</code>. Qualquer jogador pode reescrever isso, a qualquer momento, com o teclado. É a mecânica de apego mais barata que existe e nenhuma outra chega perto em custo-benefício. A partir do momento em que uma vaca se chama <em class="term">Berenice</em>, perdê-la é um evento narrativo.</p>
+
+  <h3>Tempo de serviço</h3>
+  <p>Cada ciclo que a vaca termina <strong>saudável e não superlotada</strong> soma 1 ao tempo de serviço. Cada ponto dá <strong>+15% de produção e +20% de valor</strong>, com teto em 10. Ciclo terminado doente não conta e não zera — só não avança.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Serviço</th><th>Título do Conselho</th><th>Efeito</th></tr></thead>
+    <tbody>
+      <tr><td>0–2</td><td>Espécime</td><td>Nada. É gado.</td></tr>
+      <tr><td>3</td><td>Anciã</td><td>Placa dourada visível. Traço oculto é revelado de graça.</td></tr>
+      <tr><td>6</td><td>Matriarca</td><td>−3/min de estresse em todas as vacas da nave. Vira infraestrutura.</td></tr>
+      <tr><td>10</td><td>Dignitária Vitalícia</td><td>Leite sempre grau A no mínimo. O Conselho passa a <strong>exigi-la</strong> em pedidos.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note note--warn">
+    <span class="lbl">A decisão que o sistema existe para criar</span>
+    <p>Quando o Conselho pede especificamente a sua Matriarca de 8 ciclos, oferecendo três vezes o valor dela e Prestígio suficiente para abrir a camada seguinte, o grupo tem que <strong>decidir se vende a Berenice</strong>. Nenhuma outra coisa neste documento vai gerar tanto grito no Discord.</p>
+  </div>
+
+  <h3>Traços</h3>
+  <p>Cada vaca nasce com <strong>1 a 3 traços ocultos</strong>. São revelados pelo Escâner Mk II, por comportamento observado, ou de graça ao chegar a Anciã. São a personalidade — e metade deles é ruim de propósito.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Traço</th><th>Efeito</th><th>Como se descobre sem escâner</th></tr></thead>
+    <tbody>
+      <tr><td>Fonte</td><td>+40% de leite</td><td>O balde enche antes da conta</td></tr>
+      <tr><td>Estoica</td><td>Estresse sobe pela metade</td><td>Não se debate ao ser carregada</td></tr>
+      <tr><td>Líder</td><td>−3/min de estresse nas vizinhas</td><td>A baia toda fica estranhamente calma</td></tr>
+      <tr><td>Glutona</td><td>Come o dobro, produz +20%</td><td>O cocho some rápido demais</td></tr>
+      <tr><td>Escapista</td><td>Abre a porteira da baia sozinha</td><td>Você acha ela no corredor às 3h</td></tr>
+      <tr><td>Sonâmbula</td><td>Anda pela nave à noite, derruba baldes</td><td>Barulho de latão caindo, sem culpado</td></tr>
+      <tr><td>Sino Interno</td><td>Muge alto e constante. +2/min de estresse na nave, +25% de alerta no campo</td><td>Imediatamente. Dolorosamente.</td></tr>
+      <tr><td>Amaldiçoada</td><td>Equipamento a 3 m dela tem chance de falhar</td><td>Estatisticamente, depois de muito sofrimento</td></tr>
+      <tr><td>Ímã de Pânico</td><td>Contagia estresse ao dobro</td><td>Uma baia inteira enlouquece do nada</td></tr>
+      <tr><td>Couro Grosso</td><td>Nunca fica doente</td><td>Ela é a única que sobrevive à baia imunda</td></tr>
+    </tbody>
+  </table></div>
+  <p>Traços ruins não são removíveis. Você convive, isola ou vende — e vender a Escapista depois de dois ciclos de convivência já é uma decisão emocional, que é o ponto.</p>
+
+  <h3>Dossiê</h3>
+  <p>A nave mantém um registro por vaca: capturada em qual fazenda, por quem, quantas vezes foi derrubada e por quem, litros totais, incidentes, ciclos de serviço. Na prestação de contas, o Conselho lê <strong>uma linha aleatória do dossiê em voz alta</strong>, com total seriedade burocrática:</p>
+  <div class="dossie">
+    <span class="lbl">Registro do Conselho · Leitura de encerramento</span>
+    <p>"A dignitária BERENICE completou seu quarto ciclo de serviço. Foi derrubada em solo onze vezes, das quais nove pelo mesmo operador. O Conselho registra tal insistência como um <em>ritual de submissão voluntária</em> e felicita o operador por sua devoção."</p>
+  </div>
+  <p>É a máquina de narrativa mais barata do projeto: ela não inventa nada, só lê o que o grupo fez, com a moldura errada. Todo o humor do jogo cabe nessa distância.</p>
+</section>
+
+<hr class="rule">
+<section id="b9">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 09 <span class="chip chip--later">Fora do MVP</span></div>
+    <h2>Genética</h2>
+  </div>
+  <p class="lede">Não é biologia, é colecionismo com consequências. Regras que cabem num cartão.</p>
+
+  <h3>As quatro regras</h3>
+  <ol>
+    <li><strong>Herança</strong> — o bezerro recebe <strong>um traço de cada progenitor</strong>, sorteado entre os que eles têm. Sem dominância, sem recessivo, sem quadro de Punnett.</li>
+    <li><strong>Mutação</strong> — 12% de chance de um dos dois virar outro traço da lista. Perto do reator, 30% — e a mutação vem da lista <em class="term">anômala</em>: Elétrica, Bicéfala, Fosforescente, Muda (não muge, valor altíssimo).</li>
+    <li><strong>Porte</strong> — o bezerro herda a média dos pais ±1 nível. Duas Colossais tendem a gerar Colossais, e a nave inteira vira um problema de logística.</li>
+    <li><strong>Crescimento</strong> — o bezerro sobe um nível de porte por ciclo até chegar ao potencial. É literalmente a mesma malha em escala crescente, como decidido no Bloco 1, e o jogador <strong>vê</strong> a vaca crescer entre ciclos.</li>
+  </ol>
+
+  <h3>O que a genética custa</h3>
+  <p>O Criadouro exige 6 unidades de espaço, energia contínua, <strong>duas vacas com estresse abaixo de 25 por um ciclo inteiro</strong>, e o bezerro ocupa espaço por 3 ciclos antes de render qualquer coisa. É um investimento de longo prazo dentro de um jogo com cota crescente — e essa tensão é o design inteiro do bloco.</p>
+
+  <h3>Descoberta</h3>
+  <p>O Arquivo do Conselho registra cada combinação encontrada com nome pomposo ("Linhagem do Sino Silencioso"). Sobrevive à morte da run como conhecimento, nunca como poder. É a única progressão meta do jogo e ela é, deliberadamente, só uma lista de coisas engraçadas que vocês já fizeram.</p>
+</section>
+
+<hr class="rule">
+<section id="b10">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 10 <span class="chip chip--risk">Maior risco técnico</span></div>
+    <h2>Multiplayer</h2>
+  </div>
+  <p class="lede">Um jogo inteiro cujo verbo central é dois jogadores carregando um corpo físico juntos. Isso é, de longe, a parte mais difícil do projeto — e a arquitetura precisa ser desenhada em volta disso, não depois.</p>
+
+  <h3>Topologia</h3>
+  <ul>
+    <li><strong>Host autoritativo.</strong> O host é dono do save da nave. Sem servidor dedicado, sem migração de host: se o host cai, a sessão acaba e o save fica com ele. Para 2–4 amigos, isso é aceitável e economiza meses.</li>
+    <li><strong>Tick de simulação a 30 Hz</strong>, snapshots a 20 Hz, interpolação de 100 ms no cliente.</li>
+    <li><strong>Predição só do próprio avatar.</strong> Nada mais. Sem rollback, sem reconciliação de física — o custo/benefício não fecha para um jogo cooperativo entre amigos.</li>
+  </ul>
+
+  <h3>A regra que salva o projeto: não simule a vaca carregada</h3>
+  <div class="note note--warn">
+    <span class="lbl">Decisão de arquitetura</span>
+    <p>A tentação é resolver "dois jogadores carregam uma vaca" com juntas físicas entre três corpos rígidos. <strong>Não faça isso.</strong> Juntas em rede são instáveis, explodem com latência, e vão consumir o projeto inteiro.</p>
+    <p>Em vez disso: enquanto carregada, a vaca <strong>deixa de ser um corpo físico</strong> e vira um objeto cinemático preso a um ponto de âncora calculado entre os carregadores. O balanço, o peso e o cambaleio são <strong>molas visuais e penalidades de input</strong>, não simulação. Ela só volta a ser corpo rígido no instante em que é solta. Isso resolve simultaneamente o problema de física e o de rede, e é indistinguível do "real" para o jogador.</p>
+  </div>
+
+  <h3>Autoridade por objeto</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Objeto</th><th>Estado</th><th>Dono da simulação</th></tr></thead>
+    <tbody>
+      <tr><td>Avatar</td><td>sempre</td><td>Cliente, com validação de posição no host</td></tr>
+      <tr><td>Vaca solta</td><td>pastando, em pânico, dormindo</td><td>Host (IA de rebanho)</td></tr>
+      <tr><td>Vaca carregada</td><td>1 carregador</td><td><strong>Migra para esse cliente</strong> — zero latência para quem carrega</td></tr>
+      <tr><td>Vaca carregada</td><td>2+ carregadores</td><td>O <em class="term">primeiro</em> a pegar é o líder e dona a âncora; os demais aplicam offset e penalidade</td></tr>
+      <tr><td>Balde, feno, ferramenta</td><td>carregado</td><td>Migra para quem carrega</td></tr>
+      <tr><td>Alerta, vigília, cota, necessidades</td><td>sempre</td><td>Host, exclusivamente. Nunca previsto no cliente.</td></tr>
+      <tr><td>Porteira, máquina, alavanca</td><td>sempre</td><td>Host, com feedback otimista local (o som toca antes da confirmação)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Migração de autoridade em <strong>pegar</strong> e devolução em <strong>soltar</strong> é o único mecanismo de rede sofisticado do jogo. Ele precisa ser à prova de bala: dois jogadores pegando no mesmo frame, jogador desconectando com vaca no colo, vaca sendo passada por cima da cerca.</p>
+
+  <h3>Tarefas cooperativas por construção</h3>
+  <p>Nenhuma delas exige um sistema de "cooperação". Todas emergem de restrições físicas que já existem:</p>
+  <ul>
+    <li><strong>Carregar + iluminar</strong> — quem carrega não tem mãos para a lanterna (decidido no Bloco 1).</li>
+    <li><strong>Passar por cima da cerca</strong> — um levanta, o outro recebe. É o handshake mais satisfatório possível.</li>
+    <li><strong>Latão de 20 L</strong> — dois jogadores obrigatórios, e nenhum deles enxerga bem para a frente.</li>
+    <li><strong>Guindaste</strong> — um opera o painel, o outro guia a vaca com a mão.</li>
+    <li><strong>Resgatar caído</strong> — mesmo verbo de carregar vaca, mesma penalidade.</li>
+    <li><strong>Alavanca de Subida</strong> — puxar é individual; abortar também. O conflito é o recurso.</li>
+  </ul>
+
+  <h3>Comunicação</h3>
+  <p>Voz proximal é a solução ideal e é escopo demais para o MVP. Substituto para a versão 1: <strong>roda de chiados</strong> — quatro sinais alienígenas contextuais (<em class="term">aqui</em> / <em class="term">ajuda</em> / <em class="term">corre</em> / <em class="term">olha isso</em>) que marcam posição no mundo para todos, e são engraçados por serem incompreensíveis. Todo o resto o jogo comunica visualmente: se está escuro, você <strong>vê</strong> a lanterna do colega; se tem uma vaca subindo, você <strong>vê</strong> a coluna de luz do outro lado do mapa.</p>
+
+  <h3>Entrada e saída</h3>
+  <ul>
+    <li><strong>Entrar</strong> a qualquer momento, inclusive no meio da expedição: o jogador nasce na cabine de clonagem e desce pelo feixe. Diegético, zero tela de espera.</li>
+    <li><strong>Sair</strong>: o avatar solta tudo onde está e some. A vaca cai. É consistente com todas as outras formas de perder o controle de um objeto.</li>
+    <li><strong>Solo</strong> é jogável do começo ao fim. A cota não escala com o número de jogadores — jogar sozinho é simplesmente mais lento e mais tenso, e isso é uma proposta válida.</li>
+  </ul>
+</section>
+
+<hr class="rule">
+<section id="b11">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 11 <span class="chip chip--new">Projetado</span></div>
+    <h2>Situações emergentes</h2>
+  </div>
+  <p class="lede">Nada aqui é um evento roteirizado. Todas as cadeias abaixo já são consequência dos sistemas dos blocos 2 a 8 — foram <em class="term">encontradas</em> no design, não escritas nele.</p>
+
+  <div class="chain"><b>A décima vaca</b><div class="flow">alerta em 88 · <span>alguém extrai a décima</span> → +12 → 100 → debandada → Vigília 1 → holofote encontra quem carrega a Matrona → alerta dispara de novo → Vigília 2 → o fazendeiro sai de casa → tiro → Matrona cai na lama → escorrega ladeira abaixo → <span>para exatamente embaixo do feixe</span></div></div>
+
+  <div class="chain"><b>O disjuntor</b><div class="flow">centrífuga ligada + condensador + resfriador + véu = <span>11 de 10</span> → disjuntor cai → luz apaga → 8 vacas no escuro → estresse coletivo → uma enlouquece → derruba o latão de 20 L → +15 de sujeira → leite da baia inteira vira grau C → <span>a cota não fecha por 60 créditos</span></div></div>
+
+  <div class="chain"><b>Berenice, a Escapista</b><div class="flow">traço nunca escaneado → ela abre a baia durante a expedição → anda até o porão de trânsito → <span>bloqueia a rampa</span> → a vaca que está subindo pelo feixe cai em cima dela → as duas ficam Enlouquecidas → e não tem ninguém a bordo, porque todo mundo desceu</div></div>
+
+  <div class="chain"><b>O sino que valia 120</b><div class="flow">o grupo mantém o sino pelo valor → alerta sobe 2/s o transporte inteiro → chegam com Vigília 2 → na nave, +2/min de estresse em todas → produção do ciclo cai 18% → <span>o sino custou mais do que valia</span> e ninguém consegue provar isso para o cara que insistiu</div></div>
+
+  <div class="chain"><b>O resgate que virou dois resgates</b><div class="flow">jogador derrubado no lamaçal → colega o carrega (velocidade 45%) → sem lanterna, os dois → o terceiro corre para iluminar → <span>tromba no que carrega</span> → os dois caem → agora são dois caídos e um jogador com lanterna e 60 segundos</div></div>
+
+  <div class="chain"><b>A porteira</b><div class="flow">abrir a porteira para passar a Colossal → <span>quatro vacas escapam</span> → correm para a estrada → faróis → alerta → Vigília 3 → nave começa a acumular Exposição → multa de 250 no fim do ciclo → que é exatamente o valor da Colossal</div></div>
+
+  <div class="chain"><b>Queijo</b><div class="flow">fermentador maturando há 2 ciclos (valor projetado ~340) → energia estoura numa noite ruim → fermentador para → <span>a roda inteira estraga</span> → vira biomassa → o reprocessador transforma em feno → as vacas comem o próprio queijo</div></div>
+
+  <div class="chain"><b>Superlotação por otimismo</b><div class="flow">"cabe mais uma" ×3 → +45/min de estresse na baia → produção zera → ninguém entende por quê (não escanearam) → dois ciclos de leite grau C → <span>descobrem no dia da cota</span></div></div>
+
+  <div class="chain"><b>A Amaldiçoada</b><div class="flow">vaca com traço oculto colocada perto do resfriador → resfriador falha aleatoriamente → leite estraga em silêncio → o grupo compra um resfriador novo → <span>coloca no mesmo lugar</span></div></div>
+
+  <div class="chain"><b>Rádio bovino, primeira vez</b><div class="flow">alguém liga para testar → <span>o pasto inteiro caminha na sua direção</span> → alerta em 100 em oito segundos → Vigília 1, 2 e 3 em menos de um minuto → protocolo de emergência → a nave sobe com duas vacas e todos os equipamentos ficaram na Terra</div></div>
+
+  <div class="chain"><b>A babá</b><div class="flow">um jogador sobe para cuidar do rebanho → os outros três continuam capturando → ele ordenha, limpa, alimenta → <span>eles trazem mais quatro vacas</span> → o feno acaba no minuto 14 → ele grita → ninguém ouve, porque estão sob a coluna de luz do feixe</div></div>
+
+  <div class="chain"><b>Ordenha sob pressão</b><div class="flow">Vigília 4 · buzina tocando · 90 segundos → alguém decide ordenhar as três vacas antes de subir (12 s cada) → <span>consegue duas</span> → a terceira chuta o balde → o leite derrama na rampa → o último jogador escorrega na rampa ao entrar</div></div>
+
+  <div class="chain"><b>O pedido do Conselho</b><div class="flow">"o portador de insígnia de maior porte" → o único candidato é a Matriarca de 6 ciclos → aceitar paga a cota inteira e abre a camada 3 → recusar mantém −3/min de estresse na nave toda → <span>a discussão dura mais que a expedição</span></div></div>
+
+  <div class="chain"><b>Fim de run</b><div class="flow">cota 1625, projeção mostra 1480 → vendem as máquinas a 60% → 1595 → vendem a Berenice → <span>1610</span> → quarta noite desesperada com Vigília 2 herdada → volta com uma novilha → 1655</div></div>
+</section>
+
+<hr class="rule">
+<section id="b12">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 12 <span class="chip chip--mvp">Construir isto primeiro</span></div>
+    <h2>MVP</h2>
+  </div>
+  <p class="lede">Uma pergunta, um protótipo: <strong>é divertido carregar uma vaca até uma nave e cuidar dela com um amigo?</strong> Tudo que não ajuda a responder isso está cortado.</p>
+
+  <h3>Dentro</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Sistema</th><th>Escopo mínimo</th></tr></thead>
+    <tbody>
+      <tr><td>Personagem</td><td>Alienígena a pé. Andar, correr, agachar, pegar/soltar. Câmera em terceira pessoa. <strong>Sem nave voadora.</strong></td></tr>
+      <tr><td>Carregar</td><td>O verbo inteiro: 1 jogador (lento) ou 2 (rápido). Cambaleio visual, penalidade de velocidade, soltar por queda.</td></tr>
+      <tr><td>Vacas</td><td>Uma malha, três escalas (Novilha, Adulta, Matrona). 6 no mapa. IA: pastar, acordar, entrar em pânico, correr. Sem traços, sem temperamento.</td></tr>
+      <tr><td>Fazenda</td><td>Um pasto. Um lamaçal, uma cerca com uma porteira, escuridão total. Sem celeiro, sem fazendeiro, sem cães.</td></tr>
+      <tr><td>Lanterna</td><td>Um item carregável que ocupa as mãos. É metade da resposta à pergunta do MVP.</td></tr>
+      <tr><td>Alerta</td><td>Barra global, três fontes (correr, derrubar, feixe) e <strong>uma</strong> consequência: debandada em 100. Sem Níveis de Vigília.</td></tr>
+      <tr><td>Nave</td><td>Parada, ancorada. Rampa + feixe de extração. Duas baias de 3 unidades. Um cocho. Um ponto de ordenha.</td></tr>
+      <tr><td>Necessidade</td><td><strong>Só Saciedade.</strong> Cai com o tempo, enche com fardo de feno carregado do celeiro. Sem estresse, sem sujeira, sem doença.</td></tr>
+      <tr><td>Produção</td><td>Ordenhar → balde → carregar até o tubo de tributo. Sem qualidade, sem processamento.</td></tr>
+      <tr><td>Ciclo</td><td>Uma noite. Uma entrega. Uma cota fixa. Tela de vitória ou derrota.</td></tr>
+      <tr><td>Rede</td><td>Dois jogadores online, host autoritativo, migração de autoridade em pegar/soltar. Sem drop-in, sem clonagem.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Fora — explicitamente</h3>
+  <p>Genética · múltiplos planetas · vacas alienígenas · traços · temperamento · adornos · escâner · níveis de vigília · fazendeiro e cães · estresse · sujeira · doença · qualidade de leite · queijo e manteiga · energia · árvore de melhorias · prestígio · contratos do Conselho · clonagem · 3–4 jogadores · drop-in · dossiês · nomes de vacas.</p>
+  <p><strong>Exceção:</strong> nomear vacas custa quase nada e é a coisa mais barata do documento com maior impacto no teste. Se sobrar meio dia, é a primeira coisa a puxar de volta.</p>
+
+  <h3>Marcos</h3>
+  <div class="ladder">
+    <div class="rung" style="--rc:var(--beam)"><div class="lvl">M1</div><div><h5>Peso</h5><p>Um alienígena, uma vaca, um plano infinito. Pegar, carregar, soltar, com câmera e cambaleio. <strong>Jogável offline.</strong> Se isso não for gostoso sozinho, nada mais importa — e você descobre em uma semana.</p></div></div>
+    <div class="rung" style="--rc:var(--beam)"><div class="lvl">M2</div><div><h5>Dois</h5><p>Rede com dois jogadores, migração de autoridade, carregar em dupla. É o marco mais arriscado do projeto e por isso vem em segundo, não em último.</p></div></div>
+    <div class="rung" style="--rc:var(--beam)"><div class="lvl">M3</div><div><h5>Atrito</h5><p>Lamaçal, cerca, porteira, escuridão, lanterna. O momento em que "carregar" vira "resolver um problema junto".</p></div></div>
+    <div class="rung" style="--rc:var(--beam)"><div class="lvl">M4</div><div><h5>Loop</h5><p>Feixe, baias, saciedade, feno, ordenha, entrega, cota. O ciclo fecha e a partida tem fim.</p></div></div>
+    <div class="rung" style="--rc:var(--alerta)"><div class="lvl">M5</div><div><h5>Tensão</h5><p>Alerta e debandada. Só depois de tudo funcionar. É tempero, não estrutura.</p></div></div>
+  </div>
+
+  <div class="note note--beam">
+    <span class="lbl">Critério de validação — o que medir no playtest</span>
+    <ul>
+      <li>Alguém disse "espera, espera, ESPERA" em voz alta? <em class="term">A física está legível.</em></li>
+      <li>Os dois jogadores se organizaram sozinhos (um carrega, um ilumina) sem o jogo pedir? <em class="term">A cooperação é emergente.</em></li>
+      <li>Alguém quis ir buscar mais uma vaca depois de já ter o suficiente? <em class="term">A ganância funciona.</em></li>
+      <li>Alguém contou o que aconteceu para uma terceira pessoa depois? <em class="term">O jogo existe.</em></li>
+    </ul>
+  </div>
+</section>
+
+<hr class="rule">
+<section id="b13">
+  <div class="sec-head">
+    <div class="eyebrow">Bloco 13 <span class="chip chip--new">Recomendação técnica</span></div>
+    <h2>Tecnologia e arquitetura</h2>
+  </div>
+
+  <h3>Avaliação</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Tecnologia</th><th>Veredito</th></tr></thead>
+    <tbody>
+      <tr><td>SceneKit</td><td><strong>Não construa em cima.</strong> Foi marcado como <em class="term">deprecated</em> pela Apple na WWDC25. Ainda funciona no macOS 26 e é ótimo para prototipar rápido — que é exatamente o uso certo dele agora — mas não vai receber recursos novos. Vale confirmar o estado atual na documentação antes de decidir.</td></tr>
+      <tr><td>RealityKit</td><td><strong>Alvo recomendado.</strong> ECS nativo, USDZ de primeira classe, PBR moderno, unificado entre plataformas e ativamente desenvolvido. Fraquezas reais: controle de pipeline limitado e física que não foi feita para controlador de personagem — nenhuma das duas te impede aqui, porque a decisão de arquitetura abaixo tira física e personagem das mãos da engine.</td></tr>
+      <tr><td>Metal</td><td>Só se um efeito específico exigir (o feixe, a névoa noturna). Escrever o renderer inteiro é meses que não compram diversão nenhuma.</td></tr>
+      <tr><td>GameplayKit</td><td>Use <code>GKStateMachine</code> para os estados da vaca e <code>GKNoise</code> para geração de terreno. <strong>Não</strong> use <code>GKAgent</code> para o rebanho — boids em 150 linhas de Swift puro é mais previsível, mais fácil de sincronizar e mais fácil de balancear.</td></tr>
+      <tr><td>SwiftUI</td><td>Menus, Mesa de Alvos, painéis diegéticos renderizados em textura, ferramentas de debug. Não para HUD em tempo real de alta frequência.</td></tr>
+      <tr><td>GameKit (<code>GKMatch</code>)</td><td>Transporte razoável para 2–4 amigos em plataformas Apple: matchmaking, relay e NAT resolvidos de graça, canal não confiável disponível. Custo: exige conta Game Center e prende o jogo ao ecossistema Apple. É o que o protótipo já usa — mantenha, mas atrás de uma abstração.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note note--warn">
+    <span class="lbl">A decisão que torna tudo isso reversível</span>
+    <p><strong>A simulação não pode importar nenhum framework de render.</strong> Um módulo <code>GameCore</code> em Swift puro, com passo fixo, que não sabe o que é <code>SCNNode</code> nem <code>Entity</code>. O renderer vira uma camada fina que espelha estado em nós de cena. Consequências: você prototipa em SceneKit <em class="term">hoje</em> e migra para RealityKit sem tocar em regra de jogo; você testa o jogo inteiro em testes unitários sem abrir janela; e o servidor autoritativo roda a mesma simulação que o cliente. É a recomendação mais importante deste bloco.</p>
+  </div>
+
+  <h3>Estrutura de módulos</h3>
+  <pre><code>GamePoc/
+├── Packages/
+│   ├── GameCore/            # Swift puro. ZERO imports de render.
+│   │   ├── Model/           # Cow, Herd, Pen, Ship, Expedition, Contract, Trait
+│   │   ├── Systems/         # CarrySystem, AlertSystem, NeedsSystem,
+│   │   │                    # ProductionSystem, PowerSystem, EconomySystem
+│   │   ├── Sim/             # World, FixedStepLoop, Command, Snapshot, Delta
+│   │   └── Data/            # SaveFile, BalanceTable, versionamento
+│   ├── GameNet/             # Transport (protocolo), GKMatchTransport,
+│   │                        # codec de snapshot, autoridade e migração
+│   └── GameRender/          # Presenters. SceneKitPresenter hoje,
+│                            # RealityKitPresenter depois. Mesma interface.
+├── App/
+│   ├── Game_PocApp.swift
+│   ├── Input/               # teclado, gamepad, mapeamento
+│   └── UI/                  # SwiftUI: menus, Mesa de Alvos, debug
+└── Content/
+    ├── Assets3D/            # .usdz
+    ├── Audio/
+    └── Balance/*.json       # todos os números deste documento, editáveis sem recompilar</code></pre>
+
+  <h3>Modelo de dados</h3>
+  <pre><code>struct CowID: Hashable, Codable { let raw: UUID }
+
+struct Cow: Codable, Identifiable {
+    let id: CowID
+    var name: String                 // "ESPÉCIME-7" até alguém renomear
+    var size: Size                   // .bezerro ... .colossal
+    var adornments: Set&lt;Adornment&gt;
+    var traits: Set&lt;Trait&gt;
+    var discoveredTraits: Set&lt;Trait&gt;
+    var satiety: Double              // 0...100
+    var stress: Double               // 0...100
+    var condition: Condition         // .ok .fraca .doente .enlouquecida
+    var serviceCycles: Int
+    var milkStored: Double
+    var dossier: [DossierEntry]
+
+    var bayUnits: Int { size.bayUnits }
+    var carrySpeed: Double { size.carrySpeed(handlers: carriers.count) }
+}
+
+struct Pen: Codable {
+    var capacity: Int
+    var occupants: [CowID]
+    var filth: Double                // 0...100 — por baia, não por vaca
+    var trough: (hay: Double, water: Double)
+    var overcrowding: Int { max(0, occupants.reduce(0){ $0 + cow($1).bayUnits } - capacity) }
+}
+
+struct Ship: Codable {
+    var pens: [Pen]
+    var machines: [Machine]
+    var powerCapacity: Int           // começa em 10
+    var powerDraw: Int { machines.filter(\.isRunning).reduce(0){ $0 + $1.draw } }
+    var isBreakerTripped: Bool { powerDraw &gt; powerCapacity }
+    var credits: Int
+    var prestige: Int
+    var cycle: Int
+    var quota: Int { Balance.quota(forCycle: cycle) }
+}</code></pre>
+
+  <h3>Física, IA e interação</h3>
+  <ul>
+    <li><strong>Controlador de personagem próprio</strong> — cápsula, varredura, gravidade e degrau escritos à mão em <code>GameCore</code>. Nenhuma engine da Apple dá o controle necessário, e é código previsível e testável.</li>
+    <li><strong>Objeto carregado é cinemático</strong> — ver Bloco 10. Corpo rígido só quando solto. Sem juntas, nunca.</li>
+    <li><strong>Colisão</strong> — malhas convexas simples para vacas e cenário. As <code>.usdz</code> de arte nunca são a geometria de colisão.</li>
+    <li><strong>Rebanho</strong> — boids próprio (separação, alinhamento, coesão, fuga) sobre <code>GKStateMachine</code>: <code>Dormindo → Alerta → Pastando → Pânico → Debandada</code>. Roda só no host.</li>
+    <li><strong>Interação</strong> — um único sistema de "foco": raio curto a partir da câmera, um verbo contextual, uma tecla. Pegar vaca, pegar amigo, abrir porteira, puxar alavanca, ordenhar — tudo o mesmo caminho de código.</li>
+  </ul>
+
+  <h3>Save</h3>
+  <ul>
+    <li>JSON <code>Codable</code> versionado (<code>schemaVersion</code>), escrita atômica, em <code>~/Library/Application Support/&lt;bundle&gt;/ships/&lt;uuid&gt;.json</code>.</li>
+    <li>Salva ao fim de cada ciclo e ao fim de cada expedição. <strong>Nunca no meio</strong> — evita save-scumming e simplifica tudo.</li>
+    <li>Só o host escreve. Clientes recebem uma cópia somente-leitura para exibir a nave.</li>
+    <li>Todos os números deste documento vivem em <code>Content/Balance/*.json</code>, com hot-reload no build de debug. Balancear um jogo assim sem recompilar economiza semanas.</li>
+  </ul>
+</section>
+
+<hr class="rule">
+<section id="apendice">
+  <div class="sec-head">
+    <div class="eyebrow">Apêndice</div>
+    <h2>Riscos, assets e nomes</h2>
+  </div>
+
+  <h3>Riscos, em ordem de gravidade</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Risco</th><th>Mitigação</th></tr></thead>
+    <tbody>
+      <tr><td>Carregar objeto físico em rede</td><td>Cinemático + migração de autoridade. Provar no marco M2, não no fim. Se falhar, o jogo inteiro muda.</td></tr>
+      <tr><td>Escopo</td><td>Os 13 blocos são um jogo de anos. O MVP é semanas. Nada do bloco 5 em diante entra antes do M5 estar divertido.</td></tr>
+      <tr><td>SceneKit deprecado</td><td>Isolado por <code>GameCore</code>. Prototipe nele, migre depois, sem tocar em regra de jogo.</td></tr>
+      <tr><td>Game Center obrigatório</td><td><code>Transport</code> como protocolo. Se um amigo não tiver conta, dá para plugar Network.framework em LAN — ou Steam mais tarde, se o jogo sair do ecossistema.</td></tr>
+      <tr><td>Licença dos assets</td><td>Os quatro <code>.usdz</code> são <strong>CC-BY-4.0 do Sketchfab</strong> e <strong>exigem atribuição</strong> na tela de créditos: Kyuta (Cow, Vaca Morango), olamultimedia (UFO), DavidePrestino (Alien Frank). Falta creditar = violação de licença.</td></tr>
+      <tr><td>Projeto no Desktop</td><td>O projeto está em <code>~/Desktop</code>, sincronizado pelo iCloud, o que quebra a assinatura de código no build. Use <code>SYMROOT</code> fora do Desktop.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Títulos propostos</h3>
+  <div class="cards">
+    <div class="card"><h5>Protocolo Bovino</h5><p>Frio, burocrático, alienígena. Usado como nome deste documento. É o mais próximo do tom.</p></div>
+    <div class="card"><h5>Tributo Líquido</h5><p>Vende o leite como ritual. Mais estranho, menos legível fora do contexto.</p></div>
+    <div class="card"><h5>Casta Serva</h5><p>Coloca a piada central no título. O jogador entende antes de jogar — o que talvez estrague a piada.</p></div>
+    <div class="card"><h5>O Conselho Não Revisa</h5><p>Melhor subtítulo do que título, mas resume o jogo inteiro em quatro palavras.</p></div>
+  </div>
+
+  <h3>Ordem sugerida de trabalho</h3>
+  <ol>
+    <li>Pivotar o protótipo: tirar a nave voadora, colocar o alienígena a pé com o verbo de carregar.</li>
+    <li>Marco M1 offline. Testar com uma pessoa. Se não for gostoso, iterar só nisso.</li>
+    <li>Marco M2 em rede. É aqui que se descobre se o projeto é viável.</li>
+    <li>M3, M4, M5. Playtest com quatro amigos ao fim de cada um.</li>
+    <li>Só então abrir os blocos 5, 7 e 8 — economia, melhorias e progressão das vacas, nessa ordem.</li>
+  </ol>
+</section>
+
+<footer>
+  <p><strong>Protocolo Bovino</strong> — documento de design v0.1. Blocos 1 e a regra de cota são decisões travadas do documento original; blocos 2 a 13 e todos os números são propostas abertas a revisão. Escrito para um co-op de 2–4 jogadores em macOS, Swift.</p>
+</footer>
+
+</div>
+</main>
+</div>
