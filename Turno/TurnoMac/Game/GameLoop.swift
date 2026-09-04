@@ -2,14 +2,15 @@
 //  GameLoop.swift
 //  TurnoMac
 //
-//  Regras por frame: movimento em primeira pessoa, modo ferramenta (rodo,
-//  vassoura, pano), escuta na porta, gerente e suspeita, sustos e fim de turno.
+//  Regras por frame: movimento, modo ferramenta, interações, a ronda da
+//  gerente, os sustos de cada noite e o fim do turno.
 //
 
 import Foundation
 import RealityKit
 import simd
 import CoreGraphics
+import AppKit
 
 @MainActor
 final class GameLoop {
@@ -20,45 +21,54 @@ final class GameLoop {
     var server: ControllerServer?
     var coop: CoopSession?
 
-    // Jogador
-    private var yaw: Float = 0            // rad, 0 = olhando para -z
+    // Câmera
+    private var yaw: Float = 0
     private var pitch: Float = 0
     private var phoneYawRef: Float = 0
-    private var phonePitchRef: Float = 0
     private var phoneRefValid = false
     private var lastPhoneYaw: Float = 0
     private var edgeTurnBase: Float = 0
 
-    // Modo ferramenta
+    // Ferramenta
     private var activeSurface: CleaningSurface?
     private var savedPose: (SIMD3<Float>, Float, Float)?
     private var toolLerp: Float = 0
     private var toolUV = SIMD2<Float>(0.5, 0.5)
     private var toolPhoneRef: (Float, Float)?
     private var scrubLevel: Float = 0
+    private var hintEntity: ModelEntity?
 
-    // Escuta na porta
-    private var listening = false
-    private var listenLine = 0
-    private var listenTimer: Float = 0
+    // Interação (escuta, exame, conversa)
+    private var activeInteraction: InteractionSpec?
+    private var interactionLine = 0
+    private var interactionTimer: Float = 0
+    private var interactionElapsed: Float = 0
+    /// Quanto de cada conversa já foi ouvido, para poder retomar depois de parar.
+    private var interactionProgress: [String: Int] = [:]
 
     // Gerente
-    private var managerZ: Float = -3
+    private var managerT: Float = 0
     private var managerDir: Float = -1
     private var managerPause: Float = 0
     private var managerRng = SplitMix(seed: 99)
+    private var managerArea: AreaID = .corredor7
 
-    // Sustos
-    private var silhouetteTimer: Float = -1
+    // Sustos e fantasma
+    private var scareFired = false
+    private var scareTimer: Float = -1
     private var flickerTimer: Float = -1
+    private var ambientGhostTimer: Float = 40
     private var heartbeat = false
 
-    // Tempo
+    private var nearElevator = false
+
+    // Tempo e rede
     private var elapsed: Double = 0
     private var lastSecond = 0
     private var stateSendAccum: Float = 0
     private var poseSendAccum: Float = 0
     private var lastSentState: ControllerState?
+    private var fadeTarget: Float = 0
 
     init(state: GameState, world: GameWorld, input: InputState, audio: ProceduralAudio) {
         self.state = state
@@ -67,49 +77,137 @@ final class GameLoop {
         self.audio = audio
     }
 
-    // MARK: - Ciclo
+    // MARK: - Fluxo da campanha
 
-    func startShift() {
-        state.reset()
-        state.phase = .playing
-        world.player.position = [0, 0, -1.5]
-        yaw = 0; pitch = 0
-        elapsed = 0; lastSecond = 0
-        managerZ = -3; managerDir = -1; managerPause = 0
-        activeSurface = nil; listening = false
-        world.silhouette.isEnabled = false
-        applyCamera()
-        state.fire("intro")
-        audio.setAmbient(true)
-        coop?.send(.start)
+    func openHub() {
+        state.progress = ProgressStore.load()
+        state.role = state.progress.role
+        state.night = Campaign.night(min(state.progress.night, Campaign.count))
+        state.phase = .hub
+        audio.setAmbient(false)
+        pushControllerState(force: true)
     }
+
+    func startNight() {
+        let spec = Campaign.night(min(state.progress.night, Campaign.count))
+        state.beginNight(spec, role: state.role)
+        do { try world.buildNight(spec, progress: state.progress) }
+        catch { print("buildNight: \(error)") }
+
+        state.phase = .playing
+        let firstArea = spec.areas.first ?? .corredor7
+        world.player.position = GameWorld.spawn(firstArea)
+        state.currentArea = firstArea
+        yaw = 0; pitch = 0
+        phoneRefValid = false
+        applyCamera()
+        elapsed = 0; lastSecond = 0
+        managerT = 0.5; managerDir = -1; managerPause = 1.5
+        managerArea = firstArea
+        activeSurface = nil; activeInteraction = nil
+        scareFired = false; scareTimer = -1; flickerTimer = -1
+        ambientGhostTimer = Float.random(in: 35...70)
+        world.ghost.isEnabled = false
+        state.fade = 0
+        fadeTarget = 0
+        placeNPC(for: spec)
+        state.fire("n\(spec.number)-intro")
+        audio.setAmbient(true)
+        coop?.send(.startNight(spec.number))
+        pushControllerState(force: true)
+    }
+
+    private func placeNPC(for spec: NightSpec) {
+        if let inter = spec.interactions.first(where: { $0.kind == .conversa }) {
+            world.npc.isEnabled = true
+            world.npc.position = inter.position + GameWorld.offset(inter.area) - SIMD3(0, 1.2, 0)
+            world.npc.orientation = simd_quatf(angle: .pi, axis: [0, 1, 0])
+        } else {
+            world.npc.isEnabled = false
+        }
+    }
+
+    private func endShift(caught: Bool) {
+        exitTool()
+        activeInteraction = nil
+        state.inToolMode = false
+        state.currentTool = .none
+        audio.setAmbient(false)
+        world.ghost.isEnabled = false
+        world.manager.isEnabled = false
+        world.npc.isEnabled = false
+
+        var p = state.progress
+        if caught {
+            p.timesCaught += 1
+            p.trust = max(0, p.trust - 0.2)
+            state.reportCaught = true
+            state.reportStars = 0
+            state.fire("descoberto")
+            state.onHaptic?(.alarm)
+        } else {
+            let stars = state.computeStars()
+            state.reportStars = stars
+            p.stars += stars
+            p.starsByNight["\(state.night.number)"] = stars
+            p.trust = min(1, p.trust + 0.06 * Float(state.tasksDone))
+            p.night = min(Campaign.count + 1, state.night.number + 1)
+        }
+        state.progress = p
+        ProgressStore.save(p)
+        state.phase = .report
+        pushControllerState(force: true)
+    }
+
+    /// Chamado pela UI ao fechar o relatório.
+    func afterReport() {
+        if state.progress.night > Campaign.count {
+            state.phase = .deduction
+        } else {
+            openHub()
+        }
+        pushControllerState(force: true)
+    }
+
+    // MARK: - Frame
 
     func update(dt dtRaw: Float) {
         let dt = min(dtRaw, 0.05)
         let now = Date().timeIntervalSince1970
         state.tick(now: now)
+        state.fade += (fadeTarget - state.fade) * min(1, dt * 6)
+
         guard state.phase == .playing else {
             world.flushSurfaces()
             return
         }
+
         elapsed += Double(dt)
         let sec = Int(elapsed)
         if sec != lastSecond {
             lastSecond = sec
-            state.shiftSecondsLeft = max(0, Story.shiftSeconds - sec)
-            if state.shiftSecondsLeft == 0 { endShift() ; return }
+            state.shiftSecondsLeft = max(0, state.night.seconds - sec)
+            if state.shiftSecondsLeft == 0 { endShift(caught: false); return }
+            if state.shiftSecondsLeft == 60 {
+                state.pushMessage(from: Campaign.detective, text: "Um minuto. Volte para o elevador.")
+            }
         }
 
-        if input.consumeRecal() { phoneRefValid = false; toolPhoneRef = nil; state.showToast("Controle recalibrado") }
+        if input.consumeRecal() {
+            phoneRefValid = false
+            toolPhoneRef = nil
+            state.showToast("Controle recalibrado")
+        }
 
         if let s = activeSurface {
             updateTool(s, dt: dt)
-        } else if listening {
-            updateListening(dt: dt)
+        } else if activeInteraction != nil {
+            updateInteraction(dt: dt)
         } else {
             updateFreeMovement(dt: dt)
         }
 
+        state.currentArea = world.area(at: world.player.position)
         updateManager(dt: dt)
         updateScares(dt: dt)
         updateNetwork(dt: dt)
@@ -120,44 +218,10 @@ final class GameLoop {
         world.flushSurfaces()
     }
 
-    private func endShift() {
-        exitTool()
-        listening = false
-        state.inToolMode = false
-        state.currentTool = .none
-        audio.setAmbient(false)
-        if state.foundEvidence.count >= 2 {
-            state.phase = .deduction
-            state.fire("fim")
-        } else {
-            state.phase = .ending(.semProvas)
-        }
-        pushControllerState(force: true)
-    }
-
-    private func caught() {
-        exitTool()
-        listening = false
-        state.phase = .ending(.descoberto)
-        state.fire("descoberto")
-        state.onHaptic?(.alarm)
-        audio.setAmbient(false)
-        pushControllerState(force: true)
-    }
-
-    /// Só para o modo de captura/teste.
-    func debugSetPose(position: SIMD3<Float>, yaw: Float, pitch: Float) {
-        world.player.position = position
-        self.yaw = yaw
-        self.pitch = pitch
-        applyCamera()
-    }
-
-    // MARK: - Movimento livre
+    // MARK: - Movimento
 
     private func phoneYawUnwrapped() -> Float {
         var y = input.phoneYaw
-        // desembrulha em relação ao último valor para evitar salto em ±π
         while y - lastPhoneYaw > .pi { y -= 2 * .pi }
         while y - lastPhoneYaw < -.pi { y += 2 * .pi }
         lastPhoneYaw = y
@@ -165,26 +229,18 @@ final class GameLoop {
     }
 
     private func updateFreeMovement(dt: Float) {
-        // Olhar
         if input.source == .phone && input.hasPhoneAttitude {
             let py = phoneYawUnwrapped()
-            if !phoneRefValid {
-                phoneYawRef = py; phonePitchRef = 0; phoneRefValid = true; edgeTurnBase = yaw
-            }
+            if !phoneRefValid { phoneYawRef = py; phoneRefValid = true; edgeTurnBase = yaw }
             let rel = py - phoneYawRef
-            let gain: Float = 1.7
-            // giro contínuo quando aponta bem para o lado
-            if abs(rel) > 0.75 {
-                edgeTurnBase -= (rel > 0 ? 1 : -1) * 1.6 * dt
-            }
-            yaw = edgeTurnBase - rel * gain
+            if abs(rel) > 0.75 { edgeTurnBase -= (rel > 0 ? 1 : -1) * 1.6 * dt }
+            yaw = edgeTurnBase - rel * 1.7
             pitch = max(-1.1, min(1.1, input.phonePitch * 1.2))
         } else {
             yaw -= input.keyYaw * 1.8 * dt
             pitch = max(-1.1, min(1.1, pitch + input.keyPitch * 1.2 * dt))
         }
 
-        // Andar (relativo ao yaw)
         let speed: Float = 2.1
         let forward = SIMD3<Float>(-sin(yaw), 0, -cos(yaw))
         let rightV = SIMD3<Float>(cos(yaw), 0, -sin(yaw))
@@ -198,59 +254,122 @@ final class GameLoop {
         world.player.position = p
         applyCamera()
 
-        // Interação
         let (target, promptText) = findInteraction()
         state.prompt = promptText
-        state.currentTool = target?.tool ?? .none
+        if case .surface(let s)? = target?.kind { state.currentTool = s.tool } else { state.currentTool = .none }
+
         if input.consumeAct(), let t = target {
             switch t.kind {
             case .surface(let s): enterTool(s)
-            case .door7: startListening()
-            case .elevator: endShift()
+            case .interaction(let spec): startInteraction(spec)
+            case .travel(let area): travel(to: area)
+            case .finish: endShift(caught: false)
             }
         }
-        _ = input.consumeBack()
+        if input.consumeBack() && nearElevator { endShift(caught: false) }
     }
 
     private struct Interaction {
-        enum Kind { case surface(CleaningSurface), door7, elevator }
+        enum Kind {
+            case surface(CleaningSurface)
+            case interaction(InteractionSpec)
+            case travel(AreaID)
+            case finish
+        }
         let kind: Kind
-        let tool: ToolKind
     }
 
     private func findInteraction() -> (Interaction?, String) {
         let eye = world.player.position + SIMD3(0, GameWorld.eyeHeight, 0)
         let forward = SIMD3<Float>(-sin(yaw) * cos(pitch), sin(pitch), -cos(yaw) * cos(pitch))
-        func facing(_ target: SIMD3<Float>, maxDist: Float, minDot: Float = 0.6) -> Bool {
+        func facing(_ target: SIMD3<Float>, maxDist: Float, minDot: Float) -> Float? {
             let d = target - eye
             let dist = simd_length(d)
-            guard dist < maxDist else { return false }
-            return simd_dot(simd_normalize(d), forward) > minDot
+            guard dist < maxDist, dist > 0.001 else { return nil }
+            return simd_dot(simd_normalize(d), forward) > minDot ? dist : nil
         }
+
         var best: (Interaction, String, Float)? = nil
+        func offer(_ kind: Interaction.Kind, _ text: String, _ dist: Float) {
+            if best == nil || dist < best!.2 { best = (Interaction(kind: kind), text, dist) }
+        }
+
         for s in world.surfaces {
-            let target = s.origin + (s.tool == .rodo ? SIMD3(0, 0, 0) : SIMD3(0, 0.3, 0))
-            if facing(target, maxDist: s.tool == .rodo ? 2.6 : 3.2, minDot: 0.45) {
-                let dist = simd_length(target - eye)
-                let done = s.mask.cleanFraction >= 0.9
-                let text = done ? "\(s.promptVerb) (concluído)  ·  AÇÃO para retocar" : "\(s.promptVerb)  ·  AÇÃO  ·  \(s.tool.title)"
-                if best == nil || dist < best!.2 { best = (Interaction(kind: .surface(s), tool: s.tool), text, dist) }
+            let anchor = s.spec.isHorizontal ? s.origin + SIMD3(0, 0.35, 0) : s.origin
+            let reach = 2.5 + max(s.width, s.height) * 0.35
+            if let d = facing(anchor, maxDist: reach, minDot: 0.4) {
+                let eff = state.role.efficiency(for: s.tool)
+                let speedNote = eff >= 1 ? "" : "  ·  não é a sua ferramenta"
+                let text = s.isDone
+                    ? "\(s.promptVerb) (feito)  ·  AÇÃO para retocar"
+                    : "\(s.promptVerb)  ·  AÇÃO  ·  \(s.tool.title)\(speedNote)"
+                offer(.surface(s), text, d)
             }
         }
-        let door7 = GameWorld.door7 + SIMD3(0, 1.2, 0)
-        if facing(door7, maxDist: 2.0, minDot: 0.5) {
-            let dist = simd_length(door7 - eye)
-            let has = state.hasEvidence("conversa")
-            let text = has ? "Suíte 7 · lacrada pela gerência" : "Escutar atrás da porta  ·  AÇÃO  ·  cuidado com a gerente"
-            if best == nil || dist < best!.2 { best = (Interaction(kind: .door7, tool: .ouvido), text, dist) }
+        for spec in state.night.interactions {
+            guard let marker = world.interactionMarkers[spec.id] else { continue }
+            if let d = facing(marker.position, maxDist: 2.2, minDot: 0.45) {
+                let done = spec.evidenceID.map { state.hasEvidence($0) } ?? false
+                let text = done ? "\(spec.prompt) (já anotado)" : "\(spec.prompt)  ·  AÇÃO"
+                offer(.interaction(spec), text, d)
+            }
         }
-        let elev = SIMD3<Float>(0, 1.2, GameWorld.elevatorZ)
-        if facing(elev, maxDist: 2.2, minDot: 0.5) {
-            let dist = simd_length(elev - eye)
-            let text = "Encerrar o turno e descer  ·  AÇÃO  ·  provas: \(state.foundEvidence.count)/4"
-            if best == nil || dist < best!.2 { best = (Interaction(kind: .elevator, tool: .none), text, dist) }
+
+        // elevador de serviço: AÇÃO viaja para a próxima área, SAIR encerra o turno
+        nearElevator = false
+        let regions = orderedRegions()
+        let here = GameWorld.region(state.currentArea)
+        if let anchorArea = state.night.areas.first(where: { GameWorld.region($0) == here }) {
+            let point = GameWorld.travelPoint(anchorArea)
+            if let d = facing(point, maxDist: 2.4, minDot: 0.4) {
+                nearElevator = true
+                let n = state.progress.evidenceCount(night: state.night.number)
+                let t = CampaignProgress.totalEvidence(night: state.night.number)
+                if regions.count > 1, let next = nextRegionArea() {
+                    offer(.travel(next), "Elevador de serviço  ·  AÇÃO ir para \(next.name)  ·  SAIR encerrar o turno (provas \(n)/\(t))", d)
+                } else {
+                    offer(.finish, "Encerrar o turno  ·  AÇÃO  ·  provas \(n)/\(t)", d)
+                }
+            }
         }
         return (best?.0, best?.1 ?? "")
+    }
+
+    /// Regiões distintas desta noite, na ordem em que aparecem.
+    private func orderedRegions() -> [AreaID] {
+        var seen = Set<String>()
+        var out: [AreaID] = []
+        for a in state.night.areas {
+            let r = GameWorld.region(a)
+            if !seen.contains(r) { seen.insert(r); out.append(a) }
+        }
+        return out
+    }
+
+    private func nextRegionArea() -> AreaID? {
+        let regions = orderedRegions()
+        guard regions.count > 1 else { return nil }
+        let here = GameWorld.region(state.currentArea)
+        let i = regions.firstIndex { GameWorld.region($0) == here } ?? 0
+        return regions[(i + 1) % regions.count]
+    }
+
+    private func travel(to area: AreaID) {
+        fadeTarget = 1
+        state.showToast("Indo para \(area.name)")
+        let dest = GameWorld.spawn(area)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            guard let self, self.state.phase == .playing else { return }
+            self.world.player.position = dest
+            self.yaw = 0; self.pitch = 0
+            self.phoneRefValid = false
+            self.applyCamera()
+            self.state.currentArea = area
+            self.managerArea = area
+            self.managerT = 0.2
+            self.managerPause = 3
+            self.fadeTarget = 0
+        }
     }
 
     private func applyCamera() {
@@ -258,7 +377,15 @@ final class GameLoop {
         world.camera.orientation = simd_quatf(angle: pitch, axis: [1, 0, 0])
     }
 
-    // MARK: - Modo ferramenta
+    func debugSetPose(position: SIMD3<Float>, yaw y: Float, pitch p: Float) {
+        world.player.position = position
+        yaw = y
+        pitch = p
+        state.currentArea = world.area(at: position)
+        applyCamera()
+    }
+
+    // MARK: - Ferramenta
 
     private func enterTool(_ s: CleaningSurface) {
         activeSurface = s
@@ -271,12 +398,14 @@ final class GameLoop {
         state.inToolMode = true
         state.currentTool = s.tool
         state.onHaptic?(.tick)
+        showHint(for: s)
         pushControllerState(force: true)
     }
 
     private func exitTool() {
         guard let s = activeSurface else { return }
         s.toolTip.isEnabled = false
+        hintEntity?.isEnabled = false
         if let (p, y, pi) = savedPose { world.player.position = p; yaw = y; pitch = pi }
         applyCamera()
         activeSurface = nil
@@ -286,13 +415,34 @@ final class GameLoop {
         pushControllerState(force: true)
     }
 
+    /// Spray revelador: marca de leve onde ainda há algo escondido.
+    private func showHint(for s: CleaningSurface) {
+        guard state.progress.hasUpgrade("spray"), let region = s.revealRegion,
+              let ev = s.evidenceID, !state.hasEvidence(ev) else {
+            hintEntity?.isEnabled = false
+            return
+        }
+        let e = hintEntity ?? {
+            let m = ModelEntity(mesh: .generatePlane(width: 1, height: 1),
+                                materials: [UnlitMaterial(color: NSColor(calibratedRed: 1, green: 0.9, blue: 0.4, alpha: 0.18))])
+            world.nightRoot.addChild(m)
+            hintEntity = m
+            return m
+        }()
+        let cx = Float(region.midX), cy = Float(region.midY)
+        e.position = s.worldPoint(u: cx, v: cy, lift: 0.006)
+        e.orientation = s.dirtEntity.orientation
+        e.scale = [Float(region.width) * s.width * 1.2, Float(region.height) * s.height * 1.2, 1]
+        if s.spec.isHorizontal { e.scale = [Float(region.width) * s.width * 1.2, 1, Float(region.height) * s.height * 1.2] }
+        e.isEnabled = true
+    }
+
     private func updateTool(_ s: CleaningSurface, dt: Float) {
-        // câmera desliza para a pose da ferramenta
         toolLerp = min(1, toolLerp + dt * 3.5)
         let camTarget = s.toolCameraPosition - SIMD3(0, GameWorld.eyeHeight, 0)
         let look = s.toolLookAt - s.toolCameraPosition
         let targetYaw = atan2(-look.x, -look.z)
-        let targetPitch = asin(max(-1, min(1, look.y / simd_length(look))))
+        let targetPitch = asin(max(-1, min(1, look.y / max(simd_length(look), 0.001))))
         if let (p, y, pi) = savedPose {
             let t = toolLerp * toolLerp * (3 - 2 * toolLerp)
             world.player.position = simd_mix(p, camTarget, SIMD3(repeating: t))
@@ -301,7 +451,6 @@ final class GameLoop {
             applyCamera()
         }
 
-        // posição da ponta
         var uv = toolUV
         if input.source == .phone && input.hasPhoneAttitude {
             let py = phoneYawUnwrapped()
@@ -318,25 +467,25 @@ final class GameLoop {
         uv.x = max(0, min(1, uv.x)); uv.y = max(0, min(1, uv.y))
         let delta = uv - toolUV
         toolUV = uv
+
         let lift: Float = s.tool == .rodo ? 0.02 : 0.04
         s.toolTip.position = s.worldPoint(u: uv.x, v: uv.y, lift: lift)
-        s.toolTip.orientation = simd_quatf(angle: s.tool == .rodo ? 0 : atan2(delta.x, max(abs(delta.y), 0.001)) * 0.3, axis: s.normal)
 
-        // limpar
         let speed = simd_length(delta) / max(dt, 0.001)
         if input.use && toolLerp > 0.7 {
             let effort: Float = input.source == .phone ? max(0.5, min(1.6, input.phoneEffort / 2.5)) : 1
+            let roleEff = state.role.efficiency(for: s.tool)
             if speed > 0.05 && s.gestureMatches(delta: delta) {
                 let b = s.brush
                 let from = s.lastUV ?? uv
-                s.mask.clean(from: from, to: uv, halfW: b.halfW, halfH: b.halfH, amount: b.amount * effort, round: b.round)
-                coop?.send(.clean(surface: s.index, u0: from.x, v0: from.y, u1: uv.x, v1: uv.y, tool: s.tool, amount: b.amount * effort), reliable: false)
+                let amount = b.amount * effort * roleEff
+                s.mask.clean(from: from, to: uv, halfW: b.halfW, halfH: b.halfH, amount: amount, round: b.round)
+                coop?.send(.clean(surface: s.index, u0: from.x, v0: from.y, u1: uv.x, v1: uv.y, amount: amount), reliable: false)
                 s.strokeDistance += simd_length(delta)
                 scrubLevel = min(1, speed * 1.5)
                 if s.strokeDistance > 0.18 { s.strokeDistance = 0; state.onHaptic?(.stroke) }
                 state.suspicion = max(0, state.suspicion - dt * 0.05)
             } else if speed > 0.05 {
-                // gesto errado: feedback, não limpa
                 scrubLevel = 0.2
             }
             s.lastUV = uv
@@ -346,15 +495,12 @@ final class GameLoop {
 
         let frac = s.mask.cleanFraction
         state.setTask(s.taskID, progress: frac)
-        if s.mask.cleanFraction > 0.001 { coop?.send(.task(s.taskID, frac), reliable: false) }
+        if frac > 0.001 { coop?.send(.task(s.taskID, frac), reliable: false) }
 
-        // prova revelada
         var promptText = "\(s.tool.title)  ·  segure USAR e mova  ·  SAIR para voltar"
-        if let ev = s.evidenceID, !state.hasEvidence(ev) {
-            if s.isRevealed {
-                promptText = "Tem algo aqui embaixo  ·  AÇÃO para fotografar  ·  SAIR para voltar"
-                if ev == "mao" { state.fire("mao") }
-            }
+        if let ev = s.evidenceID, !state.hasEvidence(ev), s.isRevealed {
+            promptText = "Tem algo aqui embaixo  ·  AÇÃO para fotografar"
+            hintEntity?.isEnabled = false
         }
         state.prompt = promptText
 
@@ -362,52 +508,79 @@ final class GameLoop {
             if let ev = s.evidenceID, !state.hasEvidence(ev), s.isRevealed {
                 state.addEvidence(ev)
                 coop?.send(.evidence(ev))
-                if state.managerSees { state.suspicion = min(1, state.suspicion + 0.2) }
+                if state.managerSees { state.suspicion = min(1, state.suspicion + 0.15) }
             }
         }
         if input.consumeBack() { exitTool() }
     }
 
-    // MARK: - Escuta
+    // MARK: - Interações
 
-    private func startListening() {
-        listening = true
-        listenLine = 0
-        listenTimer = 0
-        state.currentTool = .ouvido
-        state.prompt = "Escutando...  ·  SAIR para se afastar"
-        state.showSubtitle("(vozes abafadas atrás da porta)", seconds: 3)
+    private func startInteraction(_ spec: InteractionSpec) {
+        if let ev = spec.evidenceID, state.hasEvidence(ev) { return }
+        activeInteraction = spec
+        interactionLine = interactionProgress[spec.id] ?? 0
+        interactionTimer = 2.2
+        interactionElapsed = 0
+        state.currentTool = spec.kind == .escuta ? .ouvido : .none
+        state.prompt = spec.kind == .escuta ? "Escutando…  ·  SAIR para se afastar" : "\(spec.prompt)  ·  SAIR para parar"
         state.onHaptic?(.tick)
         pushControllerState(force: true)
     }
 
-    private func updateListening(dt: Float) {
-        // encosta a câmera na porta
-        let target = SIMD3<Float>(1.0, 0, GameWorld.door7.z)
-        world.player.position = simd_mix(world.player.position, target, SIMD3(repeating: min(1, dt * 4)))
-        let targetYaw: Float = -.pi / 2
-        yaw += (targetYaw - yaw) * min(1, dt * 4)
-        pitch += (0.1 - pitch) * min(1, dt * 4)
+    private func updateInteraction(dt: Float) {
+        guard let spec = activeInteraction, let marker = world.interactionMarkers[spec.id] else {
+            activeInteraction = nil
+            return
+        }
+        // aproxima e encara o alvo
+        let target = marker.position
+        let stand = target + simd_normalize(world.player.position - target + SIMD3(0.001, 0, 0.001)) * 0.9
+        var p = world.player.position
+        p = simd_mix(p, SIMD3(stand.x, 0, stand.z), SIMD3(repeating: min(1, dt * 3)))
+        world.player.position = p
+        let d = target - (p + SIMD3(0, GameWorld.eyeHeight, 0))
+        let ty = atan2(-d.x, -d.z)
+        var diff = ty - yaw
+        while diff > .pi { diff -= 2 * .pi }
+        while diff < -.pi { diff += 2 * .pi }
+        yaw += diff * min(1, dt * 4)
+        pitch += (0.05 - pitch) * min(1, dt * 4)
         applyCamera()
 
-        listenTimer += dt
-        if listenTimer > 2.8 {
-            listenTimer = 0
-            if listenLine < Story.door7Transcript.count {
-                state.showSubtitle(Story.door7Transcript[listenLine], seconds: 3.5)
-                state.pushMessage(from: "Porta 7", text: Story.door7Transcript[listenLine])
-                listenLine += 1
+        interactionElapsed += dt
+        // Se ela olhar, você endireita o corpo e volta a trabalhar. O preço é
+        // proporcional ao tempo que você já estava parada ali.
+        if spec.risky && state.managerSees && interactionElapsed > 0.5 {
+            interactionProgress[spec.id] = interactionLine
+            activeInteraction = nil
+            state.currentTool = .none
+            state.suspicion = min(1, state.suspicion + min(0.18, 0.02 + interactionElapsed * 0.02) * suspicionRate)
+            state.showToast("Dona Celeste olhou. Você endireitou o corpo e voltou ao trabalho.")
+            state.onHaptic?(.warning)
+            return
+        }
+
+        interactionTimer += dt
+        if interactionTimer > 2.2 {
+            interactionTimer = 0
+            if interactionLine < spec.lines.count {
+                state.pushMessage(from: spec.speaker, text: spec.lines[interactionLine])
+                interactionLine += 1
             } else {
-                state.addEvidence("conversa")
-                coop?.send(.evidence("conversa"))
-                listening = false
+                if let ev = spec.evidenceID {
+                    state.addEvidence(ev)
+                    coop?.send(.evidence(ev))
+                }
+                interactionProgress[spec.id] = spec.lines.count
+                activeInteraction = nil
                 state.currentTool = .none
+                return
             }
         }
-        // escutar é a ação mais suspeita
-        if state.managerSees { state.suspicion = min(1, state.suspicion + dt * 0.16) }
-        if input.consumeBack() || input.consumeAct() {
-            listening = false
+        if input.consumeBack() {
+            interactionProgress[spec.id] = interactionLine
+            activeInteraction = nil
             state.currentTool = .none
         }
         _ = input.consumeAct()
@@ -415,71 +588,166 @@ final class GameLoop {
 
     // MARK: - Gerente
 
+    private var suspicionRate: Float {
+        state.progress.managerAlertness * (state.progress.hasUpgrade("luvas") ? 0.75 : 1.0)
+    }
+
+    /// Trecho que a gerente percorre em cada área, em coordenadas de mundo.
+    private func managerPath(_ area: AreaID) -> (SIMD3<Float>, SIMD3<Float>)? {
+        let o = GameWorld.offset(area)
+        switch GameWorld.region(area) {
+        case "andar7": return (o + [0.55, 0, -1.5], o + [0.55, 0, -13.5])
+        case "lobby": return (o + [-3.2, 0, -5.5], o + [3.2, 0, -12.5])
+        case "porao": return (o + [-0.6, 0, -1.2], o + [-0.6, 0, -7.6])
+        case "andar8": return (o + [0.4, 0, -1.2], o + [0.4, 0, -12.5])
+        default: return nil   // na fachada ninguém te alcança
+        }
+    }
+
+    /// Nos quartos, na gôndola e atrás do balcão você está fora de vista.
+    private var inCover: Bool {
+        world.isInCover(world.player.position) || (activeSurface.map { world.isInCover($0.toolCameraPosition) } ?? false)
+    }
+
     private func updateManager(dt: Float) {
+        let area = state.currentArea
+        guard let (a, b) = managerPath(area) else {
+            world.manager.isEnabled = false
+            state.managerNear = false
+            state.managerSees = false
+            state.managerWarning = false
+            heartbeat = false
+            return
+        }
+        if managerArea != area {
+            managerArea = area
+            managerT = 0
+            managerPause = 2.5
+        }
+
+        // no oitavo andar ela só sobe no fim do turno
+        let lateNight = state.night.number == Campaign.count && state.shiftSecondsLeft < 100
+        if area == .andar8 && !lateNight {
+            world.manager.isEnabled = false
+            state.managerNear = false
+            state.managerSees = false
+            heartbeat = false
+            return
+        }
+
+        world.manager.isEnabled = true
         let isHost = coop?.isHost ?? true
         if isHost {
             if managerPause > 0 {
                 managerPause -= dt
             } else {
-                managerZ += managerDir * 0.9 * dt
-                if managerZ < -13.5 { managerZ = -13.5; managerDir = 1; managerPause = 2.5 }
-                if managerZ > -1.5 { managerZ = -1.5; managerDir = -1; managerPause = 3.5 }
-                if managerRng.next() < 0.004 { managerPause = 1.5 + Float(managerRng.next()) * 2 }
+                let speed: Float = 0.16 * suspicionRate
+                managerT += managerDir * speed * dt
+                if managerT <= 0 { managerT = 0; managerDir = 1; managerPause = 3.0 }
+                if managerT >= 1 { managerT = 1; managerDir = -1; managerPause = 2.2 }
+                if managerRng.next() < 0.004 { managerPause = 1.5 + Float(managerRng.next()) * 2.5 }
             }
         }
-        world.manager.position = [0.55, 0, managerZ]
-        world.managerDirection = managerDir
-        world.manager.orientation = simd_quatf(angle: managerDir < 0 ? 0 : .pi, axis: [0, 1, 0])
+        let pos = simd_mix(a, b, SIMD3(repeating: managerT))
+        world.manager.position = pos
+        let facing = simd_normalize((b - a) * managerDir + SIMD3(0.0001, 0, 0.0001))
+        world.manager.orientation = simd_quatf(angle: atan2(facing.x, facing.z), axis: [0, 1, 0])
 
-        // visão: jogador no corredor, à frente da gerente, até 7 m
-        let p = world.player.position
-        let inCorridor = p.x > -1.3 && p.x < 1.3
-        let toPlayer = p.z - managerZ
-        let dist = abs(toPlayer)
-        let ahead = (managerDir < 0 && toPlayer < 0.3) || (managerDir > 0 && toPlayer > -0.3)
-        state.managerNear = dist < 4.5 && inCorridor
-        let seesNow = inCorridor && ahead && dist < 7.5
-        state.managerSees = seesNow
+        let player = world.player.position
+        let toPlayer = player - pos
+        let dist = simd_length(toPlayer)
+        let cover = inCover
+        let ahead = simd_dot(simd_normalize(toPlayer + SIMD3(0.0001, 0, 0.0001)), facing) > 0.1
+        state.managerNear = dist < 5.0 && !cover
+        state.managerSees = !cover && ahead && dist < 8.0
+        state.managerWarning = state.progress.hasUpgrade("radio") && dist < 12 && !cover
 
-        // Comportamento suspeito: parada sem ferramenta na mão perto da suíte 7, ou escutando (tratado na escuta).
-        let idleNearSuite7 = activeSurface == nil && !listening && inCorridor && abs(p.z - GameWorld.door7.z) < 2.0
-        if seesNow && idleNearSuite7 && dist < 5 {
-            state.suspicion = min(1, state.suspicion + dt * 0.08)
+        // Parada onde não devia, à vista dela: perto de uma porta lacrada, de
+        // um telefone que não é seu, ou num andar que oficialmente não existe.
+        let idle = activeSurface == nil && activeInteraction == nil
+        let nearHotspot = state.night.interactions.contains { spec in
+            guard spec.risky, let m = world.interactionMarkers[spec.id] else { return false }
+            return simd_length(player - m.position) < 3.2
+        } || area == .andar8
+        if state.managerSees && idle && nearHotspot {
+            state.suspicion = min(1, state.suspicion + dt * 0.05 * suspicionRate)
         }
-        // Limpar perto dela é o disfarce funcionando.
-        if activeSurface != nil && input.use { state.suspicion = max(0, state.suspicion - dt * 0.02) }
-
-        heartbeat = (listening || (idleNearSuite7 && seesNow)) && dist < 5
-        if state.suspicion >= 1 { caught() }
+        // Trabalhando ou fora de vista, a desconfiança esfria.
+        if activeSurface != nil && input.use {
+            state.suspicion = max(0, state.suspicion - dt * 0.05)
+        } else if !state.managerSees {
+            state.suspicion = max(0, state.suspicion - dt * 0.03)
+        }
+        heartbeat = (state.managerSees && dist < 5) || (activeInteraction?.risky == true && state.managerSees)
+        if state.suspicion >= 1 { endShift(caught: true) }
     }
 
     // MARK: - Sustos
 
     private func updateScares(dt: Float) {
-        let window = world.surfaces[0]
-        if silhouetteTimer < 0 && window.mask.cleanFraction > 0.85 && !silhouetteShown {
-            silhouetteTimer = 0
-            flickerTimer = 0
-            world.silhouette.isEnabled = true
-            state.onHaptic?(.shock)
-            state.fire("silhueta")
-            audio.stinger()
-            silhouetteShown = true
+        // susto da noite: dispara quando a primeira tarefa fecha
+        if !scareFired && state.tasksDone >= 1 {
+            scareFired = true
+            fireScare(state.night.scare)
         }
-        if silhouetteTimer >= 0 {
-            silhouetteTimer += dt
-            if silhouetteTimer > 1.4 { world.silhouette.isEnabled = false }
-            if silhouetteTimer > 30 { silhouetteTimer = -1 }
+        if scareTimer >= 0 {
+            scareTimer += dt
+            if scareTimer > 1.6 { world.ghost.isEnabled = false }
+            if scareTimer > 25 { scareTimer = -1 }
         }
         if flickerTimer >= 0 {
             flickerTimer += dt
             let on = flickerTimer > 2.4 || (Int(flickerTimer * 14) % 3 != 0)
-            for l in world.lights { l.isEnabled = on }
+            world.flicker(on, area: state.currentArea)
             state.lightsFlicker = flickerTimer <= 2.4
-            if flickerTimer > 2.4 { flickerTimer = -1; state.lightsFlicker = false }
+            if flickerTimer > 2.4 {
+                flickerTimer = -1
+                state.lightsFlicker = false
+                world.flicker(true, area: state.currentArea)
+            }
+        }
+        // presença ambiente do Osvaldo
+        ambientGhostTimer -= dt
+        if ambientGhostTimer <= 0 {
+            ambientGhostTimer = Float.random(in: 50...95)
+            if let line = Campaign.osvaldoLines.randomElement() {
+                state.showSubtitle(line, seconds: 4)
+                state.onHaptic?(.warning)
+            }
         }
     }
-    private var silhouetteShown = false
+
+    private func fireScare(_ kind: String) {
+        flickerTimer = 0
+        audio.stinger()
+        state.onHaptic?(.shock)
+        scareTimer = 0
+        let area = state.currentArea
+        let o = GameWorld.offset(area)
+        switch kind {
+        case "silhueta":
+            world.ghost.position = o + [0.1, 0, GameWorld.corridorEnd - 0.5]
+            world.ghost.isEnabled = true
+            state.showSubtitle("Tem alguém do lado de fora do vidro. No sétimo andar.", seconds: 4)
+        case "quadro":
+            world.ghost.position = o + [-5.4, 0, -6.5]
+            world.ghost.isEnabled = true
+            state.showSubtitle("O quadro de 1974 tem uma fileira de janelas a mais que o prédio de hoje.", seconds: 5)
+        case "espelho":
+            world.ghost.position = o + [6.0, 0, -13.6]
+            world.ghost.isEnabled = true
+            state.showSubtitle("O espelho embaçou sozinho, com o box seco.", seconds: 4)
+        case "incinerador":
+            world.ghost.position = o + [-3.4, 0, -7.4]
+            world.ghost.isEnabled = true
+            state.showSubtitle("O incinerador acendeu sozinho e apagou.", seconds: 4)
+        default:
+            world.ghost.position = o + [0, 0, -12.6]
+            world.ghost.isEnabled = true
+            state.showSubtitle("Alguém está passando o rodo no vidro. Do lado de fora do oitavo andar.", seconds: 5)
+        }
+        state.showToast(state.night.closer)
+    }
 
     // MARK: - Rede
 
@@ -490,10 +758,9 @@ final class GameLoop {
         if poseSendAccum > 0.05 {
             poseSendAccum = 0
             let p = world.player.position
-            coop?.send(.pose(x: p.x, y: p.y, z: p.z, yaw: yaw, tool: state.currentTool), reliable: false)
+            coop?.send(.pose(x: p.x, y: p.y, z: p.z, yaw: yaw, role: state.role), reliable: false)
             if coop?.isHost ?? false {
-                coop?.send(.manager(z: managerZ, dir: managerDir, paused: managerPause > 0), reliable: false)
-                coop?.send(.suspicion(state.suspicion), reliable: false)
+                coop?.send(.manager(t: managerT, dir: managerDir, area: state.currentArea.rawValue), reliable: false)
             }
         }
     }
@@ -509,18 +776,20 @@ final class GameLoop {
     private func same(_ a: ControllerState, _ b: ControllerState) -> Bool {
         a.tool == b.tool && a.inToolMode == b.inToolMode && a.prompt == b.prompt && a.phase == b.phase
             && abs(a.suspicion - b.suspicion) < 0.02 && a.managerNear == b.managerNear
-            && a.shiftSecondsLeft == b.shiftSecondsLeft && a.evidenceCount == b.evidenceCount
+            && a.managerWarning == b.managerWarning && a.shiftSecondsLeft == b.shiftSecondsLeft
+            && a.evidenceCount == b.evidenceCount && a.area == b.area && a.night == b.night
             && zip(a.tasks, b.tasks).allSatisfy { abs($0.progress - $1.progress) < 0.02 }
     }
 
-    /// Mensagens do outro Mac.
-    func handleCoop(_ m: CoopMessage) {
+    func handleCoop(_ m: CoopMessage, from peer: String) {
         switch m {
-        case .pose(let x, let y, let z, let yaw, _):
-            world.ghost.isEnabled = true
-            world.ghost.position = [x, y, z]
-            world.ghost.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0])
-        case .clean(let idx, let u0, let v0, let u1, let v1, _, let amount):
+        case .pose(let x, let y, let z, let yaw, let role):
+            let e = world.avatar(for: peer, role: role)
+            e.isEnabled = true
+            e.position = [x, y, z]
+            e.orientation = simd_quatf(angle: yaw, axis: [0, 1, 0])
+            state.coopPeers[peer] = role
+        case .clean(let idx, let u0, let v0, let u1, let v1, let amount):
             guard idx < world.surfaces.count else { return }
             let s = world.surfaces[idx]
             let b = s.brush
@@ -529,12 +798,13 @@ final class GameLoop {
             state.addEvidence(id)
         case .task(let id, let p):
             state.setTask(id, progress: p)
-        case .manager(let z, let dir, let paused):
-            if !(coop?.isHost ?? true) { managerZ = z; managerDir = dir; managerPause = paused ? 1 : 0 }
-        case .suspicion(let s):
-            if !(coop?.isHost ?? true) { state.suspicion = s }
-        case .start:
-            if state.phase == .menu { startShift() }
+        case .manager(let t, let dir, _):
+            if !(coop?.isHost ?? true) { managerT = t; managerDir = dir }
+        case .startNight(let n):
+            if state.phase != .playing {
+                state.progress.night = n
+                startNight()
+            }
         }
     }
 }

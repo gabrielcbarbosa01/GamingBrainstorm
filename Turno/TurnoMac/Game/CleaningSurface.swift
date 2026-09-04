@@ -131,24 +131,14 @@ final class DirtMask {
 @MainActor
 final class CleaningSurface {
     let index: Int
-    let id: String
-    let taskID: String
-    let tool: ToolKind
-    let promptVerb: String
+    let spec: SurfaceSpec
+    let mask: DirtMask
     let origin: SIMD3<Float>
     let right: SIMD3<Float>
     let up: SIMD3<Float>
     let normal: SIMD3<Float>
-    let width: Float
-    let height: Float
-    let mask: DirtMask
-    let revealRegion: CGRect?
-    let evidenceID: String?
-    let toolCameraPosition: SIMD3<Float>
-    let toolLookAt: SIMD3<Float>
-    /// Faixa de yaw/pitch (rad) do iPhone que cobre a superfície inteira.
-    let phoneYawRange: Float
-    let phonePitchRange: Float
+    /// Pincel maior quando a melhoria do rodo largo está comprada.
+    var wideBrush = false
 
     var dirtEntity: ModelEntity!
     var revealEntity: ModelEntity?
@@ -156,29 +146,32 @@ final class CleaningSurface {
     var lastUV: SIMD2<Float>? = nil
     var strokeDistance: Float = 0
 
-    init(index: Int, id: String, taskID: String, tool: ToolKind, promptVerb: String,
-         origin: SIMD3<Float>, right: SIMD3<Float>, up: SIMD3<Float>, width: Float, height: Float,
-         mask: DirtMask, revealRegion: CGRect?, evidenceID: String?,
-         toolCameraPosition: SIMD3<Float>, toolLookAt: SIMD3<Float>,
-         phoneYawRange: Float = 0.9, phonePitchRange: Float = 0.7) {
+    var id: String { spec.id }
+    var area: AreaID { spec.area }
+    var tool: ToolKind { spec.tool }
+    var taskID: String { spec.id }
+    var promptVerb: String { spec.promptVerb }
+    var width: Float { spec.width }
+    var height: Float { spec.height }
+    var evidenceID: String? { spec.evidenceID }
+    var revealRegion: CGRect? { spec.revealRegion }
+    var toolCameraPosition: SIMD3<Float> { spec.camera + offset }
+    var toolLookAt: SIMD3<Float> { spec.lookAt + offset }
+    let offset: SIMD3<Float>
+
+    /// Faixa de yaw/pitch (rad) do iPhone que cobre a superfície inteira.
+    var phoneYawRange: Float { spec.isHorizontal ? 0.8 : 0.7 }
+    var phonePitchRange: Float { spec.isHorizontal ? 0.6 : 0.8 }
+
+    init(index: Int, spec: SurfaceSpec, offset: SIMD3<Float>, mask: DirtMask) {
         self.index = index
-        self.id = id
-        self.taskID = taskID
-        self.tool = tool
-        self.promptVerb = promptVerb
-        self.origin = origin
-        self.right = simd_normalize(right)
-        self.up = simd_normalize(up)
-        self.normal = simd_normalize(simd_cross(self.right, self.up))
-        self.width = width
-        self.height = height
+        self.spec = spec
+        self.offset = offset
         self.mask = mask
-        self.revealRegion = revealRegion
-        self.evidenceID = evidenceID
-        self.toolCameraPosition = toolCameraPosition
-        self.toolLookAt = toolLookAt
-        self.phoneYawRange = phoneYawRange
-        self.phonePitchRange = phonePitchRange
+        self.origin = spec.origin + offset
+        self.right = simd_normalize(spec.right)
+        self.up = simd_normalize(spec.up)
+        self.normal = simd_normalize(simd_cross(self.right, self.up))
     }
 
     func worldPoint(u: Float, v: Float, lift: Float = 0.01) -> SIMD3<Float> {
@@ -190,19 +183,22 @@ final class CleaningSurface {
         return mask.cleanFraction(in: r)
     }
 
-    var isRevealed: Bool { revealFraction > 0.62 }
+    var isRevealed: Bool { revealFraction > 0.6 }
+    var isDone: Bool { mask.cleanFraction >= 0.88 }
 
     /// Tamanho do pincel em uv, por ferramenta.
     var brush: (halfW: Float, halfH: Float, amount: Float, round: Bool) {
+        let k: Float = wideBrush ? 1.7 : 1.0
         switch tool {
-        case .rodo: return (0.11, 0.012, 1.0, false)
-        case .vassoura: return (0.09, 0.05, 0.45, true)
-        case .pano: return (0.07, 0.11, 0.3, true)
+        case .rodo: return (0.11 * k, 0.012, 1.0, false)
+        case .vassoura: return (0.09 * k, 0.05 * k, 0.45, true)
+        case .pano: return (0.07 * k, 0.11 * k, 0.3, true)
+        case .flanela: return (0.09 * k, 0.05 * k, 0.26, true)
         default: return (0.05, 0.05, 0.5, true)
         }
     }
 
-    /// Verifica se o gesto combina com a ferramenta (rodo vertical, vassoura lateral).
+    /// Verifica se o gesto combina com a ferramenta.
     func gestureMatches(delta: SIMD2<Float>) -> Bool {
         let ax = abs(delta.x), ay = abs(delta.y)
         switch tool {

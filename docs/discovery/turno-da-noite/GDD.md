@@ -1,56 +1,86 @@
 # Turno da Noite — GDD de discovery
 
-> Status: **hipótese em discovery** (branch `discovery/turno-da-noite`, 04/09/2026). Nada aqui substitui as fontes de verdade da `main`; esta branch existe para prototipar e testar o conceito antes de qualquer decisão de pivô.
+> Status: **hipótese em discovery** (branch `discovery/turno-da-noite`). Nada aqui substitui as fontes de verdade da `main`; esta branch existe para prototipar e testar o conceito antes de qualquer decisão de pivô.
 
 ## High concept
 
-Um hotel acolhedor com um crime mal explicado. Você é uma policial infiltrada na equipe de limpeza do **Grand Oxford Hotel**. O turno é de verdade: vidros, corredor, quartos. A investigação acontece por baixo do turno. **Limpar bem é o seu disfarce**: cada tarefa mal feita ou cada minuto parada onde não deveria sobe a suspeita da gerente.
+Um hotel acolhedor com um crime mal explicado. Até quatro policiais entram disfarçados na equipe de limpeza do **Grand Oxford Hotel** e têm **cinco noites** antes de o hotel ser vendido. O turno é de verdade: vidros, corredores, quartos, porão. A investigação acontece por baixo do turno.
 
-- **Gênero:** cozy horror em primeira pessoa, com mecânicas físicas de limpeza e dedução leve.
-- **Fantasia:** ser boa no trabalho de fachada enquanto olha tudo; sentir o hotel ficar estranho conforme a sujeira sai.
-- **Emoção durante:** satisfação tátil (limpar), tensão sussurrada (a gerente, o que aparece sob a sujeira).
-- **Emoção depois:** "eu vi aquilo?", vontade de contar a alguém quem foi.
-- **Plataforma:** macOS nativo (jogo) + iPhone (controle de movimento e "celular da policial").
-- **Multiplayer:** co-op entre Macs na mesma rede; cada Mac pode ter seu iPhone. Sozinha o jogo fecha.
+**Limpar bem é o disfarce.** A sujeira esconde as provas: só aparece o que você tira. E ficar parada onde não devia, à vista da gerente, é o que te entrega.
+
+- **Gênero:** cozy horror em primeira pessoa, com mecânicas físicas de limpeza e dedução.
+- **Emoção durante:** satisfação tátil, tensão de timing, descoberta.
+- **Emoção depois:** vontade de contar a alguém quem foi.
+- **Plataforma:** macOS nativo + iPhone como controle de movimento e celular da personagem.
+- **Multiplayer:** até quatro pessoas, cada uma no seu Mac, na mesma rede. Sozinha a campanha fecha, com mais noites.
+
+## A história
+
+Heitor Vilar, perito de seguros, morreu na suíte 7. A gerência chamou de infarto e barrou a perícia.
+
+| Noite | Título | Onde | O que acontece |
+| --- | --- | --- | --- |
+| 1 | O sétimo andar | corredor, quarto 5, fachada | A marca de mão do lado de fora, no sétimo andar. Alguém limpa o vidro à noite. |
+| 2 | O livro de registro | lobby, corredor | A página arrancada, a gôndola alugada e devolvida sem sair do lugar, a chave de um oitavo andar que não existe. |
+| 3 | A suíte 7 | suíte 7, fachada | O crachá arrebentado, os arranhões na cornija e uma palavra escrita por dentro do espelho. |
+| 4 | O porão | lavanderia, incinerador | O uniforme queimado de 1974, a planta com oito andares, o livro de ponto com quatro saídas em branco. |
+| 5 | O oitavo andar | andar lacrado | O carrinho de Osvaldo, a gôndola ainda pendurada, o contrato e a apólice que Vilar ia negar. |
+
+**A verdade:** Almeida é coproprietário oculto. A venda só fecha com a apólice aprovada, e Vilar ia negá-la por causa do oitavo andar selado depois do incêndio de 1974. Almeida trocou de quarto com ele na véspera, saiu pela janela do 5, andou pela cornija e entrou na 7. Celeste escondeu tudo porque a mãe dela morreu no 803 e o hotel é o que sobrou dela. Osvaldo, o limpador de vidros que caiu naquela noite, continua limpando as janelas.
+
+## Os quatro papéis
+
+| Papel | Ferramenta rápida | Acesso natural |
+| --- | --- | --- |
+| Camareira | pano e spray | quartos e suítes |
+| Limpadora de vidros | rodo | fachada, gôndola, o que se vê de fora |
+| Zelador | vassoura e esfregão | porão, lavanderia, casa de máquinas |
+| Recepção | flanela de lustrar | balcão, livro de registro, telefone |
+
+Cada papel rende 100% na sua ferramenta, 62% na secundária e 40% nas outras. Com quatro pessoas, uma noite cobre tudo. Sozinha, você escolhe o que importa. As provas que ficaram para trás continuam lá.
+
+## Mecânicas
+
+**Limpeza.** Cada superfície tem uma máscara de sujeira que some onde a ferramenta passa. O gesto precisa bater: o rodo só limpa na vertical, a vassoura só na horizontal, o pano e a flanela pedem passadas repetidas. Sob a sujeira pode haver uma prova, que só aparece quando 60% da área dela está limpa.
+
+**Suspeita.** Dona Celeste faz ronda. Ela te vê se você estiver na frente dela, a menos de 8 m, e fora de um esconderijo. Trabalhando, a suspeita cai; parada perto de uma porta lacrada, sobe. Cheia, você é descoberta e perde a noite. Sem ninguém olhando, ela esfria sozinha.
+
+**Esconderijos.** Dentro dos quartos, na gôndola, atrás do balcão e ao lado do incinerador ela não te enxerga.
+
+**Escutas e conversas.** Escutar atrás da porta 7 ou ouvir a secretária eletrônica leva alguns segundos. Se ela olhar, você endireita o corpo na hora e retoma depois de onde parou.
+
+## Progressão
+
+- **Mural de provas:** 20 cartões que ficam entre as noites, marcados com a pergunta que ajudam a responder.
+- **Estrelas:** até 3 por noite (2 por tarefas, 1 por achar todas as provas da noite).
+- **Armário:** rodo largo, spray revelador, lanterna de cabeça, luvas silenciosas, rádio da equipe. A lanterna muda o porão e o oitavo andar de injogáveis para jogáveis.
+- **Confiança:** sobe com tarefas feitas, cai quando você é descoberta. Confiança baixa deixa a ronda mais atenta.
+- **Ser descoberta não acaba a campanha:** a noite é perdida e repetida, e a gerência fica mais vigilante.
+
+## Dedução final
+
+Três perguntas: quem, por quê e como. Só aparecem as respostas que as suas provas sustentam. Duas ou três certas encerram o caso; menos que isso, ele é arquivado.
 
 ## O iPhone
 
-O iPhone é a ferramenta na mão **e** o celular da personagem.
-
 | No jogo | No iPhone |
 | --- | --- |
-| Olhar | Apontar o aparelho (attitude do CoreMotion). |
-| Andar | Joystick virtual. |
-| Rodo de vidro | Segurar na vertical e puxar de cima para baixo, faixa por faixa. Só o gesto vertical limpa. |
-| Vassoura | Segurar como cabo apontando para o chão; varrer de lado a lado. Só o gesto lateral limpa. |
-| Pano e spray | Segurar USAR (spray) e esfregar em círculos; várias passadas. |
-| Escutar na porta | Encostar o aparelho na orelha e ficar parada. |
-| Provas | Fotografar com AÇÃO quando algo aparece sob a sujeira. Ficam na aba Provas. |
-| Delegado | Mensagens chegam na aba Mensagens, com vibração. |
-| Sustos | Háptica forte no aparelho, luzes piscam no Mac. |
+| Olhar | apontar o aparelho (attitude do CoreMotion) |
+| Andar | joystick virtual |
+| Rodo | segurar na vertical e puxar de cima para baixo |
+| Vassoura | segurar como cabo e varrer de lado a lado |
+| Pano, flanela | segurar USAR e esfregar |
+| Escutar | encostar o aparelho na orelha e ficar parada |
+| Provas | fotografar com AÇÃO; ficam na aba Provas |
+| Delegado | mensagens com vibração, na aba Mensagens |
+| Rádio da equipe | vibra quando a gerente entra no andar |
 
-Sem sensores (simulador) ou sem iPhone, teclado e mouse fazem tudo (fallback de teste, não a experiência).
-
-## Vertical slice implementado
-
-- **Lugar:** 7º andar, corredor com quartos 5, 6, 7 (lacrado) e 8, elevador, janela no fim, quarto 5 aberto.
-- **Turno (9 min):** limpar o vidro do fim do corredor (rodo), varrer o corredor da suíte 7 (vassoura), limpar a mesa do quarto 5 (pano).
-- **Provas (4):** marca de mão do lado de fora do vidro; bituca com batom na poeira; cartão-chave da suíte 7 sob a mancha de vinho; conversa atrás da porta 7.
-- **Gerente (Dona Celeste):** patrulha o corredor. Ficar parada perto da suíte 7 ou escutar na porta sob o olhar dela sobe a suspeita; limpar na frente dela baixa. Suspeita cheia = descoberta.
-- **Sustos:** ao limpar 85% do vidro, as luzes piscam e uma silhueta aparece do lado de fora por 1,4 s.
-- **Fim:** elevador com 2+ provas leva à dedução (3 suspeitos). Culpado: Sr. Almeida, que trocou de quarto com a vítima na véspera e entrou pela cornija.
-- **Finais:** descoberta, sem provas, caso resolvido, suspeito errado.
-
-## Pilares (com teste observável)
-
-1. **Limpar tem que ser gostoso em 30 segundos.** Teste: a pessoa faz uma segunda faixa no vidro sem ser pedida.
-2. **O trabalho é o disfarce.** Teste: a pessoa descreve que limpou "para a gerente não desconfiar" sem ler ajuda.
-3. **O celular é parte do mundo.** Teste: a pessoa olha para o iPhone quando vibra e conta o que o delegado disse.
+Sem iPhone, teclado e mouse fazem tudo (fallback de teste, não a experiência).
 
 ## Maior incerteza
 
-Se o rodo no iPhone dá sensação de limpar um vidro de verdade (latência, drift de yaw, mapeamento de faixa). O modo de captura (`TURNO_CAPTURE=1`) valida a lógica; a sensação só se valida com iPhone físico na mão.
+Se o rodo com o iPhone na mão dá a sensação de limpar um vidro de verdade. O modo `TURNO_CAPTURE=1` valida as regras; a sensação só se valida com aparelho físico.
 
-## Fora de escopo deste slice
+## Fora de escopo
 
-Assets 3D/áudio externos (tudo é procedural), múltiplos andares, papéis assimétricos no co-op (camareira/limpador de vidros/porteiro), internet fora da rede local (GameKit), salvamento.
+Assets externos (tudo é procedural), vozes, papéis com acesso exclusivo por chave, internet fora da rede local, mais de um culpado possível.

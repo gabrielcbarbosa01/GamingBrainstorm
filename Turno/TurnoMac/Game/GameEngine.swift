@@ -20,19 +20,18 @@ final class GameEngine {
     let server: ControllerServer
     let coop = CoopSession()
     var subscription: EventSubscription?
-    var buildError: String?
 
     init() {
-        do {
-            world = try GameWorld()
-        } catch {
-            fatalError("Não foi possível montar o mundo: \(error)")
-        }
+        do { world = try GameWorld() }
+        catch { fatalError("Não foi possível montar o hotel: \(error)") }
         keyboard = KeyboardMouseInput(input: input)
         server = ControllerServer(input: input)
         loop = GameLoop(state: state, world: world, input: input, audio: audio)
         loop.server = server
         loop.coop = coop
+        state.progress = ProgressStore.load()
+        state.role = state.progress.role
+        state.night = Campaign.night(min(state.progress.night, Campaign.count))
 
         server.onConnected = { [weak self] name in
             guard let self else { return }
@@ -40,7 +39,7 @@ final class GameEngine {
             self.state.showToast("\(name) conectado como controle")
             self.loop.pushControllerState(force: true)
             for m in self.state.messages { self.server.send(.message(m)) }
-            for e in self.state.foundEvidence { self.server.send(.evidence(e)) }
+            for e in self.state.boardEvidence { self.server.send(.evidence(e)) }
         }
         server.onDisconnected = { [weak self] in
             self?.state.controllerName = ""
@@ -51,10 +50,15 @@ final class GameEngine {
         state.onHaptic = { [weak self] h in self?.server.send(.haptic(h)) }
 
         coop.onPeersChanged = { [weak self] n in
-            self?.state.coopPeers = n
-            self?.state.showToast(n > 0 ? "Co-op: \(n) Mac(s) conectado(s)" : "Co-op: sozinha no turno")
+            guard let self else { return }
+            self.state.coopPeerNames = self.coop.peers.map(\.displayName)
+            self.state.showToast(n > 0 ? "Equipe: \(n + 1) pessoas no turno" : "Você está sozinha no turno")
         }
-        coop.onMessage = { [weak self] _, m in self?.loop.handleCoop(m) }
+        coop.onPeerLost = { [weak self] name in
+            self?.state.coopPeers[name] = nil
+            self?.world.peerAvatars[name]?.isEnabled = false
+        }
+        coop.onMessage = { [weak self] peer, m in self?.loop.handleCoop(m, from: peer) }
 
         server.start()
         coop.start()

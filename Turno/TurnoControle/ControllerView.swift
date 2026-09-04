@@ -59,10 +59,16 @@ struct ControllerView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 2) {
+        let s = client.state
+        return VStack(spacing: 2) {
             Text("TURNO DA NOITE").font(.headline.weight(.black)).tracking(3)
                 .foregroundStyle(Color(red: 0.95, green: 0.8, blue: 0.5))
-            Text(client.status).font(.caption).foregroundStyle(.secondary)
+            if client.connectedTo != nil && s.night > 0 && !s.nightTitle.isEmpty {
+                Text("Noite \(s.night) · \(s.nightTitle)").font(.caption.bold()).foregroundStyle(.white.opacity(0.8))
+                Text("\(s.role)\(s.area.isEmpty ? "" : " · " + s.area)").font(.caption2).foregroundStyle(.secondary)
+            } else {
+                Text(client.status).font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -107,6 +113,10 @@ struct ControllerView: View {
                 Text(suspicionLabel(s.suspicion)).font(.caption.bold())
                 ProgressView(value: Double(s.suspicion)).tint(s.suspicion > 0.6 ? .red : .orange).frame(width: 120)
             }
+            if s.managerWarning {
+                Label("rádio: Dona Celeste está no andar", systemImage: "antenna.radiowaves.left.and.right")
+                    .font(.caption2.bold()).foregroundStyle(.orange)
+            }
         }
         .padding()
         .frame(maxWidth: .infinity)
@@ -114,19 +124,43 @@ struct ControllerView: View {
         .padding(.horizontal)
     }
 
+    @ViewBuilder
     private var shiftStrip: some View {
         let s = client.state
-        return HStack {
-            Text(String(format: "Turno %d:%02d", s.shiftSecondsLeft / 60, s.shiftSecondsLeft % 60)).monospacedDigit()
-            Spacer()
-            ForEach(s.tasks) { t in
-                Image(systemName: t.progress >= 0.9 ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(t.progress >= 0.9 ? .green : .secondary)
+        if s.phase != "playing" {
+            Text(waitingLine).font(.caption).foregroundStyle(.secondary)
+                .padding(.bottom, 8)
+        } else {
+        VStack(spacing: 4) {
+            HStack(spacing: 6) {
+                ForEach(s.tasks) { t in
+                    HStack(spacing: 3) {
+                        Image(systemName: t.progress >= 0.9 ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(t.progress >= 0.9 ? .green : .secondary)
+                        Text(t.area).font(.caption2)
+                    }
+                }
             }
-            Spacer()
-            Text("Provas \(s.evidenceCount)/4")
+            HStack {
+                Text(String(format: "Turno %d:%02d", s.shiftSecondsLeft / 60, s.shiftSecondsLeft % 60)).monospacedDigit()
+                Spacer()
+                Label("\(s.stars)", systemImage: "star.fill").foregroundStyle(.yellow)
+                Spacer()
+                Text("Provas \(s.evidenceCount)/\(max(1, s.evidenceTotal))")
+            }
         }
         .font(.caption).padding(.horizontal, 20).padding(.bottom, 6)
+        }
+    }
+
+    private var waitingLine: String {
+        switch client.state.phase {
+        case "hub": return "Vestiário — escolha o disfarce no Mac"
+        case "report": return "Relatório da noite no Mac"
+        case "deduction": return "Hora de responder ao delegado"
+        case "ending": return "Fim da campanha"
+        default: return "Aguardando o turno começar no Mac"
+        }
     }
 
     // MARK: Mensagens
@@ -167,6 +201,8 @@ struct ControllerView: View {
             List {
                 if client.evidence.isEmpty {
                     Text("Nenhuma prova ainda. Limpe bem e olhe embaixo da sujeira.").foregroundStyle(.secondary)
+                } else {
+                    Text("O mural fica com você entre as noites.").font(.caption).foregroundStyle(.secondary)
                 }
                 ForEach(client.evidence) { e in
                     VStack(alignment: .leading, spacing: 4) {
@@ -176,20 +212,11 @@ struct ControllerView: View {
                     .padding(.vertical, 4)
                 }
             }
-            .navigationTitle("Provas \(client.evidence.count)/4")
+            .navigationTitle("Provas \(client.evidence.count)")
         }
     }
 
-    private func toolIcon(_ t: ToolKind) -> String {
-        switch t {
-        case .rodo: return "square.and.line.vertical.and.square"
-        case .vassoura: return "wind"
-        case .pano: return "drop.fill"
-        case .ouvido: return "ear"
-        case .camera: return "camera"
-        case .none: return "figure.walk"
-        }
-    }
+    private func toolIcon(_ t: ToolKind) -> String { t.icon }
 
     private func suspicionLabel(_ s: Float) -> String {
         s < 0.25 ? "Suspeita baixa" : (s < 0.6 ? "Suspeita: atenção" : "SUSPEITA ALTA")

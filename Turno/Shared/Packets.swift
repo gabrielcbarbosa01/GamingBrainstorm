@@ -31,12 +31,13 @@ struct ControllerPacket: Codable {
     var actCount: UInt16 = 0
     var backCount: UInt16 = 0
     var recalCount: UInt16 = 0
+    var mapCount: UInt16 = 0
     var hello: Bool = false
     var name: String = ""
 }
 
 enum ToolKind: String, Codable, CaseIterable {
-    case none, rodo, vassoura, pano, ouvido, camera
+    case none, rodo, vassoura, pano, flanela, ouvido, camera
 
     var title: String {
         switch self {
@@ -44,6 +45,7 @@ enum ToolKind: String, Codable, CaseIterable {
         case .rodo: return "Rodo de vidro"
         case .vassoura: return "Vassoura"
         case .pano: return "Pano e spray"
+        case .flanela: return "Flanela de lustrar"
         case .ouvido: return "Escutando"
         case .camera: return "Câmera de provas"
         }
@@ -52,11 +54,24 @@ enum ToolKind: String, Codable, CaseIterable {
     var motionHint: String {
         switch self {
         case .none: return "Aponte o iPhone para olhar. Use o joystick para andar."
-        case .rodo: return "Segure o iPhone na vertical e puxe de cima para baixo, faixa por faixa."
-        case .vassoura: return "Segure como cabo de vassoura, apontando para o chão. Varra de lado a lado."
-        case .pano: return "Segure USAR para o spray e esfregue em círculos."
-        case .ouvido: return "Encoste o iPhone na orelha. Fique parada. Se a gerente aparecer, saia."
+        case .rodo: return "iPhone na vertical. Puxe de cima para baixo, faixa por faixa."
+        case .vassoura: return "Segure como cabo de vassoura. Varra de um lado ao outro."
+        case .pano: return "Segure USAR e esfregue em círculos, várias passadas."
+        case .flanela: return "Movimentos curtos e cruzados, sem pressa, até o brilho aparecer."
+        case .ouvido: return "Encoste o iPhone na orelha. Fique parada."
         case .camera: return "Aponte para a prova e toque em AÇÃO para fotografar."
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .rodo: return "square.and.line.vertical.and.square"
+        case .vassoura: return "wind"
+        case .pano: return "drop.fill"
+        case .flanela: return "sparkle"
+        case .ouvido: return "ear"
+        case .camera: return "camera"
+        case .none: return "figure.walk"
         }
     }
 }
@@ -65,6 +80,7 @@ struct TaskStatus: Codable, Identifiable {
     var id: String
     var title: String
     var progress: Float
+    var area: String
 }
 
 struct ControllerState: Codable {
@@ -73,14 +89,22 @@ struct ControllerState: Codable {
     var prompt: String = ""
     var suspicion: Float = 0
     var managerNear: Bool = false
+    var managerWarning: Bool = false
     var shiftSecondsLeft: Int = 0
     var tasks: [TaskStatus] = []
     var evidenceCount: Int = 0
+    var evidenceTotal: Int = 0
     var phase: String = "menu"
+    var night: Int = 1
+    var nightTitle: String = ""
+    var role: String = ""
+    var area: String = ""
+    var stars: Int = 0
+    var trust: Float = 0.5
 }
 
 enum HapticKind: String, Codable {
-    case tick, stroke, success, heartbeat, alarm, shock
+    case tick, stroke, success, heartbeat, alarm, shock, warning
 }
 
 struct ChatMessage: Codable, Identifiable, Equatable {

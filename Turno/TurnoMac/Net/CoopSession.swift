@@ -11,13 +11,12 @@ import Foundation
 import MultipeerConnectivity
 
 enum CoopMessage: Codable {
-    case pose(x: Float, y: Float, z: Float, yaw: Float, tool: ToolKind)
-    case clean(surface: Int, u0: Float, v0: Float, u1: Float, v1: Float, tool: ToolKind, amount: Float)
+    case pose(x: Float, y: Float, z: Float, yaw: Float, role: Role)
+    case clean(surface: Int, u0: Float, v0: Float, u1: Float, v1: Float, amount: Float)
     case evidence(String)
     case task(String, Float)
-    case manager(z: Float, dir: Float, paused: Bool)
-    case suspicion(Float)
-    case start
+    case manager(t: Float, dir: Float, area: String)
+    case startNight(Int)
 }
 
 final class CoopSession: NSObject {
@@ -31,6 +30,7 @@ final class CoopSession: NSObject {
     private(set) var peers: [MCPeerID] = []
     var onPeersChanged: ((Int) -> Void)?
     var onMessage: ((String, CoopMessage) -> Void)?
+    var onPeerLost: ((String) -> Void)?
 
     /// Host = menor nome em ordem alfabética entre os conectados (determinístico).
     var isHost: Bool {
@@ -62,6 +62,7 @@ extension CoopSession: MCSessionDelegate {
     func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         DispatchQueue.main.async {
             self.peers = session.connectedPeers
+            if state == .notConnected { self.onPeerLost?(peerID.displayName) }
             self.onPeersChanged?(self.peers.count)
         }
     }

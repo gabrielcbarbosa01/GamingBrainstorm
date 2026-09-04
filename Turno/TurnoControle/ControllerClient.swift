@@ -116,9 +116,11 @@ final class ControllerClient {
     private func apply(_ fb: FeedbackPacket) {
         switch fb {
         case .state(let s):
-            let wasHeart = state.managerNear
+            let wasNear = state.managerNear
+            let wasWarning = state.managerWarning
             state = s
-            if s.managerNear && !wasHeart { heavy.impactOccurred(intensity: 0.6) }
+            if s.managerNear && !wasNear { heavy.impactOccurred(intensity: 0.6) }
+            if s.managerWarning && !wasWarning { impact.impactOccurred(intensity: 0.45) }
         case .haptic(let h):
             lastHaptic = h
             switch h {
@@ -127,6 +129,7 @@ final class ControllerClient {
             case .success: notify.notificationOccurred(.success)
             case .heartbeat: heavy.impactOccurred(intensity: 0.7)
             case .alarm: notify.notificationOccurred(.error)
+            case .warning: impact.impactOccurred(intensity: 0.35)
             case .shock:
                 heavy.impactOccurred(intensity: 1.0)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.heavy.impactOccurred(intensity: 1.0) }
