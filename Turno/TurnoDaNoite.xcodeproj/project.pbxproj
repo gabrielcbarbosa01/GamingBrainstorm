@@ -1,0 +1,498 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		13BC3BB4E7F2A4A069622E42 /* MotionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14FD12930DC3C4EC0CCB9912 /* MotionService.swift */; };
+		2685F7C2BCF2F92A89511C4B /* Packets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25A7F6A86478E48C667DA19 /* Packets.swift */; };
+		2A5D4B03351A04263875C442 /* ControllerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0E55BAE3888ACB9D5798B97 /* ControllerView.swift */; };
+		2E8A400B2376B75D1255246A /* TurnoControleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65652E1452E655F6CF85C468 /* TurnoControleApp.swift */; };
+		308BCEC8B62A1128E07675CB /* Packets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25A7F6A86478E48C667DA19 /* Packets.swift */; };
+		51A0972D661C9120ECF7CD92 /* ControllerServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFB423657EDDD59A0A2C98CC /* ControllerServer.swift */; };
+		59FD7E603FB9E5D0D60E7C36 /* CleaningSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77299F32401E79726E122DF /* CleaningSurface.swift */; };
+		6478A47AA4EB728A7E5B57C9 /* GameLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDB5ACFDD9BD6D74284438BB /* GameLoop.swift */; };
+		73BA6E7B78A34D26913D0446 /* ControllerClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB23CFFE8D18C2048BF3745D /* ControllerClient.swift */; };
+		7A92755CE1095A917EF49B94 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36D7C09C1870C972E32646F /* ContentView.swift */; };
+		84F3F92CF155B553CA5CB6B6 /* CoopSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E014DACAB4EB02BD31824E38 /* CoopSession.swift */; };
+		8A08DC9BF39C5CF57CD3F1EC /* KeyboardMouseInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3469F79469514F46C5B03622 /* KeyboardMouseInput.swift */; };
+		9F79D8C2EDC032EE9FB37406 /* InputState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6319AF0C21714659512F449 /* InputState.swift */; };
+		AE4A32C83337561D72374DA5 /* TurnoMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60BBEEE7CCF44D59D32F875 /* TurnoMacApp.swift */; };
+		DAAF35DCE4D588E5D99C2836 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3DDE188AD551E4A44E0892 /* GameState.swift */; };
+		E54D40462833E2D0F54DAE23 /* ProceduralAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B02EC0E52D64A0AF2F858C1 /* ProceduralAudio.swift */; };
+		F4A6AB4CE8F777742F546894 /* GameWorld.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BF93821B9A6B732DC88C81C /* GameWorld.swift */; };
+		F4CD8384567411B336E3B9EE /* DebugCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AAE6EFA0231E09082826C78 /* DebugCapture.swift */; };
+		F77EE8CF9EB021E215B9AEC2 /* Story.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C42A142317059384E43D8C2 /* Story.swift */; };
+		F98E62D54CFF61CF16FE4E36 /* Textures.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB5FDA7972E63031CCB94C79 /* Textures.swift */; };
+		FAF70AD7767B7FDE5C71F17F /* GameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FC0EF4BB39AF7AEF46F89C8 /* GameEngine.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0C3DDE188AD551E4A44E0892 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
+		14FD12930DC3C4EC0CCB9912 /* MotionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionService.swift; sourceTree = "<group>"; };
+		1B02EC0E52D64A0AF2F858C1 /* ProceduralAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProceduralAudio.swift; sourceTree = "<group>"; };
+		1FC0EF4BB39AF7AEF46F89C8 /* GameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameEngine.swift; sourceTree = "<group>"; };
+		2C42DE8A8323CACC55864209 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		3469F79469514F46C5B03622 /* KeyboardMouseInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMouseInput.swift; sourceTree = "<group>"; };
+		4AAE6EFA0231E09082826C78 /* DebugCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugCapture.swift; sourceTree = "<group>"; };
+		65652E1452E655F6CF85C468 /* TurnoControleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnoControleApp.swift; sourceTree = "<group>"; };
+		6F94D94024B008991BD4291A /* TurnoMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TurnoMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		723B28ED44F7929C1E83951D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7BF93821B9A6B732DC88C81C /* GameWorld.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameWorld.swift; sourceTree = "<group>"; };
+		840DEC3FAEE71D053D88AD90 /* TurnoMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TurnoMac.entitlements; sourceTree = "<group>"; };
+		9C42A142317059384E43D8C2 /* Story.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Story.swift; sourceTree = "<group>"; };
+		A25A7F6A86478E48C667DA19 /* Packets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packets.swift; sourceTree = "<group>"; };
+		A36D7C09C1870C972E32646F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A60BBEEE7CCF44D59D32F875 /* TurnoMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnoMacApp.swift; sourceTree = "<group>"; };
+		A77299F32401E79726E122DF /* CleaningSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleaningSurface.swift; sourceTree = "<group>"; };
+		AB5FDA7972E63031CCB94C79 /* Textures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Textures.swift; sourceTree = "<group>"; };
+		B4AF71CEE69860BAC0690ECF /* TurnoControle.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TurnoControle.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BFB423657EDDD59A0A2C98CC /* ControllerServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControllerServer.swift; sourceTree = "<group>"; };
+		E014DACAB4EB02BD31824E38 /* CoopSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoopSession.swift; sourceTree = "<group>"; };
+		E0E55BAE3888ACB9D5798B97 /* ControllerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControllerView.swift; sourceTree = "<group>"; };
+		E6319AF0C21714659512F449 /* InputState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputState.swift; sourceTree = "<group>"; };
+		FB23CFFE8D18C2048BF3745D /* ControllerClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControllerClient.swift; sourceTree = "<group>"; };
+		FDB5ACFDD9BD6D74284438BB /* GameLoop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameLoop.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		15EE9C873EB896166E066808 /* TurnoMac */ = {
+			isa = PBXGroup;
+			children = (
+				A36D7C09C1870C972E32646F /* ContentView.swift */,
+				723B28ED44F7929C1E83951D /* Info.plist */,
+				840DEC3FAEE71D053D88AD90 /* TurnoMac.entitlements */,
+				A60BBEEE7CCF44D59D32F875 /* TurnoMacApp.swift */,
+				A2084C66ED0865DA44112DF2 /* Audio */,
+				A215AC3B62332575BFF85FC5 /* Game */,
+				655EA6211F76A67146CFE335 /* Input */,
+				F943C2D117ED6FEEDF7ADCFD /* Net */,
+			);
+			path = TurnoMac;
+			sourceTree = "<group>";
+		};
+		1771F774D662BA185591303D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B4AF71CEE69860BAC0690ECF /* TurnoControle.app */,
+				6F94D94024B008991BD4291A /* TurnoMac.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5944E64919C709D95EA0F2BD /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A25A7F6A86478E48C667DA19 /* Packets.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		655EA6211F76A67146CFE335 /* Input */ = {
+			isa = PBXGroup;
+			children = (
+				E6319AF0C21714659512F449 /* InputState.swift */,
+				3469F79469514F46C5B03622 /* KeyboardMouseInput.swift */,
+			);
+			path = Input;
+			sourceTree = "<group>";
+		};
+		A2084C66ED0865DA44112DF2 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				1B02EC0E52D64A0AF2F858C1 /* ProceduralAudio.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+		A215AC3B62332575BFF85FC5 /* Game */ = {
+			isa = PBXGroup;
+			children = (
+				A77299F32401E79726E122DF /* CleaningSurface.swift */,
+				4AAE6EFA0231E09082826C78 /* DebugCapture.swift */,
+				1FC0EF4BB39AF7AEF46F89C8 /* GameEngine.swift */,
+				FDB5ACFDD9BD6D74284438BB /* GameLoop.swift */,
+				0C3DDE188AD551E4A44E0892 /* GameState.swift */,
+				7BF93821B9A6B732DC88C81C /* GameWorld.swift */,
+				9C42A142317059384E43D8C2 /* Story.swift */,
+				AB5FDA7972E63031CCB94C79 /* Textures.swift */,
+			);
+			path = Game;
+			sourceTree = "<group>";
+		};
+		DDCBBB30B4E2A67A538DA0EE /* TurnoControle */ = {
+			isa = PBXGroup;
+			children = (
+				FB23CFFE8D18C2048BF3745D /* ControllerClient.swift */,
+				E0E55BAE3888ACB9D5798B97 /* ControllerView.swift */,
+				2C42DE8A8323CACC55864209 /* Info.plist */,
+				14FD12930DC3C4EC0CCB9912 /* MotionService.swift */,
+				65652E1452E655F6CF85C468 /* TurnoControleApp.swift */,
+			);
+			path = TurnoControle;
+			sourceTree = "<group>";
+		};
+		E354E1D344B890E29D89EFB7 = {
+			isa = PBXGroup;
+			children = (
+				5944E64919C709D95EA0F2BD /* Shared */,
+				DDCBBB30B4E2A67A538DA0EE /* TurnoControle */,
+				15EE9C873EB896166E066808 /* TurnoMac */,
+				1771F774D662BA185591303D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F943C2D117ED6FEEDF7ADCFD /* Net */ = {
+			isa = PBXGroup;
+			children = (
+				BFB423657EDDD59A0A2C98CC /* ControllerServer.swift */,
+				E014DACAB4EB02BD31824E38 /* CoopSession.swift */,
+			);
+			path = Net;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6DF18631D171FC49808298B8 /* TurnoMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 009E8DB874A247C91334C58E /* Build configuration list for PBXNativeTarget "TurnoMac" */;
+			buildPhases = (
+				28A151B8DCB8779524ADA224 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TurnoMac;
+			packageProductDependencies = (
+			);
+			productName = TurnoMac;
+			productReference = 6F94D94024B008991BD4291A /* TurnoMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		95FA657EC125AF6696366E47 /* TurnoControle */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8BC43777F0105C04A14E1899 /* Build configuration list for PBXNativeTarget "TurnoControle" */;
+			buildPhases = (
+				3DDF7133855C1BFC710EB026 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TurnoControle;
+			packageProductDependencies = (
+			);
+			productName = TurnoControle;
+			productReference = B4AF71CEE69860BAC0690ECF /* TurnoControle.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AE97837B157FB1D162173212 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					6DF18631D171FC49808298B8 = {
+						DevelopmentTeam = GRQN2BABWV;
+						ProvisioningStyle = Automatic;
+					};
+					95FA657EC125AF6696366E47 = {
+						DevelopmentTeam = GRQN2BABWV;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = CBC1CF092ADCF955DA195A40 /* Build configuration list for PBXProject "TurnoDaNoite" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = E354E1D344B890E29D89EFB7;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 1771F774D662BA185591303D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6DF18631D171FC49808298B8 /* TurnoMac */,
+				95FA657EC125AF6696366E47 /* TurnoControle */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		28A151B8DCB8779524ADA224 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				59FD7E603FB9E5D0D60E7C36 /* CleaningSurface.swift in Sources */,
+				7A92755CE1095A917EF49B94 /* ContentView.swift in Sources */,
+				51A0972D661C9120ECF7CD92 /* ControllerServer.swift in Sources */,
+				84F3F92CF155B553CA5CB6B6 /* CoopSession.swift in Sources */,
+				F4CD8384567411B336E3B9EE /* DebugCapture.swift in Sources */,
+				FAF70AD7767B7FDE5C71F17F /* GameEngine.swift in Sources */,
+				6478A47AA4EB728A7E5B57C9 /* GameLoop.swift in Sources */,
+				DAAF35DCE4D588E5D99C2836 /* GameState.swift in Sources */,
+				F4A6AB4CE8F777742F546894 /* GameWorld.swift in Sources */,
+				9F79D8C2EDC032EE9FB37406 /* InputState.swift in Sources */,
+				8A08DC9BF39C5CF57CD3F1EC /* KeyboardMouseInput.swift in Sources */,
+				2685F7C2BCF2F92A89511C4B /* Packets.swift in Sources */,
+				E54D40462833E2D0F54DAE23 /* ProceduralAudio.swift in Sources */,
+				F77EE8CF9EB021E215B9AEC2 /* Story.swift in Sources */,
+				F98E62D54CFF61CF16FE4E36 /* Textures.swift in Sources */,
+				AE4A32C83337561D72374DA5 /* TurnoMacApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3DDF7133855C1BFC710EB026 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73BA6E7B78A34D26913D0446 /* ControllerClient.swift in Sources */,
+				2A5D4B03351A04263875C442 /* ControllerView.swift in Sources */,
+				13BC3BB4E7F2A4A069622E42 /* MotionService.swift in Sources */,
+				308BCEC8B62A1128E07675CB /* Packets.swift in Sources */,
+				2E8A400B2376B75D1255246A /* TurnoControleApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		4C82B195BE34964F2A3A92B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TurnoMac/TurnoMac.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = TurnoMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.brunamarschner.turno.mac;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		6D41238FFB81D20EDFE4872E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = TurnoControle/Info.plist;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.brunamarschner.turno.controle;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		7FBB444D29594637DB824E50 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = GRQN2BABWV;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E0235412FFF51DAD9C5028CA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = TurnoControle/Info.plist;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.brunamarschner.turno.controle;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		E201AE26958D6CD7280F11C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TurnoMac/TurnoMac.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = TurnoMac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.brunamarschner.turno.mac;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		ECFBD63D591A6BFB52C88404 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = GRQN2BABWV;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		009E8DB874A247C91334C58E /* Build configuration list for PBXNativeTarget "TurnoMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E201AE26958D6CD7280F11C3 /* Debug */,
+				4C82B195BE34964F2A3A92B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8BC43777F0105C04A14E1899 /* Build configuration list for PBXNativeTarget "TurnoControle" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6D41238FFB81D20EDFE4872E /* Debug */,
+				E0235412FFF51DAD9C5028CA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CBC1CF092ADCF955DA195A40 /* Build configuration list for PBXProject "TurnoDaNoite" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7FBB444D29594637DB824E50 /* Debug */,
+				ECFBD63D591A6BFB52C88404 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AE97837B157FB1D162173212 /* Project object */;
+}

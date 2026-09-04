@@ -1,0 +1,66 @@
+name: TurnoDaNoite
+options:
+  bundleIdPrefix: com.brunamarschner.turno
+  deploymentTarget:
+    macOS: "15.0"
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: GRQN2BABWV
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_STRICT_CONCURRENCY: minimal
+targets:
+  TurnoMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: TurnoMac
+      - path: Shared
+    entitlements:
+      path: TurnoMac/TurnoMac.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.server: true
+        com.apple.security.network.client: true
+    info:
+      path: TurnoMac/Info.plist
+      properties:
+        CFBundleDisplayName: Turno da Noite
+        LSMinimumSystemVersion: "15.0"
+        NSLocalNetworkUsageDescription: O jogo recebe o iPhone como controle e conecta outros Macs na mesma rede.
+        NSBonjourServices:
+          - _turno._udp
+          - _turno-coop._tcp
+          - _turno-coop._udp
+        NSHumanReadableCopyright: Discovery build
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.brunamarschner.turno.mac
+        ENABLE_HARDENED_RUNTIME: true
+  TurnoControle:
+    type: application
+    platform: iOS
+    sources:
+      - path: TurnoControle
+      - path: Shared
+    info:
+      path: TurnoControle/Info.plist
+      properties:
+        CFBundleDisplayName: Turno Controle
+        NSLocalNetworkUsageDescription: O app envia os movimentos do iPhone para o jogo rodando no Mac.
+        NSBonjourServices:
+          - _turno._udp
+        NSMotionUsageDescription: Os sensores de movimento viram o rodo, a vassoura e o pano no jogo.
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIRequiresFullScreen: true
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.brunamarschner.turno.controle
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark

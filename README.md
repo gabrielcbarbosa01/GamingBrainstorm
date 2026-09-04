@@ -4,6 +4,10 @@ Repositório oficial de descoberta, especificação e implementação do projeto
 
 O jogo ainda está em fase de discovery. Conceito, gênero, plataforma de lançamento, direção visual e renderer de gameplay permanecem em aberto até que sejam aprovados e registrados. O projeto Xcode atual é apenas um scaffold técnico e não representa uma decisão de produto.
 
+## Discovery em andamento
+
+A branch `discovery/turno-da-noite` explora um conceito diferente (cozy horror num hotel, iPhone como controle de movimento, 3D em RealityKit). Ver `docs/discovery/turno-da-noite/GDD.md`, `docs/adr/0003-discovery-turno-da-noite.md` e o protótipo em `Turno/`. Enquanto não houver decisão registrada, o conceito aprovado nesta seção continua sendo o de `main`.
+
 ## Fontes de verdade
 
 | Documento | Responsabilidade |
