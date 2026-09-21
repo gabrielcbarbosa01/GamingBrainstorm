@@ -57,6 +57,9 @@ final class GameScene: SKScene {
     override func didMove(to view: SKView) {
         scaleMode = .resizeFill
         addChild(mundo)
+        // Projeção 2.5D: comprime a profundidade do chão. Personagens e itens
+        // compensam essa escala individualmente para permanecerem verticais.
+        mundo.yScale = WorldMetrics.depthProjection
         mundo.addChild(camadaTerreno)
         mundo.addChild(camadaEntidades)
         camadaTerreno.zPosition = -100
@@ -103,7 +106,8 @@ final class GameScene: SKScene {
         gerarChunksPendentes(orcamento: 9)
         jogador.aplicarForma(estado?.formaAtual ?? .humano, forcar: true)
         formaDesenhada = estado?.formaAtual ?? .humano
-        cam.position = jogador.position
+        cam.position = pontoProjetado(jogador.position, offsetY: 78)
+        cam.setScale(0.88)
     }
 
     // MARK: Loop
@@ -179,6 +183,10 @@ final class GameScene: SKScene {
                 guard estado.tela == .jogo else { break }
                 interagirComFoco(estado)
 
+            case .investigar:
+                guard estado.tela == .jogo else { break }
+                usarLenteDeCampo(estado)
+
             case .habilidade:
                 guard estado.tela == .jogo else { break }
                 acionarVerbo(estado)
@@ -238,6 +246,74 @@ final class GameScene: SKScene {
             entidadeFoco = nil
             estado.dicaInteracao = nil
         }
+    }
+
+    /// Varredura curta e material: a ferramenta ajuda a ler o ambiente, mas
+    /// não substitui procurar. Perto ela identifica; longe só informa direção.
+    private func usarLenteDeCampo(_ estado: GameState) {
+        guard estado.formaAtual == .humano else {
+            estado.avisar("A lente de campo precisa de mãos — volte à forma humana (Q).",
+                          icone: "hand.raised.fill", cor: .alerta)
+            return
+        }
+
+        efeitoVarredura()
+        var maisProxima: ObjetivoNode?
+        var menorDistancia = CGFloat.greatestFiniteMagnitude
+
+        for (_, chunk) in chunks {
+            for case let pista as ObjetivoNode in chunk.entidades where pista.kind == .rastro {
+                let dx = pista.position.x - jogador.position.x
+                let dy = pista.position.y - jogador.position.y
+                let distancia = hypot(dx, dy)
+                if distancia < 520 { pista.sinalizarPelaLente() }
+                if distancia < menorDistancia {
+                    menorDistancia = distancia
+                    maisProxima = pista
+                }
+            }
+        }
+
+        guard let pista = maisProxima, menorDistancia < 760 else {
+            estado.avisar("A lente não encontrou sinais nesta área. Procure bordas de trilha, árvores e margens.",
+                          icone: "magnifyingglass", cor: .neutro)
+            return
+        }
+
+        if menorDistancia <= 300 {
+            _ = pista.examinar(estado: estado, bioma: biomaID)
+        } else {
+            let dx = pista.position.x - jogador.position.x
+            let dy = pista.position.y - jogador.position.y
+            estado.avisar("Há um indício \(direcaoDe(dx: dx, dy: dy)). A lente ainda não alcança o detalhe.",
+                          icone: "location.magnifyingglass", cor: .neutro)
+        }
+    }
+
+    private func direcaoDe(dx: CGFloat, dy: CGFloat) -> String {
+        let horizontal = abs(dx) > 70 ? (dx > 0 ? "a leste" : "a oeste") : ""
+        let vertical = abs(dy) > 70 ? (dy > 0 ? "ao norte" : "ao sul") : ""
+        if horizontal.isEmpty { return vertical.isEmpty ? "por perto" : vertical }
+        if vertical.isEmpty { return horizontal }
+        return "\(vertical) e \(horizontal)"
+    }
+
+    private func efeitoVarredura() {
+        let anel = SKShapeNode(circleOfRadius: 34)
+        anel.position = jogador.position
+        anel.strokeColor = biome.palette.accent
+        anel.lineWidth = 4
+        anel.fillColor = .clear
+        anel.alpha = 0.9
+        anel.zPosition = 470
+        camadaEntidades.addChild(anel)
+        anel.run(.sequence([
+            .group([
+                .scale(to: 8.5, duration: 0.48),
+                .fadeOut(withDuration: 0.48)
+            ]),
+            .removeFromParent()
+        ]))
     }
 
     // MARK: Movimento, verbos e colisão
@@ -611,14 +687,21 @@ final class GameScene: SKScene {
     }
 
     private func atualizarCamera(delta: TimeInterval, estado: GameState) {
-        let alvo = jogador.position
+        // O jogador fica um pouco abaixo do centro para mostrar mais caminho à
+        // frente, composição usada por jogos de exploração em perspectiva 3/4.
+        let alvo = pontoProjetado(jogador.position, offsetY: 78)
         let suavidade = CGFloat(min(1, delta * 7))
         cam.position.x += (alvo.x - cam.position.x) * suavidade
         cam.position.y += (alvo.y - cam.position.y) * suavidade
 
-        let escalaAlvo = estado.formaAtual.zoomCamera
+        let escalaAlvo = estado.formaAtual.zoomCamera * 0.88
         let atual = cam.xScale
         cam.setScale(atual + (escalaAlvo - atual) * CGFloat(min(1, delta * 4)))
+    }
+
+    private func pontoProjetado(_ ponto: CGPoint, offsetY: CGFloat = 0) -> CGPoint {
+        let projetado = mundo.convert(ponto, to: self)
+        return CGPoint(x: projetado.x, y: projetado.y + offsetY)
     }
 
     // MARK: Entidades
@@ -906,7 +989,7 @@ final class GameScene: SKScene {
             if podeOcupar(candidato, forma: estado.formaAtual) { destino = candidato; break }
         }
         jogador.position = destino
-        cam.position = destino
+        cam.position = pontoProjetado(destino, offsetY: 78)
 
         let flash = SKSpriteNode(color: Palette.danger.withAlphaComponent(0.35),
                                  size: CGSize(width: 4000, height: 4000))

@@ -226,6 +226,7 @@ struct HUDView: View {
         VStack(alignment: .trailing, spacing: 3) {
             atalho("WASD", "mover")
             atalho("ESPAÇO", "habilidade")
+            atalho("F", "lente de campo")
             atalho("E", "interagir")
             atalho("TAB", "códice")
             atalho("M", "mapa")

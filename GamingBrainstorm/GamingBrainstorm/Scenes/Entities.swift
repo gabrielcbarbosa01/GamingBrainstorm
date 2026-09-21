@@ -27,6 +27,9 @@ class WorldEntity: SKNode {
         super.init()
         position = WorldMetrics.center(of: tile)
         zPosition = 100 + CGFloat(-tile.y) * 0.01
+        // Entidades funcionam como billboards: a posição acompanha o chão em
+        // perspectiva, mas a arte não é achatada junto com ele.
+        yScale = 1 / WorldMetrics.depthProjection
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) não usado") }
@@ -42,8 +45,8 @@ class WorldEntity: SKNode {
 
     func pulsar() {
         run(.repeatForever(.sequence([
-            .scale(to: 1.10, duration: 0.9),
-            .scale(to: 0.95, duration: 0.9)
+            .scaleX(to: 1.10, y: 1.10 / WorldMetrics.depthProjection, duration: 0.9),
+            .scaleX(to: 0.95, y: 0.95 / WorldMetrics.depthProjection, duration: 0.9)
         ])))
     }
 }
@@ -53,13 +56,18 @@ class WorldEntity: SKNode {
 final class ObjetivoNode: WorldEntity {
     let kind: ObjectiveKind
     private let sprite: SKSpriteNode
+    let evidencia: EvidenceKind?
+    private(set) var identificada = false
 
     init(tile: GridPoint, kind: ObjectiveKind, bioma: BiomeID) {
         self.kind = kind
-        self.sprite = SKSpriteNode(texture: Objects.objetivo(kind, bioma: bioma))
+        self.evidencia = kind == .rastro ? EvidenceKind.at(tile, biome: bioma) : nil
+        let textura = evidencia.map { Objects.evidencia($0, bioma: bioma, identificada: false) }
+            ?? Objects.objetivo(kind, bioma: bioma)
+        self.sprite = SKSpriteNode(texture: textura)
         super.init(tile: tile)
         addChild(sprite)
-        pulsar()
+        if kind != .rastro { pulsar() }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) não usado") }
@@ -67,7 +75,12 @@ final class ObjetivoNode: WorldEntity {
     /// Rastrear dá para fazer em qualquer forma; soltar bicho de armadilha,
     /// plantar muda ou desmontar uma frente de destruição exige mãos.
     override func checar(estado: GameState) -> Interacao {
-        if kind == .rastro { return Interacao(pode: true, dica: "Registrar vestígio") }
+        if kind == .rastro {
+            guard identificada else {
+                return Interacao(pode: false, dica: "F · examinar vestígio com a lente de campo")
+            }
+            return Interacao(pode: true, dica: "Registrar \(evidencia?.nome ?? "vestígio")")
+        }
         if estado.formaAtual == .humano {
             return Interacao(pode: true, dica: kind.verbo)
         }
@@ -82,6 +95,36 @@ final class ObjetivoNode: WorldEntity {
         }
         cena.efeitoConquista(em: position, cor: Biome[cena.biomaID].palette.accent)
         return true
+    }
+
+    /// A lente não coleta a pista: apenas torna o detalhe legível. O jogador
+    /// ainda precisa se aproximar e registrá-la com E.
+    @discardableResult
+    func examinar(estado: GameState, bioma: BiomeID) -> Bool {
+        guard kind == .rastro, let evidencia else { return false }
+        guard !identificada else {
+            estado.avisar("\(evidencia.nome.capitalized) já identificada — aproxime-se e registre com E.",
+                          icone: "checkmark.magnifyingglass", cor: .neutro)
+            return true
+        }
+        identificada = true
+        sprite.texture = Objects.evidencia(evidencia, bioma: bioma, identificada: true)
+        sprite.run(.sequence([
+            .scale(to: 1.32, duration: 0.12),
+            .scale(to: 1.0, duration: 0.22)
+        ]))
+        estado.avisar("\(evidencia.nome.capitalized): \(evidencia.leitura)",
+                      icone: "magnifyingglass.circle.fill", cor: .bom)
+        return true
+    }
+
+    func sinalizarPelaLente() {
+        guard kind == .rastro, !identificada else { return }
+        sprite.removeAction(forKey: "lente")
+        sprite.run(.sequence([
+            .colorize(with: .white, colorBlendFactor: 0.75, duration: 0.12),
+            .colorize(withColorBlendFactor: 0, duration: 0.55)
+        ]), withKey: "lente")
     }
 }
 
@@ -409,11 +452,12 @@ final class CanteiroNode: WorldEntity {
         if e == 2 {
             // Muda pronta: um leve pulsar para o jogador notar de longe.
             run(.repeatForever(.sequence([
-                .scale(to: 1.06, duration: 0.8),
-                .scale(to: 0.98, duration: 0.8)
+                .scaleX(to: 1.06, y: 1.06 / WorldMetrics.depthProjection, duration: 0.8),
+                .scaleX(to: 0.98, y: 0.98 / WorldMetrics.depthProjection, duration: 0.8)
             ])), withKey: "pronto")
         } else {
-            setScale(1)
+            xScale = 1
+            yScale = 1 / WorldMetrics.depthProjection
         }
     }
 

@@ -68,15 +68,15 @@ enum Quests {
         case .refugio:
             return QuestChain(biome: .refugio, titulo: "Primeiros passos", etapas: [
                 QuestStage(kind: .rastro, titulo: "Calibrar o rastreador",
-                           descricao: "Colete três amostras ao redor do Refúgio para calibrar o rastreador de campo.",
-                           alvo: 3, dica: "Ande até os pontos brilhantes e pressione E.")
+                           descricao: "Encontre três vestígios reais ao redor do Refúgio e examine cada detalhe com a lente de campo.",
+                           alvo: 3, dica: "Procure alterações no chão e na vegetação. Use F perto do indício; depois aproxime-se e registre com E.")
             ])
 
         case .mataAtlantica:
             return QuestChain(biome: .mataAtlantica, titulo: "O grito dourado", etapas: [
                 QuestStage(kind: .rastro, titulo: "Seguir o grupo",
                            descricao: "Micos-leões vivem em grupos familiares. Registre vestígios — frutos mordidos, pelos em galhos, marcas de garra — para mapear o território do grupo.",
-                           alvo: 6, dica: "Vestígios se escondem no capim alto e sob as copas."),
+                           alvo: 6, dica: "Observe frutos no chão, fios dourados e riscos na casca. F examina com a lente; E registra."),
                 QuestStage(kind: .desafio, titulo: "Travessia da copa",
                            descricao: "A estrada partiu a mata em dois. Grupos de micos ficaram presos de um lado e não descem ao chão de jeito nenhum — ali embaixo é onde eles morrem. Vire mico, ganhe a confiança do grupo e leve a comitiva saltando até o outro fragmento.",
                            alvo: 3, dica: "Só na forma de mico eles seguem você. Se ficar longe demais, o grupo entra em pânico e se dispersa."),
@@ -89,7 +89,7 @@ enum Quests {
             return QuestChain(biome: .cerrado, titulo: "As pernas do horizonte", etapas: [
                 QuestStage(kind: .rastro, titulo: "Pegadas na poeira",
                            descricao: "O lobo-guará caminha quilômetros por noite. Registre pegadas e restos de lobeira para traçar sua rota.",
-                           alvo: 7, dica: "Use a forma de mico para cortar caminho pelos cipoais."),
+                           alvo: 7, dica: "Procure pegadas na terra, lobeiras mordidas e sementes. Use F para confirmar o indício."),
                 QuestStage(kind: .desafio, titulo: "Aceiro contra o fogo",
                            descricao: "O fogo corre pelo capim seco, tile por tile, e dobra de tamanho se você hesitar. Não dá para apagar: dá para cercar. Abra aceiros — faixas de terra nua — até o fogo não ter para onde ir.",
                            alvo: 3, dica: "A investida do lobo-guará raspa o chão e abre aceiro em linha. Corte à frente das chamas, não atrás."),
@@ -102,7 +102,7 @@ enum Quests {
             return QuestChain(biome: .pantanal, titulo: "Azul contra o céu", etapas: [
                 QuestStage(kind: .rastro, titulo: "Mapa dos ninhos",
                            descricao: "Araras-azuis só nidificam em ocos de manduvi centenários. Registre as árvores-ninho da planície.",
-                           alvo: 8, dica: "A investida do lobo-guará abre os espinheiros do caminho."),
+                           alvo: 8, dica: "Penas, lascas novas sob ocos e nozes quebradas denunciam uma árvore-ninho. Examine com F."),
                 QuestStage(kind: .desafio, titulo: "Vigília dos ninhos",
                            descricao: "Cada manduvi com oco é um berçário, e há saqueadores caminhando na direção deles agora. Chegue antes. Voar é o único jeito de cobrir a distância a tempo — mas instalar a proteção exige mão humana.",
                            alvo: 4, dica: "Plane até o ninho como arara, pouse e volte a ser gente (Q) para instalar a proteção."),
@@ -115,7 +115,7 @@ enum Quests {
             return QuestChain(biome: .amazonia, titulo: "O gigante do lago", etapas: [
                 QuestStage(kind: .rastro, titulo: "Contagem de bodecos",
                            descricao: "O pirarucu sobe para respirar. Conte as subidas nos lagos para estimar a população — é assim que o manejo comunitário funciona de verdade.",
-                           alvo: 9, dica: "Planando como arara você enxerga muito mais lago."),
+                           alvo: 9, dica: "Procure bolhas, ondulações sem vento e escamas na margem. Use F perto do sinal."),
                 QuestStage(kind: .desafio, titulo: "Malhadeiras",
                            descricao: "As redes ilegais estão no fundo, e o pirarucu tem um problema que nenhum outro peixe grande tem: ele respira ar. Mergulhe, corte a rede segurando E — e volte à tona antes que o fôlego acabe.",
                            alvo: 4, dica: "Segure ESPAÇO para submergir. O fôlego cai enquanto você está embaixo e só volta na superfície."),
@@ -128,7 +128,7 @@ enum Quests {
             return QuestChain(biome: .pampa, titulo: "A cidade sob as dunas", etapas: [
                 QuestStage(kind: .rastro, titulo: "Ouvir o chão",
                            descricao: "O tuco-tuco é ouvido antes de ser visto. Registre montículos e galerias ativas nas dunas.",
-                           alvo: 8, dica: "Ele vive só no litoral gaúcho — em nenhum outro lugar do mundo."),
+                           alvo: 8, dica: "Montículos, terra clara e capim roído indicam galerias ativas. Confirme com a lente (F)."),
                 QuestStage(kind: .desafio, titulo: "Sob o arado",
                            descricao: "O arado avança em linha reta sobre a duna e desaba tudo que houver embaixo. As galerias com bicho dentro estão no caminho. Escave até cada uma e tire os tuco-tucos antes da lâmina chegar.",
                            alvo: 4, dica: "Só se chega às galerias por baixo. Segure ESPAÇO para escavar — mas embaixo da terra você quase não enxerga."),

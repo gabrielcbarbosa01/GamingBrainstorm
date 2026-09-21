@@ -115,6 +115,9 @@ struct GridPoint: Hashable, Codable {
 enum WorldMetrics {
     /// Lado de um tile em pontos.
     static let tileSize: CGFloat = 44
+    /// Compressão vertical do mundo. O chão fica em perspectiva enquanto
+    /// personagens e pistas continuam como billboards verticais.
+    static let depthProjection: CGFloat = 0.72
     /// Tiles por lado de chunk. O mundo é gerado e descartado em chunks.
     static let chunkTiles: Int = 16
     static var chunkSize: CGFloat { tileSize * CGFloat(chunkTiles) }

@@ -13,6 +13,11 @@ gerados proceduralmente sem limite de tamanho, registra vestígios, liberta anim
 presos e recupera áreas degradadas. Cada bioma termina no encontro com um Guardião,
 que entrega um amuleto — e cada amuleto abre o bioma seguinte.
 
+Os vestígios não são marcadores abstratos: aparecem no cenário como frutas mordidas,
+pelos presos em galhos, cascas arranhadas, penas, escamas, bolhas ou terra revirada.
+A **lente de campo** (`F`) ajuda a confirmar um indício próximo e explica o que ele
+significa; só depois a evidência pode ser registrada com `E`.
+
 | Bioma | Animal | Amuleto | Travessia | ESPAÇO faz |
 |---|---|---|---|---|
 | Mata Atlântica | Mico-leão-dourado | da Copa | cipoais | **Salto** em arco, com salto duplo |
@@ -89,6 +94,7 @@ infinitas, com alvo e hostilidade crescentes, alimentando o Índice de Biodivers
 |---|---|
 | WASD / setas | andar |
 | ESPAÇO | movimento especial da forma atual |
+| F | examinar vestígios com a lente de campo |
 | E | interagir · avançar diálogo |
 | 1–6 | vestir um amuleto |
 | Q | voltar à forma humana |
@@ -102,6 +108,14 @@ quando ela acaba, você volta a ser humano na hora. Só a forma humana conversa 
 pessoas, abre armadilhas e planta mudas — a troca entre bicho e gente é o ritmo do jogo.
 
 Ninguém morre. Quem é pego por uma ameaça é afugentado e perde pontos.
+
+## Direção visual e câmera
+
+O mundo usa uma composição 2.5D de perspectiva 3/4: chão comprimido em profundidade,
+personagens verticais e câmera próxima com a pessoa jogadora abaixo do centro, para
+mostrar o caminho à frente. A referência de composição é *Cult of the Lamb* — não
+seus assets ou identidade visual. Fronteiras entre piso caminhável e bloqueios têm
+contorno, sombra de contato e face frontal para tornar a colisão legível sem uma grade.
 
 ## Estrutura
 

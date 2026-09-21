@@ -61,6 +61,9 @@ final class PlayerNode: SKNode {
     override init() {
         super.init()
         zPosition = 500
+        // Compensa a projeção vertical aplicada ao mundo: o personagem fica
+        // ereto sobre o chão inclinado, como um recorte 2D num cenário 2.5D.
+        yScale = 1 / WorldMetrics.depthProjection
 
         sombra.texture = Self.texturaSombra
         sombra.size = CGSize(width: 40, height: 15)

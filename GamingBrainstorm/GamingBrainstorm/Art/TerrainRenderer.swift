@@ -216,6 +216,42 @@ enum TerrainRenderer {
                             ncor.withAlphaComponent(0.85))
             }
         }
+
+        // Contorno de navegabilidade: somente a fronteira entre chão livre e
+        // bloqueio recebe uma borda. Assim a rota aparece como uma superfície
+        // contínua, sem transformar cada tile num quadrado de grade.
+        // Árvores e rochas recebem uma base orgânica no desenho do prop; uma
+        // moldura quadrada nelas denunciaria a grade em vez de explicar o chão.
+        if !t.livre && t != .tronco && t != .rocha {
+            for (dx, dy) in vizinhos {
+                let nt = generator.terrain(at: GridPoint(x: w.x + dx, y: w.y + dy))
+                guard nt.livre else { continue }
+
+                let a: CGPoint
+                let b: CGPoint
+                switch (dx, dy) {
+                case (1, 0):
+                    a = CGPoint(x: rect.maxX, y: rect.minY)
+                    b = CGPoint(x: rect.maxX, y: rect.maxY)
+                case (-1, 0):
+                    a = CGPoint(x: rect.minX, y: rect.minY)
+                    b = CGPoint(x: rect.minX, y: rect.maxY)
+                case (0, 1):
+                    a = CGPoint(x: rect.minX, y: rect.minY)
+                    b = CGPoint(x: rect.maxX, y: rect.minY)
+                default: // frente/sul — ganha uma pequena face para sugerir altura
+                    Draw.fill(ctx, CGRect(x: rect.minX, y: rect.maxY - 7,
+                                          width: rect.width, height: 7),
+                              SKColor(white: 0.02, alpha: 0.34))
+                    a = CGPoint(x: rect.minX, y: rect.maxY - 7)
+                    b = CGPoint(x: rect.maxX, y: rect.maxY - 7)
+                }
+                Draw.line(ctx, from: a, to: b, width: 5,
+                          SKColor(white: 0.02, alpha: 0.56), round: false)
+                Draw.line(ctx, from: a, to: b, width: 1.4,
+                          base.lighter(0.30).withAlphaComponent(0.92), round: false)
+            }
+        }
     }
 
     // MARK: - Props
@@ -266,7 +302,20 @@ enum TerrainRenderer {
                                rng: inout SeededRandom) {
         let cx = rect.midX + rng.cg(-4, 4)
         let baseY = rect.maxY - rng.cg(4, 10)
-        Draw.shadow(ctx, center: CGPoint(x: cx + 3, y: baseY + 2), w: rect.width * 0.8, h: 12, alpha: 0.22)
+        // Raízes, folhas baixas e sombra ocupam o tile: a área bloqueada fica
+        // legível como massa vegetal, sem uma caixa artificial em volta.
+        Draw.shadow(ctx, center: CGPoint(x: cx + 2, y: baseY + 1),
+                    w: rect.width * 0.98, h: 18, alpha: 0.34)
+        Draw.ellipse(ctx, CGRect(x: rect.minX + 2, y: baseY - 5,
+                                 width: rect.width - 4, height: 13),
+                     p.foliageDark.withAlphaComponent(0.72))
+        for _ in 0..<5 {
+            let x = rect.minX + rng.cg(3, rect.width - 3)
+            let y = baseY + rng.cg(-3, 5)
+            Draw.leaf(ctx, from: CGPoint(x: x - 5, y: y),
+                      to: CGPoint(x: x + 5, y: y - rng.cg(2, 6)),
+                      bulge: 3, p.foliage.darker(0.12))
+        }
 
         // Tronco
         let alturaTronco = rng.cg(14, 22)
@@ -287,7 +336,8 @@ enum TerrainRenderer {
                               rng: inout SeededRandom) {
         let cx = rect.midX + rng.cg(-3, 3)
         let cy = rect.midY + rng.cg(-2, 4)
-        Draw.shadow(ctx, center: CGPoint(x: cx + 2, y: cy + 10), w: rect.width * 0.7, h: 10)
+        Draw.shadow(ctx, center: CGPoint(x: cx + 2, y: cy + 10),
+                    w: rect.width * 0.92, h: 15, alpha: 0.34)
 
         var pts: [CGPoint] = []
         let lados = rng.int(5, 7)

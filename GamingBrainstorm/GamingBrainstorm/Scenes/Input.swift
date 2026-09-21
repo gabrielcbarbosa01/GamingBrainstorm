@@ -12,6 +12,7 @@ import SpriteKit
 
 enum GameAction: Hashable {
     case interagir
+    case investigar
     case habilidade
     case jornal
     case mapa
@@ -32,7 +33,7 @@ final class InputManager {
     private enum Key {
         static let w: UInt16 = 13, a: UInt16 = 0, s: UInt16 = 1, d: UInt16 = 2
         static let left: UInt16 = 123, right: UInt16 = 124, down: UInt16 = 125, up: UInt16 = 126
-        static let e: UInt16 = 14, q: UInt16 = 12, m: UInt16 = 46, r: UInt16 = 15
+        static let e: UInt16 = 14, f: UInt16 = 3, q: UInt16 = 12, m: UInt16 = 46, r: UInt16 = 15
         static let tab: UInt16 = 48, space: UInt16 = 49, esc: UInt16 = 53
         static let n1: UInt16 = 18, n2: UInt16 = 19, n3: UInt16 = 20, n4: UInt16 = 21
         static let n5: UInt16 = 23, n6: UInt16 = 22
@@ -71,6 +72,7 @@ final class InputManager {
     private static func acao(para code: UInt16) -> GameAction? {
         switch code {
         case Key.e: return .interagir
+        case Key.f: return .investigar
         case Key.space: return .habilidade
         case Key.tab: return .jornal
         case Key.m: return .mapa

@@ -22,6 +22,158 @@ enum Objects {
 
     // MARK: - Pontos de missão
 
+    /// Pistas de campo pequenas e materiais. Diferente dos outros objetivos,
+    /// elas não usam halo nem ícone abstrato: precisam ser reconhecidas no chão.
+    static func evidencia(_ kind: EvidenceKind, bioma: BiomeID,
+                          identificada: Bool) -> SKTexture {
+        cached("evidencia_\(kind.rawValue)_\(bioma.rawValue)_\(identificada)", 72, 58) { ctx in
+            let p = Biome[bioma].palette
+            let c = CGPoint(x: 36, y: 31)
+
+            // A lente acrescenta apenas uma marca de confirmação; a pista
+            // continua sendo o objeto encontrado, não um coletável luminoso.
+            if identificada {
+                Draw.ellipse(ctx, CGRect(x: 7, y: 17, width: 58, height: 30),
+                             p.accent.withAlphaComponent(0.16))
+                ctx.setStrokeColor(p.accent.withAlphaComponent(0.9).cgColor)
+                ctx.setLineWidth(2)
+                ctx.strokeEllipse(in: CGRect(x: 9, y: 19, width: 54, height: 26))
+            }
+
+            Draw.shadow(ctx, center: CGPoint(x: c.x + 2, y: c.y + 13),
+                        w: 48, h: 12, alpha: 0.28)
+            desenharEvidencia(ctx, kind: kind, c: c, palette: p)
+        }
+    }
+
+    /// Separado da textura para permitir inspeção visual determinística da arte.
+    static func desenharEvidencia(_ ctx: CGContext, kind: EvidenceKind,
+                                  c: CGPoint, palette p: BiomePalette) {
+        let terra = SKColor(hex: 0x5A4028)
+        let claro = Palette.parchment
+        switch kind {
+        case .pegadas:
+            for i in 0..<3 {
+                let x = c.x - 15 + CGFloat(i) * 15
+                let y = c.y + (i % 2 == 0 ? CGFloat(3) : -3)
+                Draw.ellipse(ctx, CGRect(x: x - 4, y: y - 1, width: 8, height: 11), terra.darker(0.2))
+                for dx in [CGFloat(-4), 0, 4] {
+                    Draw.circle(ctx, CGPoint(x: x + dx, y: y - 5), 1.8, terra.darker(0.2))
+                }
+            }
+
+        case .frutaMordida, .lobeiraMordida:
+            let cor = kind == .lobeiraMordida ? SKColor(hex: 0x7EA449) : SKColor(hex: 0xD9823B)
+            Draw.circle(ctx, c, 14, cor)
+            Draw.circle(ctx, CGPoint(x: c.x + 10, y: c.y - 7), 6.5, p.ground)
+            Draw.circle(ctx, CGPoint(x: c.x + 13, y: c.y + 1), 5.5, p.ground)
+            Draw.line(ctx, from: CGPoint(x: c.x - 1, y: c.y - 13),
+                      to: CGPoint(x: c.x + 2, y: c.y - 21), width: 3, SKColor(hex: 0x4A3524))
+            Draw.leaf(ctx, from: CGPoint(x: c.x + 1, y: c.y - 17),
+                      to: CGPoint(x: c.x + 11, y: c.y - 19), bulge: 3, p.foliage)
+
+        case .peloNoGalho:
+            Draw.line(ctx, from: CGPoint(x: c.x - 24, y: c.y + 8),
+                      to: CGPoint(x: c.x + 24, y: c.y - 4), width: 6, SKColor(hex: 0x60452D))
+            for i in 0..<6 {
+                let x = c.x - 7 + CGFloat(i) * 3
+                Draw.line(ctx, from: CGPoint(x: x, y: c.y + 2),
+                          to: CGPoint(x: x + CGFloat(i % 2 == 0 ? -5 : 5), y: c.y - 12),
+                          width: 1.8, SKColor(hex: 0xF2B74E))
+            }
+
+        case .cascaArranhada, .cascaDoOco:
+            Draw.roundRect(ctx, CGRect(x: c.x - 16, y: c.y - 21, width: 32, height: 42),
+                           radius: 9, SKColor(hex: 0x765033))
+            if kind == .cascaDoOco {
+                Draw.ellipse(ctx, CGRect(x: c.x - 8, y: c.y - 11, width: 16, height: 22),
+                             SKColor(hex: 0x211912))
+                for dx in [CGFloat(-14), 12] {
+                    Draw.polygon(ctx, [CGPoint(x: c.x + dx, y: c.y + 12),
+                                       CGPoint(x: c.x + dx + 6, y: c.y + 17),
+                                       CGPoint(x: c.x + dx + 9, y: c.y + 10)], SKColor(hex: 0xB98955))
+                }
+            } else {
+                for dx in [CGFloat(-8), -2, 4, 10] {
+                    Draw.line(ctx, from: CGPoint(x: c.x + dx, y: c.y - 13),
+                              to: CGPoint(x: c.x + dx - 5, y: c.y + 13), width: 2, claro)
+                }
+            }
+
+        case .fezesComSementes:
+            for i in 0..<3 {
+                Draw.ellipse(ctx, CGRect(x: c.x - 16 + CGFloat(i) * 11,
+                                         y: c.y - 4 + CGFloat(i % 2) * 4,
+                                         width: 13, height: 10), SKColor(hex: 0x493323))
+            }
+            for i in 0..<5 {
+                Draw.circle(ctx, CGPoint(x: c.x - 13 + CGFloat(i) * 7,
+                                         y: c.y + CGFloat(i % 2) * 5), 2.2, SKColor(hex: 0xD2A84A))
+            }
+
+        case .penaAzul:
+            Draw.leaf(ctx, from: CGPoint(x: c.x - 20, y: c.y + 16),
+                      to: CGPoint(x: c.x + 17, y: c.y - 17), bulge: 13, SKColor(hex: 0x2F70D8))
+            Draw.line(ctx, from: CGPoint(x: c.x - 21, y: c.y + 18),
+                      to: CGPoint(x: c.x + 18, y: c.y - 18), width: 2.3, claro)
+            for i in 0..<4 {
+                let t = CGFloat(i) / 4
+                Draw.line(ctx, from: CGPoint(x: c.x - 11 + 23 * t, y: c.y + 8 - 21 * t),
+                          to: CGPoint(x: c.x - 17 + 18 * t, y: c.y - 1 - 21 * t),
+                          width: 1.2, SKColor(hex: 0x9ED5F2))
+            }
+
+        case .nozQuebrada:
+            Draw.ellipse(ctx, CGRect(x: c.x - 22, y: c.y - 8, width: 24, height: 22), terra)
+            Draw.ellipse(ctx, CGRect(x: c.x + 2, y: c.y - 12, width: 22, height: 23), terra.lighter(0.12))
+            Draw.ellipse(ctx, CGRect(x: c.x - 14, y: c.y - 3, width: 9, height: 11), SKColor(hex: 0xE5C88A))
+            Draw.ellipse(ctx, CGRect(x: c.x + 8, y: c.y - 6, width: 9, height: 11), SKColor(hex: 0xE5C88A))
+
+        case .bolhasDeRespiracao:
+            for (dx, dy, r) in [(-16, 8, 6), (-4, -2, 4), (7, -10, 7), (18, 2, 3)] {
+                ctx.setStrokeColor(SKColor(hex: 0xC7F1F2, alpha: 0.9).cgColor)
+                ctx.setLineWidth(2)
+                ctx.strokeEllipse(in: CGRect(x: c.x + CGFloat(dx) - CGFloat(r),
+                                             y: c.y + CGFloat(dy) - CGFloat(r),
+                                             width: CGFloat(r * 2), height: CGFloat(r * 2)))
+            }
+
+        case .escama:
+            Draw.leaf(ctx, from: CGPoint(x: c.x - 20, y: c.y + 2),
+                      to: CGPoint(x: c.x + 20, y: c.y - 2), bulge: 16, SKColor(hex: 0x83B8A8))
+            Draw.leaf(ctx, from: CGPoint(x: c.x - 14, y: c.y + 1),
+                      to: CGPoint(x: c.x + 13, y: c.y - 2), bulge: 8, SKColor(hex: 0xD9E5B1, alpha: 0.65))
+
+        case .ondulacao:
+            for i in 0..<3 {
+                let w = CGFloat(22 + i * 14)
+                ctx.setStrokeColor(SKColor(hex: 0xA7E2E2, alpha: 0.85 - CGFloat(i) * 0.2).cgColor)
+                ctx.setLineWidth(2)
+                ctx.strokeEllipse(in: CGRect(x: c.x - w / 2, y: c.y - w * 0.22,
+                                             width: w, height: w * 0.44))
+            }
+
+        case .monticulo, .terraFresca:
+            let cor = kind == .monticulo ? SKColor(hex: 0xC6A36A) : SKColor(hex: 0x8A603B)
+            Draw.ellipse(ctx, CGRect(x: c.x - 26, y: c.y - 4, width: 52, height: 24), cor)
+            Draw.ellipse(ctx, CGRect(x: c.x - 11, y: c.y - 2, width: 22, height: 12), cor.darker(0.24))
+            for i in 0..<7 {
+                Draw.circle(ctx, CGPoint(x: c.x - 23 + CGFloat(i) * 8,
+                                         y: c.y + CGFloat((i * 5) % 12)), 2, cor.lighter(0.14))
+            }
+
+        case .capimRoido:
+            for i in 0..<7 {
+                let x = c.x - 21 + CGFloat(i) * 7
+                let h = CGFloat(i % 3) * 2 + 8
+                Draw.line(ctx, from: CGPoint(x: x, y: c.y + 13),
+                          to: CGPoint(x: x + 2, y: c.y + 13 - h), width: 3, p.grass.darker(0.1))
+                Draw.line(ctx, from: CGPoint(x: x, y: c.y + 13 - h),
+                          to: CGPoint(x: x + 5, y: c.y + 9 - h), width: 1.2, claro)
+            }
+        }
+    }
+
     static func objetivo(_ kind: ObjectiveKind, bioma: BiomeID) -> SKTexture {
         cached("obj_\(kind.rawValue)_\(bioma.rawValue)", 52, 52) { ctx in
             desenharObjetivo(ctx, kind: kind, bioma: bioma)
