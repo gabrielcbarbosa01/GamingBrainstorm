@@ -4,6 +4,10 @@
 
 A arquitetura está em discovery. O repositório contém um app SwiftUI macOS mínimo, criado com Xcode 26.6 e deployment target 26.5. Esses valores descrevem o scaffold atual; não constituem plataforma, versão mínima ou arquitetura aprovadas.
 
+## Identidade de distribuição
+
+Bundle ID `com.brainstorm.xisdrivethru`, team `6Y22927H5J`, assinatura automática. Ver [ADR 0001](docs/adr/0001-identidade-de-distribuicao.md). A plataforma registrada no App Store Connect não define a plataforma final.
+
 ## Objetivos de engenharia
 
 - manter gameplay testável sem depender da camada visual sempre que possível;
